@@ -29,4 +29,6 @@ if (hits.length > 0) {
   process.exit(1);
 }
 
-console.log("Asterline commentlint pass");
+if (args.has("--dry-run")) {
+  console.log("Asterline commentlint pass");
+}
