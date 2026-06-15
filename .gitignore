@@ -1,0 +1,9 @@
+# Runtime work state / evidence, never committed
+.asterline/
+.[o]mo/
+
+# Node
+node_modules/
+
+# OS
+.DS_Store

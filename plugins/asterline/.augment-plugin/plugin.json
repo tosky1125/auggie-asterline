@@ -1,0 +1,25 @@
+{
+  "name": "asterline",
+  "version": "1.0.0",
+  "description": "Auggie-native delivery kit for planning, execution, review, debugging, cleanup, and visual checks.",
+  "author": {
+    "name": "Asterline maintainers"
+  },
+  "license": "MIT",
+  "keywords": [
+    "auggie",
+    "asterline",
+    "planning",
+    "skills",
+    "agents",
+    "hooks",
+    "mcp",
+    "workflow"
+  ],
+  "skills": "./skills/",
+  "commands": "./commands/",
+  "agents": "./agents/",
+  "rules": "./rules/",
+  "hooks": "./hooks/hooks.json",
+  "mcpServers": "./.mcp.json"
+}

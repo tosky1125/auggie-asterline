@@ -1,0 +1,15 @@
+{
+  "name": "auggie-asterline",
+  "description": "Asterline for Auggie: planning, bounded execution, evidence capture, review pressure, cleanup, visual checks, and local plugin smoke validation.",
+  "version": "1.0.0",
+  "plugins": [
+    {
+      "name": "asterline",
+      "description": "Auggie-native delivery kit with plan, run, inspect, tracebug, cleanroom, pixelproof, and atlas workflows.",
+      "version": "1.0.0",
+      "source": "./plugins/asterline",
+      "category": "productivity",
+      "tags": ["planning", "skills", "agents", "workflow", "review", "qa"]
+    }
+  ]
+}
