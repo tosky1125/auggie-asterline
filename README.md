@@ -11,12 +11,6 @@ auggie plugin marketplace add tosky1125/auggie-asterline
 auggie plugin install asterline@auggie-asterline
 ```
 
-## Local Load
-
-```sh
-auggie --plugin-dir . command list
-```
-
 ## Contents
 
 | Surface | Path |
