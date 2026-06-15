@@ -68,7 +68,7 @@ function walk(path) {
 const marketplace = readJson(".augment-plugin/marketplace.json");
 const plugin = readJson("plugins/asterline/.augment-plugin/plugin.json");
 readJson("plugins/asterline/.mcp.json");
-readJson("plugins/asterline/hooks/hooks.json");
+const hooks = readJson("plugins/asterline/hooks/hooks.json");
 
 for (const path of [
   "README.md",
@@ -94,6 +94,24 @@ if (plugin) {
     if (!plugin[key]) fail(`plugin manifest missing ${key}`);
   }
   if (plugin.commands) fail("plugin manifest should not expose commands");
+}
+
+if (hooks) {
+  for (const [event, entries] of Object.entries(hooks.hooks ?? {})) {
+    if (!Array.isArray(entries)) {
+      fail(`hooks.${event}: expected array`);
+      continue;
+    }
+    for (const [index, entry] of entries.entries()) {
+      if (typeof entry.matcher === "string") {
+        try {
+          new RegExp(entry.matcher);
+        } catch (error) {
+          fail(`hooks.${event}.${index}.matcher invalid regex: ${error.message}`);
+        }
+      }
+    }
+  }
 }
 
 const agentFiles = filesIn("plugins/asterline/agents");
