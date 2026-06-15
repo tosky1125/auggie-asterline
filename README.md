@@ -1,4 +1,4 @@
-# auggie-asterline-marketplace
+# auggie-asterline
 
 Asterline is an Auggie marketplace plugin for disciplined agentic delivery:
 planning, bounded execution, evidence capture, review pressure, cleanup, and
