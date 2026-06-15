@@ -102,10 +102,10 @@ const skillDirs = readdirSync(join(root, "plugins/asterline/skills"))
   .filter((name) => statSync(join(root, "plugins/asterline/skills", name)).isDirectory())
   .sort();
 
-if (commandFiles.length !== 7) fail(`expected 7 commands, found ${commandFiles.length}`);
+if (commandFiles.length !== 8) fail(`expected 8 commands, found ${commandFiles.length}`);
 if (agentFiles.length !== 6) fail(`expected 6 agents, found ${agentFiles.length}`);
 if (ruleFiles.length < 3) fail(`expected at least 3 rules, found ${ruleFiles.length}`);
-if (skillDirs.length !== 12) fail(`expected 12 skills, found ${skillDirs.length}`);
+if (skillDirs.length !== 13) fail(`expected 13 skills, found ${skillDirs.length}`);
 
 for (const skill of skillDirs) {
   exists(`plugins/asterline/skills/${skill}/SKILL.md`);

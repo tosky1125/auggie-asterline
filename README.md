@@ -10,7 +10,6 @@ local plugin smoke checks.
 auggie plugin marketplace add tosky1125/auggie-asterline
 auggie plugin install asterline@auggie-asterline
 ```
-
 ## Contents
 
 | Surface | Path |
@@ -32,6 +31,7 @@ auggie plugin install asterline@auggie-asterline
 - `/cleanroom`: simplify generated or drifted work after tests exist.
 - `/pixelproof`: run visual checks for UI-facing changes.
 - `/atlas`: map a repository before a large change.
+- `/deepmap`: build a durable repository map before sustained work.
 
 ## Validation
 
