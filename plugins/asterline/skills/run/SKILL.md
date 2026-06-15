@@ -1,5 +1,5 @@
 ---
-name: runbook
+name: run
 description: Execute an approved plan with checkpoints and evidence.
 ---
 

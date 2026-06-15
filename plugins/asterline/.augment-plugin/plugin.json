@@ -17,7 +17,6 @@
     "workflow"
   ],
   "skills": "./skills/",
-  "commands": "./commands/",
   "agents": "./agents/",
   "rules": "./rules/",
   "hooks": "./hooks/hooks.json",

@@ -90,35 +90,45 @@ if (marketplace) {
 
 if (plugin) {
   if (plugin.name !== "asterline") fail("plugin name mismatch");
-  for (const key of ["skills", "commands", "agents", "rules", "hooks", "mcpServers"]) {
+  for (const key of ["skills", "agents", "rules", "hooks", "mcpServers"]) {
     if (!plugin[key]) fail(`plugin manifest missing ${key}`);
   }
+  if (plugin.commands) fail("plugin manifest should not expose commands");
 }
 
-const commandFiles = filesIn("plugins/asterline/commands");
 const agentFiles = filesIn("plugins/asterline/agents");
 const ruleFiles = filesIn("plugins/asterline/rules");
 const skillDirs = readdirSync(join(root, "plugins/asterline/skills"))
   .filter((name) => statSync(join(root, "plugins/asterline/skills", name)).isDirectory())
   .sort();
 
-if (commandFiles.length !== 8) fail(`expected 8 commands, found ${commandFiles.length}`);
+if (hasPath("plugins/asterline/commands")) fail("commands directory should not exist");
 if (agentFiles.length !== 6) fail(`expected 6 agents, found ${agentFiles.length}`);
 if (ruleFiles.length < 3) fail(`expected at least 3 rules, found ${ruleFiles.length}`);
 if (skillDirs.length !== 13) fail(`expected 13 skills, found ${skillDirs.length}`);
 
+const expectedSkills = [
+  "atlas",
+  "blueprint",
+  "cleanroom",
+  "codestyle",
+  "commentlint",
+  "deepmap",
+  "inspect",
+  "pixelproof",
+  "refinery",
+  "ruleweaver",
+  "run",
+  "symbolwire",
+  "tracebug",
+];
+for (const skill of expectedSkills) {
+  if (!skillDirs.includes(skill)) fail(`missing skill ${skill}`);
+}
+if (skillDirs.includes("runbook")) fail("runbook skill should be renamed to run");
+
 for (const skill of skillDirs) {
   exists(`plugins/asterline/skills/${skill}/SKILL.md`);
-}
-
-for (const file of commandFiles) {
-  const text = readFileSync(join(root, "plugins/asterline/commands", file), "utf8");
-  const match = text.match(/^skill:\s*([a-z0-9-]+)/m);
-  if (!match) {
-    fail(`${file}: missing skill frontmatter`);
-    continue;
-  }
-  if (!skillDirs.includes(match[1])) fail(`${file}: unknown skill ${match[1]}`);
 }
 
 const legacyLower = ["o", "m", "o"].join("");
@@ -166,4 +176,4 @@ if (failures.length > 0) {
 }
 
 console.log("Asterline marketplace validation passed");
-console.log(`commands=${commandFiles.length} agents=${agentFiles.length} rules=${ruleFiles.length} skills=${skillDirs.length}`);
+console.log(`agents=${agentFiles.length} rules=${ruleFiles.length} skills=${skillDirs.length}`);

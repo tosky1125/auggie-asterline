@@ -16,7 +16,6 @@ auggie plugin install asterline@auggie-asterline
 | --- | --- |
 | Plugin manifest | `plugins/asterline/.augment-plugin/plugin.json` |
 | Skills | `plugins/asterline/skills/` |
-| Commands | `plugins/asterline/commands/` |
 | Agents | `plugins/asterline/agents/` |
 | Rules | `plugins/asterline/rules/` |
 | Hooks | `plugins/asterline/hooks/` |
@@ -24,14 +23,14 @@ auggie plugin install asterline@auggie-asterline
 
 ## Command Set
 
-- `/blueprint`: build an evidence-backed implementation plan.
-- `/run`: execute an approved plan with ledger checkpoints.
-- `/inspect`: review changed work for defects and missing proof.
-- `/tracebug`: reproduce, isolate, fix, and verify a runtime defect.
-- `/cleanroom`: simplify generated or drifted work after tests exist.
-- `/pixelproof`: run visual checks for UI-facing changes.
-- `/atlas`: map a repository before a large change.
-- `/deepmap`: build a durable repository map before sustained work.
+- `/asterline:blueprint`: build an evidence-backed implementation plan.
+- `/asterline:run`: execute an approved plan with ledger checkpoints.
+- `/asterline:inspect`: review changed work for defects and missing proof.
+- `/asterline:tracebug`: reproduce, isolate, fix, and verify a runtime defect.
+- `/asterline:cleanroom`: simplify generated or drifted work after tests exist.
+- `/asterline:pixelproof`: run visual checks for UI-facing changes.
+- `/asterline:atlas`: map a repository before a large change.
+- `/asterline:deepmap`: build a durable repository map before sustained work.
 
 ## Validation
 

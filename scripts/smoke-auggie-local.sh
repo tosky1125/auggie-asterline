@@ -36,12 +36,17 @@ if grep -Eiq "manifest|invalid plugin|no such file|enoent|schema|cannot find|fai
   status="FAIL"
 fi
 
-for name in atlas blueprint cleanroom deepmap inspect pixelproof run tracebug; do
-  if ! grep -q "asterline--auggie-asterline:${name}" "$evidence"; then
+for name in atlas blueprint cleanroom commentlint deepmap inspect pixelproof refinery ruleweaver run symbolwire tracebug; do
+  if ! grep -q "asterline:${name}" "$evidence"; then
     echo "missing_command=$name" >> "$evidence"
     status="FAIL"
   fi
 done
+
+if grep -q "asterline--auggie-asterline:" "$evidence"; then
+  echo "long_command_namespace_present=true" >> "$evidence"
+  status="FAIL"
+fi
 
 {
   echo
