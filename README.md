@@ -7,7 +7,7 @@ local plugin smoke checks.
 ## Install
 
 ```sh
-auggie plugin marketplace add <owner>/auggie-asterline
+auggie plugin marketplace add tosky1125/auggie-asterline
 auggie plugin install asterline@auggie-asterline
 ```
 
