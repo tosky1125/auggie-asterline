@@ -12,6 +12,38 @@ auggie plugin marketplace add tosky1125/auggie-asterline
 auggie plugin install asterline@auggie-asterline
 ```
 
+## Update
+
+Existing users who already added this marketplace should refresh it from GitHub
+and reinstall the plugin entry:
+
+```sh
+auggie plugin marketplace update auggie-asterline
+auggie plugin install asterline@auggie-asterline
+```
+
+The update command also accepts the repository name when the local marketplace
+name is unclear:
+
+```sh
+auggie plugin marketplace update tosky1125/auggie-asterline
+```
+
+If the plugin was enabled for a project or local settings file, keep the same
+scope flag when reinstalling:
+
+```sh
+auggie plugin install --project asterline@auggie-asterline
+auggie plugin install --local asterline@auggie-asterline
+```
+
+Verify that the refreshed commands are available:
+
+```sh
+auggie plugin list
+auggie command list | grep 'asterline:'
+```
+
 For local verification during development:
 
 ```sh
