@@ -116,6 +116,30 @@ function assertNodeEntrypointLoads(path) {
   }
 }
 
+function mcpLocalEntrypoint(name, server) {
+  if (server?.command !== "bash") {
+    fail(`MCP server ${name} must launch through bash`);
+    return null;
+  }
+  if (server?.args?.[0] !== "-lc") {
+    fail(`MCP server ${name} must use bash -lc`);
+    return null;
+  }
+  const command = server?.args?.[1];
+  if (typeof command !== "string") {
+    fail(`MCP server ${name} missing bash command`);
+    return null;
+  }
+  const match = command.match(
+    /^exec node "\$HOME\/\.augment\/plugins\/marketplaces\/auggie-asterline\/plugins\/asterline\/(.+)" mcp$/,
+  );
+  if (!match) {
+    fail(`MCP server ${name} must use the installed Asterline marketplace path`);
+    return null;
+  }
+  return `plugins/asterline/${match[1]}`;
+}
+
 for (const path of [
   "README.md",
   ".augment-plugin/marketplace.json",
@@ -177,14 +201,14 @@ for (const entries of Object.values(hooks.hooks ?? {})) {
   }
 }
 
-for (const name of ["ast_grep", "grep_app", "context7", "git_bash", "lsp"]) {
+for (const name of ["ast_grep", "grep_app", "context7", "lsp"]) {
   if (!mcp.mcpServers?.[name]) fail(`missing MCP server ${name}`);
 }
-for (const name of ["ast_grep", "git_bash", "lsp"]) {
-  const firstArg = mcp.mcpServers?.[name]?.args?.[0] ?? "";
-  if (!firstArg.startsWith("${PLUGIN_ROOT}/mcp/")) {
-    fail(`MCP server ${name} must use PLUGIN_ROOT`);
-  }
+if (mcp.mcpServers?.git_bash) {
+  fail("git_bash MCP must not be registered on Linux marketplace installs");
+}
+for (const name of ["ast_grep", "lsp"]) {
+  mcpLocalEntrypoint(name, mcp.mcpServers?.[name]);
 }
 
 const publicFiles = [
@@ -235,11 +259,9 @@ for (const target of Object.values(pkg.bin ?? {})) {
     assertNodeEntrypointLoads(path);
   }
 }
-for (const name of ["ast_grep", "git_bash", "lsp"]) {
-  const args = mcp.mcpServers?.[name]?.args;
-  const firstArg = Array.isArray(args) ? args[0] : undefined;
-  if (typeof firstArg === "string" && firstArg.startsWith("${PLUGIN_ROOT}/")) {
-    const path = `plugins/asterline/${firstArg.slice("${PLUGIN_ROOT}/".length)}`;
+for (const name of ["ast_grep", "lsp"]) {
+  const path = mcpLocalEntrypoint(name, mcp.mcpServers?.[name]);
+  if (path) {
     publicFiles.push(path);
     assertNodeEntrypointLoads(path);
   }

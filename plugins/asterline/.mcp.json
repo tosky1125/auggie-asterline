@@ -1,10 +1,10 @@
 {
   "mcpServers": {
     "ast_grep": {
-      "command": "node",
+      "command": "bash",
       "args": [
-        "${PLUGIN_ROOT}/mcp/ast_grep/dist/cli.js",
-        "mcp"
+        "-lc",
+        "exec node \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/mcp/ast_grep/dist/cli.js\" mcp"
       ]
     },
     "grep_app": {
@@ -13,18 +13,11 @@
     "context7": {
       "url": "https://mcp.context7.com/mcp"
     },
-    "git_bash": {
-      "command": "node",
-      "args": [
-        "${PLUGIN_ROOT}/mcp/git_bash/dist/cli.js",
-        "mcp"
-      ]
-    },
     "lsp": {
-      "command": "node",
+      "command": "bash",
       "args": [
-        "${PLUGIN_ROOT}/mcp/lsp/dist/cli.js",
-        "mcp"
+        "-lc",
+        "exec node \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/mcp/lsp/dist/cli.js\" mcp"
       ]
     }
   }
