@@ -1,0 +1,16 @@
+export declare const WORK_LOOP_DIR = ".asterline/work-loop";
+export declare const WORK_LOOP_BRIEF = "brief.md";
+export declare const WORK_LOOP_GOALS = "goals.json";
+export declare const WORK_LOOP_LEDGER = "ledger.jsonl";
+export type WorkLoopStatus = "pending" | "in_progress" | "complete" | "failed" | "blocked" | "review_blocked" | "needs_user_decision";
+export type WorkLoopHostGoalMode = "aggregate" | "per_story";
+export type WorkLoopSteeringStatus = "superseded" | "blocked";
+export declare const WORK_LOOP_STEERING_MUTATION_KINDS: readonly ["add_subgoal", "split_subgoal", "reorder_pending", "revise_pending_wording", "revise_criterion", "annotate_ledger", "mark_blocked_superseded"];
+export type WorkLoopSteeringMutationKind = (typeof WORK_LOOP_STEERING_MUTATION_KINDS)[number];
+export type WorkLoopSteeringSource = "user_prompt_submit" | "finding" | "cli";
+export declare const WORK_LOOP_SUCCESS_CRITERION_USER_MODELS: readonly ["happy", "edge", "regression", "adversarial"];
+export type WorkLoopSuccessCriterionUserModel = (typeof WORK_LOOP_SUCCESS_CRITERION_USER_MODELS)[number];
+export declare const WORK_LOOP_CRITERION_STATUSES: readonly ["pending", "pass", "fail", "blocked"];
+export type WorkLoopCriterionStatus = (typeof WORK_LOOP_CRITERION_STATUSES)[number];
+export declare const WORK_LOOP_LEDGER_EVENT_KINDS: readonly ["plan_created", "goal_started", "goal_resumed", "goal_completed", "goal_blocked", "goal_failed", "goal_needs_user_decision", "goal_retried", "aggregate_completed", "aggregate_objective_migrated", "goal_added", "steering_accepted", "steering_rejected", "final_review_failed", "goal_review_blocked", "evidence_captured", "criterion_failed", "criterion_blocked", "criteria_revised"];
+export type WorkLoopLedgerEventKind = (typeof WORK_LOOP_LEDGER_EVENT_KINDS)[number];

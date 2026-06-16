@@ -1,0 +1,26 @@
+{
+	"name": "@sisyphuslabs/asterline-git-bash-hook",
+	"version": "4.10.0",
+	"description": "Asterline hook component that reminds Windows sessions to prefer the ASTERLINE git_bash MCP.",
+	"type": "module",
+	"private": true,
+	"bin": {
+		"asterline-git-bash-hook": "./dist/cli.js"
+	},
+	"files": [
+		"dist",
+		"hooks"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"test": "bun test test/*.test.ts",
+		"typecheck": "tsc --noEmit"
+	},
+	"devDependencies": {
+		"@types/node": "^25.9.3",
+		"typescript": "^6.0.3"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@asterline/auggie-plugin",
+  "version": "4.10.0",
+  "description": "Asterline Auggie marketplace plugin with bundled runtime components.",
+  "type": "module",
+  "private": true,
+  "license": "MIT",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "bin": {
+    "asterline-comment-guard": "./components/comment-checker/dist/cli.js",
+    "asterline-git-flow": "./components/git-bash/dist/cli.js",
+    "asterline-code-intel": "./components/lsp/dist/cli.js",
+    "asterline-rule-sync": "./components/rules/dist/cli.js",
+    "asterline-telemetry": "./components/telemetry/dist/cli.js",
+    "asterline-run-plan-continuation": "./components/start-work-continuation/dist/cli.js",
+    "asterline-deep-research-engine": "./components/ultrawork/dist/cli.js",
+    "asterline-work-loop-engine": "./components/work-loop/dist/cli.js"
+  },
+  "scripts": {
+    "build": "node scripts/validate-runtime.mjs",
+    "test": "node --test test/*.test.mjs",
+    "check": "npm run build && npm test"
+  },
+  "dependencies": {
+    "@code-yeongyu/lsp-daemon": "vendor/lsp-daemon",
+    "@code-yeongyu/lsp-tools-mcp": "vendor/lsp-tools-mcp",
+    "picomatch": "vendor/picomatch",
+    "posthog-node": "vendor/posthog-node"
+  }
+}

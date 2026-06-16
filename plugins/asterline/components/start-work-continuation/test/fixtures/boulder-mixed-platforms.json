@@ -1,0 +1,27 @@
+{
+	"schema_version": 2,
+	"active_work_id": "asterline_work",
+	"works": {
+		"opencode_work": {
+			"work_id": "opencode_work",
+			"active_plan": "/repo/.asterline/plans/opencode-plan.md",
+			"plan_name": "opencode-plan",
+			"status": "active",
+			"started_at": "2026-05-28T00:00:00Z",
+			"session_ids": ["opencode:sess_abc"]
+		},
+		"asterline_work": {
+			"work_id": "asterline_work",
+			"active_plan": "/repo/.asterline/plans/plan-with-unchecked.md",
+			"plan_name": "asterline-plan",
+			"status": "paused",
+			"started_at": "2026-05-28T00:00:00Z",
+			"session_ids": ["asterline:def"]
+		}
+	},
+	"active_plan": "/repo/.asterline/plans/opencode-plan.md",
+	"plan_name": "legacy-opencode-plan",
+	"started_at": "2026-05-28T00:00:00Z",
+	"status": "active",
+	"session_ids": ["opencode:sess_abc"]
+}

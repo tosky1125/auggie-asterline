@@ -1,0 +1,6 @@
+asterline-work-loop
+
+This package provides the work-loop feature in a Asterline plugin repository.
+
+The plugin targets Asterline plugin manifests and plugin-bundled lifecycle hooks.
+The orchestration engine is added in later port waves.

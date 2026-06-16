@@ -1,0 +1,12 @@
+interface:
+  display_name: "upstream-fix"
+  short_description: "Contribute verified Asterline or Auggie bug fixes"
+  search_terms:
+    - "upstream-fix"
+    - "contribute a bug fix"
+    - "contribute to fix bug"
+    - "fix bug pr"
+    - "asterline fix"
+    - "asterline-runtime bug fix"
+    - "auggie bug fix pr"
+  default_prompt: "Use $upstream-fix to debug this Asterline or Auggie bug, work from a fresh /tmp clone and worktree, implement the smallest verified fix, apply the asterline-generated label, deliver it (verified-fix issue on Asterline upstream source repository — never a PR there; fork PR only for <owner>/<auggie-cli-source-repo>), and clean up."

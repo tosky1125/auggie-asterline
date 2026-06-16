@@ -1,0 +1,62 @@
+{
+	"name": "@code-yeongyu/asterline-rules",
+	"version": "4.10.0",
+	"description": "Asterline plugin that injects project rule files into model context through lifecycle hooks.",
+	"type": "module",
+	"packageManager": "npm@11.12.1",
+	"license": "MIT",
+	"homepage": "https://github.com/code-yeongyu/asterline-rules",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/code-yeongyu/asterline-rules.git"
+	},
+	"bugs": {
+		"url": "https://github.com/code-yeongyu/asterline-rules/issues"
+	},
+	"keywords": [
+		"asterline",
+		"asterline-plugin",
+		"rules",
+		"hooks",
+		"agents-md",
+		"context-injection",
+		"typescript"
+	],
+	"bin": {
+		"asterline-rules": "./dist/cli.js"
+	},
+	"files": [
+		"bundled-rules",
+		"dist",
+		"hooks",
+		"skills",
+		".augment-plugin",
+		"LICENSE",
+		"NOTICE",
+		"README.md",
+		"CHANGELOG.md"
+	],
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"test": "vitest --run",
+		"test:watch": "vitest",
+		"bench": "npm run build --silent && node scripts/bench-asterline-rules.mjs",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"check": "tsc --noEmit && biome check . && npm run build"
+	},
+	"dependencies": {
+		"picomatch": "^4.0.3"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.16",
+		"@types/node": "^25.9.3",
+		"@types/picomatch": "^4.0.0",
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.8"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
+}

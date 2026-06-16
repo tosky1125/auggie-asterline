@@ -1,6 +1,7 @@
 # Runtime work state / evidence, never committed
 .asterline/
 .[o]mo/
+.env.langfuse.local
 
 # Node
 node_modules/

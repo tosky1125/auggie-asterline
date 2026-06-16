@@ -1,0 +1,54 @@
+{
+	"name": "@code-yeongyu/asterline-ultrawork",
+	"version": "4.10.0",
+	"description": "Asterline plugin that injects the ultrawork orchestration directive and syncs the ultrawork reviewer agent role.",
+	"type": "module",
+	"packageManager": "npm@11.12.1",
+	"license": "MIT",
+	"homepage": "https://github.com/code-yeongyu/asterline-ultrawork",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/code-yeongyu/asterline-ultrawork.git"
+	},
+	"bugs": {
+		"url": "https://github.com/code-yeongyu/asterline-ultrawork/issues"
+	},
+	"keywords": [
+		"asterline",
+		"asterline-plugin",
+		"ultrawork",
+		"agents",
+		"hooks",
+		"orchestration"
+	],
+	"bin": {
+		"asterline-ultrawork": "./dist/cli.js"
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.build.json",
+		"test": "vitest --run",
+		"test:watch": "vitest",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check .",
+		"lint:fix": "biome check --write .",
+		"check": "tsc --noEmit && biome check . && npm run build"
+	},
+	"files": [
+		"agents",
+		"dist",
+		"directive.md",
+		"hooks",
+		"README.md",
+		"LICENSE",
+		"NOTICE"
+	],
+	"devDependencies": {
+		"@biomejs/biome": "2.4.16",
+		"@types/node": "^25.9.3",
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.8"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
+}

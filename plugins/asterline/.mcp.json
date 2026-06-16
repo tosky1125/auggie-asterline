@@ -1,8 +1,31 @@
 {
   "mcpServers": {
+    "ast_grep": {
+      "command": "node",
+      "args": [
+        "${AUGMENT_PLUGIN_ROOT}/mcp/ast_grep/dist/cli.js",
+        "mcp"
+      ]
+    },
+    "grep_app": {
+      "url": "https://mcp.grep.app"
+    },
     "context7": {
-      "command": "npx",
-      "args": ["-y", "@upstash/context7-mcp"]
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "git_bash": {
+      "command": "node",
+      "args": [
+        "${AUGMENT_PLUGIN_ROOT}/mcp/git_bash/dist/cli.js",
+        "mcp"
+      ]
+    },
+    "lsp": {
+      "command": "node",
+      "args": [
+        "${AUGMENT_PLUGIN_ROOT}/mcp/lsp/dist/cli.js",
+        "mcp"
+      ]
     }
   }
 }

@@ -1,0 +1,64 @@
+{
+	"name": "@code-yeongyu/asterline-lsp",
+	"version": "4.10.0",
+	"description": "Asterline plugin that exposes Language Server Protocol tools and post-edit diagnostics.",
+	"type": "module",
+	"packageManager": "npm@11.12.1",
+	"license": "MIT",
+	"homepage": "https://github.com/code-yeongyu/asterline-lsp",
+	"repository": {
+		"type": "git",
+		"url": "git+https://github.com/code-yeongyu/asterline-lsp.git"
+	},
+	"bugs": {
+		"url": "https://github.com/code-yeongyu/asterline-lsp/issues"
+	},
+	"keywords": [
+		"asterline",
+		"asterline-plugin",
+		"lsp",
+		"language-server-protocol",
+		"mcp",
+		"diagnostics"
+	],
+	"bin": {
+		"asterline-lsp": "./dist/cli.js"
+	},
+	"files": [
+		"dist",
+		"hooks",
+		"skills",
+		".augment-plugin",
+		".mcp.json",
+		"LICENSE",
+		"NOTICE",
+		"README.md",
+		"CHANGELOG.md"
+	],
+	"scripts": {
+		"bootstrap": "node scripts/build-lsp-tools.mjs && node scripts/build-lsp-daemon.mjs",
+		"prebuild": "node scripts/build-lsp-tools.mjs && node scripts/build-lsp-daemon.mjs",
+		"build": "node scripts/clean-dist.mjs && tsc -p tsconfig.build.json",
+		"pretest": "node scripts/build-lsp-tools.mjs && node scripts/build-lsp-daemon.mjs",
+		"test": "node scripts/test.mjs",
+		"test:watch": "vitest",
+		"pretypecheck": "node scripts/build-lsp-tools.mjs && node scripts/build-lsp-daemon.mjs",
+		"typecheck": "tsc --noEmit",
+		"lint": "biome check src test",
+		"lint:fix": "biome check --write src test",
+		"precheck": "node scripts/build-lsp-tools.mjs && node scripts/build-lsp-daemon.mjs",
+		"check": "tsc --noEmit && biome check src test && tsc -p tsconfig.build.json"
+	},
+	"dependencies": {
+		"@code-yeongyu/lsp-daemon": "file:/home/shawn/.npm/_npx/02ade080a575d4c0/node_modules/asterline-ai/packages/lsp-daemon"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.4.16",
+		"@types/node": "^25.9.3",
+		"typescript": "^6.0.3",
+		"vitest": "^4.1.8"
+	},
+	"engines": {
+		"node": ">=20.0.0"
+	}
+}

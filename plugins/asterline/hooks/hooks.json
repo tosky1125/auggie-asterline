@@ -1,12 +1,163 @@
 {
   "hooks": {
-    "PostToolUse": [
+    "SessionStart": [
       {
-        "matcher": ".*",
         "hooks": [
           {
             "type": "command",
-            "command": "node ${AUGMENT_PLUGIN_ROOT}/hooks/commentlint.mjs"
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/rules-session-start.sh",
+            "timeout": 10,
+            "statusMessage": "Asterline(4.10.0): Loading Project Rules"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/telemetry-session-start.sh",
+            "timeout": 5,
+            "statusMessage": "Asterline(4.10.0): Recording Session Telemetry"
+          }
+        ]
+      },
+      {
+        "matcher": "^startup$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/bootstrap-session-start.sh",
+            "timeout": 30,
+            "statusMessage": "Asterline(4.10.0): Checking Bootstrap Provisioning"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/rules-user-prompt-submit.sh",
+            "timeout": 10,
+            "statusMessage": "Asterline(4.10.0): Loading Project Rules"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/deep-research-user-prompt-submit.sh",
+            "timeout": 5,
+            "statusMessage": "Asterline(4.10.0): Checking Deep Research Trigger"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/work-loop-user-prompt-submit.sh",
+            "timeout": 10,
+            "statusMessage": "Asterline(4.10.0): Checking Work Loop Steering"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "^launch-process$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/git-flow-pre-tool-use.sh",
+            "timeout": 5,
+            "statusMessage": "Asterline(4.10.0): Recommending Git Bash MCP"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "^(str-replace-editor|save-file)$",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/comment-guard-post-tool-use.sh",
+            "timeout": 30,
+            "statusMessage": "Asterline(4.10.0): Checking Comments"
+          },
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/code-intel-post-tool-use.sh",
+            "timeout": 60,
+            "statusMessage": "Asterline(4.10.0): Checking Code Intelligence Diagnostics"
+          },
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/rule-sync-post-tool-use.sh",
+            "timeout": 10,
+            "statusMessage": "Asterline(4.10.0): Matching Project Rules"
+          }
+        ]
+      }
+    ],
+    "PostCompact": [
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/git-flow-post-compact.sh",
+            "timeout": 5,
+            "statusMessage": "Asterline(4.10.0): Resetting Git Bash MCP Reminder"
+          }
+        ]
+      },
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/rule-sync-post-compact.sh",
+            "timeout": 10,
+            "statusMessage": "Asterline(4.10.0): Resetting Project Rule Cache"
+          }
+        ]
+      },
+      {
+        "matcher": "manual|auto",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/code-intel-post-compact.sh",
+            "timeout": 5,
+            "statusMessage": "Asterline(4.10.0): Resetting Code Intelligence Diagnostics Cache"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/run-plan-stop.sh",
+            "timeout": 10,
+            "statusMessage": "Asterline(4.10.0): Checking Run-Plan Continuation"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "${AUGMENT_PLUGIN_ROOT}/hooks/bin/run-plan-subagent-stop.sh",
+            "timeout": 10,
+            "statusMessage": "Asterline(4.10.0): Checking Run-Plan Continuation"
           }
         ]
       }

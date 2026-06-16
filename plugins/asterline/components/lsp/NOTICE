@@ -1,0 +1,3 @@
+asterline-lsp ports the standalone LSP runtime from pi-lsp-client into a Asterline plugin.
+
+The package includes adapted code originally developed for pi-lsp-client.

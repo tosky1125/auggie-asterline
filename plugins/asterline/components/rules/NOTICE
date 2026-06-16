@@ -1,0 +1,15 @@
+asterline-rules
+
+This package implements rule/context loading for Asterline plugins.
+Its behavior is ported from pi-rules in the pi coding-agent extension ecosystem
+and inspired by Asterline (asterline) at https://github.com/code-yeongyu/Asterline,
+including asterline's `.asterline/rules/` workflow and rules-injector hook architecture.
+asterline is originally licensed under the Sustainable Use License 1.0.
+
+Yeongyu Kim (https://github.com/code-yeongyu), author of asterline, pi-rules, and this
+package, licenses the source distributed in this repository under the MIT License.
+If any source was ported from asterline or pi-rules, that ported source is re-licensed
+here under MIT for distribution as a Asterline plugin. See LICENSE for terms.
+
+picomatch is by Jon Schlinkert and contributors (https://github.com/micromatch/picomatch).
+Distributed under the MIT License.

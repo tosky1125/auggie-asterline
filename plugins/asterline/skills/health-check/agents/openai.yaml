@@ -1,0 +1,11 @@
+interface:
+  display_name: "health-check"
+  short_description: "Diagnose Asterline/Auggie install health against latest sources"
+  search_terms:
+    - "health-check"
+    - "asterline doctor"
+    - "asterline health check"
+    - "auggie doctor"
+    - "asterline install broken"
+    - "asterline-runtime diagnose"
+  default_prompt: "Use $health-check to sync the latest Asterline and Auggie sources into /tmp, inventory the local installation, compare versions, config, and wiring against the latest sources, probe the real surface, and report PASS/WARN/FAIL findings with evidence and remediations."

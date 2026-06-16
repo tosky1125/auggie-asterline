@@ -1,0 +1,277 @@
+import { readFile } from "node:fs/promises";
+
+import { describe, expect, it } from "vitest";
+
+import {
+	classifyExternalAuthorizationBlocker,
+	clearGoalBlockerFields,
+	normalizeBlockerEvidence,
+	sameBlockerOccurrences,
+	validateQualityGate,
+} from "../src/quality-gate.js";
+import type { WorkLoopItem, WorkLoopPlan } from "../src/types.js";
+import { WorkLoopError } from "../src/types.js";
+
+const NOW = "2026-05-23T00:00:00.000Z";
+const VALID_GATE = {
+	aiSlopCleaner: { status: "passed", evidence: "no slop detected after cleaner run" },
+	verification: { status: "passed", commands: ["npm test"], evidence: "all tests pass" },
+	codeReview: { recommendation: "APPROVE", architectStatus: "CLEAR", evidence: "ship it" },
+	criteriaCoverage: { totalCriteria: 2, passCount: 2, adversarialClassesCovered: ["malformed_input"] },
+} as const;
+
+interface GoalWithBlocker extends WorkLoopItem {
+	blocker?: { readonly signature: string };
+	blockerEvidence?: string;
+	blockerOccurrences?: number;
+	blockedAt?: string;
+}
+
+function makeGate(overrides: Record<string, unknown> = {}): Record<string, unknown> {
+	return { ...VALID_GATE, ...overrides };
+}
+
+describe("validateQualityGate LIGHT-tier shape", () => {
+	it("#given a light-tier gate with none-applicable classes and self-review approval evidence #when validated #then it passes without reviewer fields", () => {
+		// given
+		const gate = makeGate({
+			codeReview: {
+				evidence: "UNCONDITIONAL APPROVAL — LIGHT tier: single-file copy change, self-reviewed diff + diagnostics",
+			},
+			criteriaCoverage: {
+				totalCriteria: 1,
+				passCount: 1,
+				adversarialClassesCovered: ["none-applicable: prompt-file-only change, no input parsing or state"],
+			},
+		});
+
+		// when
+		const validated = validateQualityGate(gate);
+
+		// then
+		expect(validated.codeReview.recommendation).toBe("APPROVE");
+		expect(validated.codeReview.architectStatus).toBe("CLEAR");
+	});
+});
+
+function getQualityGateError(input: unknown): WorkLoopError {
+	try {
+		validateQualityGate(input);
+	} catch (error) {
+		if (error instanceof WorkLoopError) return error;
+		throw error;
+	}
+	throw new Error("Expected WorkLoopError");
+}
+
+function makeGoal(overrides: Partial<WorkLoopItem> = {}): WorkLoopItem {
+	return {
+		id: "G001",
+		title: "Goal one",
+		objective: "Complete goal one",
+		status: "pending",
+		successCriteria: [],
+		attempt: 1,
+		createdAt: NOW,
+		updatedAt: NOW,
+		...overrides,
+	};
+}
+
+function makePlan(goals: WorkLoopItem[]): WorkLoopPlan {
+	return {
+		version: 1,
+		createdAt: NOW,
+		updatedAt: NOW,
+		briefPath: ".asterline/work-loop/brief.md",
+		goalsPath: ".asterline/work-loop/goals.json",
+		ledgerPath: ".asterline/work-loop/ledger.jsonl",
+		goals,
+	};
+}
+
+describe("validateQualityGate", () => {
+	it("accepts valid quality gate from fixture", async () => {
+		// given
+		const raw = await readFile(new URL("./fixtures/sample-quality-gate.json", import.meta.url), "utf8");
+		const parsed: unknown = JSON.parse(raw);
+
+		// when
+		const gate = validateQualityGate(parsed);
+
+		// then
+		expect(gate.aiSlopCleaner.status).toBe("passed");
+		expect(gate).toMatchObject({ criteriaCoverage: { totalCriteria: 9, passCount: 9 } });
+	});
+
+	it("infers APPROVE/CLEAR when clean reviewer evidence omits structured fields", () => {
+		// given
+		const input = makeGate({
+			codeReview: {
+				evidence: "UNCONDITIONAL APPROVAL\nAll criteria and QA evidence are complete.",
+			},
+		});
+
+		// when
+		const gate = validateQualityGate(input);
+
+		// then
+		expect(gate.codeReview.recommendation).toBe("APPROVE");
+		expect(gate.codeReview.architectStatus).toBe("CLEAR");
+		expect(gate.codeReview.evidence).toBe("UNCONDITIONAL APPROVAL\nAll criteria and QA evidence are complete.");
+	});
+
+	it("infers APPROVE/CLEAR when clean reviewer evidence has blank structured fields", () => {
+		// given
+		const input = makeGate({
+			codeReview: {
+				recommendation: "",
+				architectStatus: "   ",
+				evidence: "UNCONDITIONAL APPROVAL\nAll criteria and QA evidence are complete.",
+			},
+		});
+
+		// when
+		const gate = validateQualityGate(input);
+
+		// then
+		expect(gate.codeReview.recommendation).toBe("APPROVE");
+		expect(gate.codeReview.architectStatus).toBe("CLEAR");
+	});
+
+	it("throws when reviewer fields are omitted and evidence has no approval verdict", () => {
+		// given
+		const input = makeGate({
+			codeReview: {
+				evidence: "review completed without an explicit verdict",
+			},
+		});
+
+		// when
+		const error = getQualityGateError(input);
+
+		// then
+		expect(error.code).toBe("WORK_LOOP_QUALITY_GATE_INVALID");
+		expect(error.message).toContain("UNCONDITIONAL APPROVAL");
+	});
+
+	it("throws WorkLoopError when aiSlopCleaner missing", () => {
+		// when
+		const error = getQualityGateError(makeGate({ aiSlopCleaner: undefined }));
+
+		// then
+		expect(error.code).toBe("WORK_LOOP_QUALITY_GATE_INVALID");
+	});
+
+	it("throws WorkLoopError when verification missing", () => {
+		// when
+		const error = getQualityGateError(makeGate({ verification: undefined }));
+
+		// then
+		expect(error.code).toBe("WORK_LOOP_QUALITY_GATE_INVALID");
+	});
+
+	it("throws WorkLoopError when codeReview missing", () => {
+		// when
+		const error = getQualityGateError(makeGate({ codeReview: undefined }));
+
+		// then
+		expect(error.code).toBe("WORK_LOOP_QUALITY_GATE_INVALID");
+	});
+
+	it("throws WorkLoopError when criteriaCoverage missing (NEW)", () => {
+		// when
+		const error = getQualityGateError(makeGate({ criteriaCoverage: undefined }));
+
+		// then
+		expect(error.code).toBe("WORK_LOOP_QUALITY_GATE_INVALID");
+	});
+
+	it("throws WorkLoopError when criteriaCoverage.passCount < totalCriteria (NEW)", () => {
+		// when
+		const error = getQualityGateError(
+			makeGate({ criteriaCoverage: { totalCriteria: 3, passCount: 2, adversarialClassesCovered: [] } }),
+		);
+
+		// then
+		expect(error.message).toContain("criteriaCoverage.passCount");
+	});
+
+	it("throws WorkLoopError when codeReview.recommendation is not APPROVE", () => {
+		// when
+		const error = getQualityGateError(
+			makeGate({ codeReview: { ...VALID_GATE.codeReview, recommendation: "COMMENT" } }),
+		);
+
+		// then
+		expect(error.message).toContain("recommendation");
+	});
+
+	it("throws WorkLoopError when architectStatus is not CLEAR", () => {
+		// when
+		const error = getQualityGateError(
+			makeGate({ codeReview: { ...VALID_GATE.codeReview, architectStatus: "WATCH" } }),
+		);
+
+		// then
+		expect(error.message).toContain("architectStatus");
+	});
+});
+
+describe("classifyExternalAuthorizationBlocker", () => {
+	it("returns GHCR signature when evidence mentions ghcr.io auth failure", () => {
+		expect(
+			classifyExternalAuthorizationBlocker("ghcr.io returned 401 authentication required for package pull"),
+		).toBe("GHCR_PULL_ACCESS:HTTP_401_ANONYMOUS:GHCR_VISIBILITY_OR_CREDENTIAL_REQUIRED");
+	});
+
+	it("returns generic auth signature for generic 401 evidence", () => {
+		expect(classifyExternalAuthorizationBlocker("Registry returned 401 because credentials are missing")).toBe(
+			"EXTERNAL_AUTHORIZATION_REQUIRED",
+		);
+	});
+
+	it("returns null when no auth keywords", () => {
+		expect(classifyExternalAuthorizationBlocker("build failed because tests failed")).toBeNull();
+	});
+});
+
+describe("normalizeBlockerEvidence", () => {
+	it("collapses whitespace + lowercases", () => {
+		expect(normalizeBlockerEvidence(" GHCR.IO\n\tNeeds   TOKEN ")).toBe("ghcr.io needs token");
+	});
+});
+
+describe("sameBlockerOccurrences", () => {
+	it("counts goals matching signature", () => {
+		// given
+		const nested: GoalWithBlocker = { ...makeGoal({ id: "G002" }), blocker: { signature: "AUTH" } };
+		const plan = makePlan([makeGoal({ blockerSignature: "AUTH" }), nested, makeGoal({ id: "G003" })]);
+
+		// when/then
+		expect(sameBlockerOccurrences(plan, "AUTH")).toBe(2);
+	});
+});
+
+describe("clearGoalBlockerFields", () => {
+	it("clears all 5 blocker fields", () => {
+		// given
+		const goal: GoalWithBlocker = {
+			...makeGoal({ blockerSignature: "AUTH" }),
+			blocker: { signature: "AUTH" },
+			blockerEvidence: "401 unauthorized",
+			blockerOccurrences: 2,
+			blockedAt: NOW,
+		};
+
+		// when
+		clearGoalBlockerFields(goal);
+
+		// then
+		expect(goal).not.toHaveProperty("blocker");
+		expect(goal).not.toHaveProperty("blockerSignature");
+		expect(goal).not.toHaveProperty("blockerEvidence");
+		expect(goal).not.toHaveProperty("blockerOccurrences");
+		expect(goal).not.toHaveProperty("blockedAt");
+	});
+});

@@ -1,7 +1,7 @@
 {
   "name": "asterline",
-  "version": "1.0.0",
-  "description": "Auggie-native delivery kit for planning, execution, review, debugging, cleanup, and visual checks.",
+  "version": "4.10.0",
+  "description": "Asterline for Auggie: evidence-led planning, execution, code intelligence, review, debugging, cleanup, visual checks, and durable work loops.",
   "author": {
     "name": "Asterline maintainers"
   },
@@ -9,16 +9,31 @@
   "keywords": [
     "auggie",
     "asterline",
-    "planning",
-    "skills",
-    "agents",
     "hooks",
     "mcp",
-    "workflow"
+    "skills",
+    "workflow",
+    "code-intelligence"
   ],
   "skills": "./skills/",
   "agents": "./agents/",
   "rules": "./rules/",
   "hooks": "./hooks/hooks.json",
-  "mcpServers": "./.mcp.json"
+  "mcpServers": "./.mcp.json",
+  "interface": {
+    "displayName": "Asterline",
+    "shortDescription": "Auggie runtime with Asterline identity.",
+    "longDescription": "Asterline exposes rules, comment guard, Git Bash guidance, LSP diagnostics, deep research, durable work loops, run-plan continuation, bootstrap checks, and telemetry as one Auggie plugin namespace.",
+    "developerName": "Asterline maintainers",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Hooks",
+      "MCP Tools",
+      "Code Intelligence",
+      "Workflow",
+      "Context Injection"
+    ],
+    "brandColor": "#2563EB",
+    "screenshots": []
+  }
 }

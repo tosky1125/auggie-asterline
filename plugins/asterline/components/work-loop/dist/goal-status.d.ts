@@ -1,0 +1,12 @@
+import { type WorkLoopScope } from "./paths.js";
+import type { WorkLoopHostGoalMode, WorkLoopItem, WorkLoopPlan, WorkLoopSuccessCriterion } from "./types.js";
+export declare const WORK_LOOP_AGGREGATE_ASTERLINE_OBJECTIVE: string;
+export declare function aggregateAsterlineObjectiveForScope(scope?: WorkLoopScope): string;
+export declare function hostGoalMode(plan: WorkLoopPlan): WorkLoopHostGoalMode;
+export declare function isWorkLoopDone(plan: WorkLoopPlan): boolean;
+export declare function isFinalRunCompletionCandidate(plan: WorkLoopPlan, goal: WorkLoopItem): boolean;
+export declare function aggregateAsterlineObjective(plan: WorkLoopPlan): string;
+export declare function expectedAsterlineObjective(plan: WorkLoopPlan, goal: WorkLoopItem): string;
+export declare function compatibleAsterlineObjectives(plan: WorkLoopPlan): readonly string[];
+export declare function hasAllCriteriaPass(goal: WorkLoopItem): boolean;
+export declare function firstUnresolvedCriterion(goal: WorkLoopItem): WorkLoopSuccessCriterion | undefined;
