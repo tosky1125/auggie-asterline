@@ -80,7 +80,7 @@ test('MCP and runtime component dist files are present', () => {
   assert.equal(mcp.context7.url, 'https://mcp.context7.com/mcp');
   for (const name of ['ast_grep', 'git_bash', 'lsp']) {
     assert.equal(mcp[name].command, 'node');
-    assert.match(mcp[name].args[0], /^\$\{AUGMENT_PLUGIN_ROOT\}\/mcp\//);
+    assert.match(mcp[name].args[0], /^\$\{PLUGIN_ROOT\}\/mcp\//);
   }
   for (const path of ['components/rules/dist/cli.js', 'components/comment-checker/dist/cli.js', 'components/lsp/dist/cli.js', 'components/work-loop/dist/cli.js']) {
     assert.equal(statSync(join(root, path)).isFile(), true);
@@ -92,7 +92,7 @@ test('Runtime package bin and MCP entrypoints load successfully', () => {
   const mcp = readJson('.mcp.json').mcpServers;
   for (const target of Object.values(pkg.bin)) assertEntrypointLoads(target.replace(/^\.\//, ''));
   for (const name of ['ast_grep', 'git_bash', 'lsp']) {
-    assertEntrypointLoads(mcp[name].args[0].replace(/^\$\{AUGMENT_PLUGIN_ROOT\}\//, ''));
+    assertEntrypointLoads(mcp[name].args[0].replace(/^\$\{PLUGIN_ROOT\}\//, ''));
   }
 });
 
@@ -147,7 +147,7 @@ test('Public shipped surfaces contain no Codex-era identity tokens', () => {
   }
   for (const target of Object.values(pkg.bin)) files.push(target.replace(/^\.\//, ''));
   for (const name of ['ast_grep', 'git_bash', 'lsp']) {
-    files.push(mcp[name].args[0].replace(/^\$\{AUGMENT_PLUGIN_ROOT\}\//, ''));
+    files.push(mcp[name].args[0].replace(/^\$\{PLUGIN_ROOT\}\//, ''));
   }
 
   const forbidden = /\$omo:|\/omo:|\$lcx|lcx-|ulw-loop|ulw-plan|LazyCodex|lazycodex|lazycodex-ai|omo-codex|lazycodex-generated|\(omo\)|\bOmO\b|\bOMO\b|\bCodex\b|\bcodex\b|CODEX|\.codex|codex-|openai\/codex|create_goal|call_omo_agent|[A-Za-z]Codex|Codex[A-Za-z]/;

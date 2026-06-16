@@ -3,7 +3,7 @@
     "ast_grep": {
       "command": "node",
       "args": [
-        "${AUGMENT_PLUGIN_ROOT}/mcp/ast_grep/dist/cli.js",
+        "${PLUGIN_ROOT}/mcp/ast_grep/dist/cli.js",
         "mcp"
       ]
     },
@@ -16,14 +16,14 @@
     "git_bash": {
       "command": "node",
       "args": [
-        "${AUGMENT_PLUGIN_ROOT}/mcp/git_bash/dist/cli.js",
+        "${PLUGIN_ROOT}/mcp/git_bash/dist/cli.js",
         "mcp"
       ]
     },
     "lsp": {
       "command": "node",
       "args": [
-        "${AUGMENT_PLUGIN_ROOT}/mcp/lsp/dist/cli.js",
+        "${PLUGIN_ROOT}/mcp/lsp/dist/cli.js",
         "mcp"
       ]
     }

@@ -182,8 +182,8 @@ for (const name of ["ast_grep", "grep_app", "context7", "git_bash", "lsp"]) {
 }
 for (const name of ["ast_grep", "git_bash", "lsp"]) {
   const firstArg = mcp.mcpServers?.[name]?.args?.[0] ?? "";
-  if (!firstArg.startsWith("${AUGMENT_PLUGIN_ROOT}/mcp/")) {
-    fail(`MCP server ${name} must use AUGMENT_PLUGIN_ROOT`);
+  if (!firstArg.startsWith("${PLUGIN_ROOT}/mcp/")) {
+    fail(`MCP server ${name} must use PLUGIN_ROOT`);
   }
 }
 
@@ -238,8 +238,8 @@ for (const target of Object.values(pkg.bin ?? {})) {
 for (const name of ["ast_grep", "git_bash", "lsp"]) {
   const args = mcp.mcpServers?.[name]?.args;
   const firstArg = Array.isArray(args) ? args[0] : undefined;
-  if (typeof firstArg === "string" && firstArg.startsWith("${AUGMENT_PLUGIN_ROOT}/")) {
-    const path = `plugins/asterline/${firstArg.slice("${AUGMENT_PLUGIN_ROOT}/".length)}`;
+  if (typeof firstArg === "string" && firstArg.startsWith("${PLUGIN_ROOT}/")) {
+    const path = `plugins/asterline/${firstArg.slice("${PLUGIN_ROOT}/".length)}`;
     publicFiles.push(path);
     assertNodeEntrypointLoads(path);
   }
