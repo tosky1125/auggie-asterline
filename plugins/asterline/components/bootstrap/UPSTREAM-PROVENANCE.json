@@ -1,0 +1,25 @@
+{
+	"schemaVersion": 1,
+	"upstream": {
+		"repository": "https://github.com/code-yeongyu/oh-my-openagent",
+		"tag": "v4.17.1",
+		"commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a",
+		"path": "packages/omo-codex/plugin/components/bootstrap",
+		"treeOid": "ef8ef5496986b75e8d78e75373ced05d62e30c52"
+	},
+	"adaptation": {
+		"host": "Auggie CLI 0.32",
+		"removed": [
+			"Codex config and agent-link installation",
+			"unsupported SessionStart statusMessage",
+			"runtime package-manager and vendor resolution",
+			"legacy ast-grep 0.42.3 and Windows Node download manifests"
+		],
+		"preserved": [
+			"detached non-blocking SessionStart worker",
+			"stale-lock recovery and single-worker exclusion",
+			"version completion marker and fail-open degradation",
+			"checksum-pinned native provisioning and atomic cleanup"
+		]
+	}
+}

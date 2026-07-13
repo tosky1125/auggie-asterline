@@ -1,108 +1,60 @@
 import { spawn } from "node:child_process";
 import { stat } from "node:fs/promises";
-import type { Readable } from "node:stream";
 import { fileURLToPath } from "node:url";
 
-import { DEFAULT_LOCK_STALE_MS } from "../../../scripts/auto-update-state.mjs";
-import { resolveBootstrapLockPath, resolveBootstrapStatePath } from "./environment.ts";
-import { readBootstrapState, readPluginVersion } from "./worker.ts";
+import { containedPath, resolvePluginData, resolvePluginRoot } from "./paths.ts";
+import type { BootstrapEnvironment } from "./paths.ts";
+import { LOCK_STALE_MS, readJsonRecord } from "./state.ts";
 
-export const BOOTSTRAP_RESTART_NOTICE =
-	"Asterline bootstrap running in background — restart the session when it completes";
+export const BOOTSTRAP_RESTART_NOTICE = "Asterline bootstrap running in background — restart Auggie after it completes";
 
-export type SessionStartAction =
-	| "spawned"
-	| "skip-completed"
-	| "skip-locked"
-	| "skip-missing-env"
-	| "skip-version-unresolved";
-
-export interface WorkerSpawnInvocation {
+export type HookAction = "spawned" | "skip-completed" | "skip-locked" | "spawn-failed";
+export type SpawnInvocation = {
 	readonly command: string;
 	readonly args: readonly string[];
-	readonly env: Record<string, string | undefined>;
-}
-
-export interface SessionStartHookOptions {
-	readonly env: Record<string, string | undefined>;
-	readonly stdin?: Readable & { readonly isTTY?: boolean };
+	readonly env: BootstrapEnvironment;
+};
+export type HookOptions = {
+	readonly env: BootstrapEnvironment;
 	readonly now?: number;
-	readonly spawnWorker?: (invocation: WorkerSpawnInvocation) => void;
-	readonly workerCliPath?: string;
-	readonly writeNotice?: (line: string) => void;
-}
+	readonly spawnWorker?: (invocation: SpawnInvocation) => void;
+	readonly writeOutput?: (line: string) => void;
+};
 
-export interface SessionStartHookResult {
-	readonly exitCode: 0;
-	readonly action: SessionStartAction;
-}
-
-export async function runSessionStartHook(options: SessionStartHookOptions): Promise<number> {
-	return (await executeSessionStartHook(options)).exitCode;
-}
-
-export async function executeSessionStartHook(options: SessionStartHookOptions): Promise<SessionStartHookResult> {
-	if (options.stdin !== undefined) await drainStdin(options.stdin);
-	const now = options.now ?? Date.now();
-	const pluginRoot = options.env["PLUGIN_ROOT"]?.trim();
-	const pluginData = options.env["PLUGIN_DATA"]?.trim();
-	if (pluginRoot === undefined || pluginRoot.length === 0 || pluginData === undefined || pluginData.length === 0) {
-		return { action: "skip-missing-env", exitCode: 0 };
+async function isFresh(path: string, now: number): Promise<boolean> {
+	try {
+		return now - (await stat(path)).mtimeMs < LOCK_STALE_MS;
+	} catch (error) {
+		if (error instanceof Error && "code" in error && error.code === "ENOENT") return false;
+		throw error;
 	}
-
-	const pluginVersion = await readPluginVersion(pluginRoot);
-	if (pluginVersion === undefined) return { action: "skip-version-unresolved", exitCode: 0 };
-
-	const state = await readBootstrapState(resolveBootstrapStatePath(pluginData));
-	if (state.completedForVersion === pluginVersion) return { action: "skip-completed", exitCode: 0 };
-
-	if (await isLockFresh(resolveBootstrapLockPath(pluginData), now)) return { action: "skip-locked", exitCode: 0 };
-
-	const spawnWorker = options.spawnWorker ?? spawnDetachedWorker;
-	spawnWorker({
-		args: [options.workerCliPath ?? defaultWorkerCliPath(), "worker"],
-		command: process.execPath,
-		env: options.env,
-	});
-	const writeNotice = options.writeNotice ?? ((line: string) => process.stdout.write(`${line}\n`));
-	writeNotice(
-		JSON.stringify({
-			hookSpecificOutput: {
-				hookEventName: "SessionStart",
-				additionalContext: BOOTSTRAP_RESTART_NOTICE,
-			},
-		}),
-	);
-	return { action: "spawned", exitCode: 0 };
 }
 
-function spawnDetachedWorker(invocation: WorkerSpawnInvocation): void {
-	const child = spawn(invocation.command, [...invocation.args], {
-		detached: true,
-		env: invocation.env,
-		stdio: "ignore",
-	});
+function spawnDetached(invocation: SpawnInvocation): void {
+	const child = spawn(invocation.command, [...invocation.args], { detached: true, env: invocation.env, stdio: "ignore" });
 	child.unref();
 }
 
-function defaultWorkerCliPath(): string {
-	// In the esbuild bundle every module shares import.meta.url, so this
-	// resolves to dist/cli.js — the file the detached worker must re-enter.
-	return fileURLToPath(import.meta.url);
-}
-
-async function isLockFresh(lockPath: string, now: number): Promise<boolean> {
+export async function runSessionStart(options: HookOptions): Promise<HookAction> {
+	// no-excuse-ok: catch -- Auggie hook boundary is contractually fail-open.
 	try {
-		const lockStat = await stat(lockPath);
-		return now - lockStat.mtimeMs < DEFAULT_LOCK_STALE_MS;
-	} catch {
-		return false;
-	}
-}
-
-async function drainStdin(stdin: NonNullable<SessionStartHookOptions["stdin"]>): Promise<void> {
-	if (stdin.isTTY === true) return;
-	for await (const chunk of stdin) {
-		void chunk;
+		const now = options.now ?? Date.now();
+		const pluginRoot = resolvePluginRoot(options.env, import.meta.url);
+		const dataRoot = resolvePluginData(options.env);
+		const manifest = await readJsonRecord(containedPath(pluginRoot, ".augment-plugin", "plugin.json"));
+		const state = await readJsonRecord(containedPath(dataRoot, "bootstrap", "state.json"));
+		if (typeof manifest["version"] === "string" && state["completedForVersion"] === manifest["version"]) return "skip-completed";
+		if (await isFresh(containedPath(dataRoot, "bootstrap", "worker.lock"), now)) return "skip-locked";
+		(options.spawnWorker ?? spawnDetached)({
+			command: process.execPath,
+			args: [fileURLToPath(import.meta.url), "worker"],
+			env: options.env,
+		});
+		const output = JSON.stringify({ hookSpecificOutput: { hookEventName: "SessionStart", additionalContext: BOOTSTRAP_RESTART_NOTICE } });
+		(options.writeOutput ?? ((line: string) => process.stdout.write(`${line}\n`)))(output);
+		return "spawned";
+	} catch (error) {
+		process.stderr.write(`[asterline-bootstrap] ${error instanceof Error ? error.message : String(error)}\n`);
+		return "spawn-failed";
 	}
 }

@@ -2,152 +2,70 @@
 import { realpathSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
-import { downloadFromManifest } from "./download.ts";
-import { runSessionStartHook } from "./hook.ts";
-import { runBootstrapWorker } from "./worker.ts";
+import { runSessionStart } from "./hook.ts";
+import { runWorker } from "./worker.ts";
 
-export {
-	bootstrapLocks,
-	detectInstallFlow,
-	detectInstallFlowDetailed,
-	detectInstallFlowForTest,
-	detectInstallFlowFromEnvironment,
-	INSTALL_SNAPSHOT_FILENAME,
-	resolveBootstrapLockPath,
-	resolveBootstrapStatePath,
-	resolveAsterlineHome,
-} from "./environment.ts";
-export type {
-	BootstrapLockHandle,
-	BootstrapLocksOptions,
-	AsterlineHomeResolution,
-	AsterlineHomeSource,
-	ConfigSourceSignal,
-	DetectInstallFlowFromEnvironmentOptions,
-	DetectInstallFlowOptions,
-	InstallFlow,
-	InstallFlowDetection,
-	ResolveAsterlineHomeOptions,
-} from "./environment.ts";
-export { BOOTSTRAP_RESTART_NOTICE, executeSessionStartHook, runSessionStartHook } from "./hook.ts";
-export {
-	runSgProvision,
-	SG_FORCE_PROVISION_ENV_KEY,
-	SG_PROVISION_COMPONENT,
-	sgProvisionDestination,
-} from "./provision.ts";
-export type { ResolvePreexistingSgOptions, SgProvisionSeams } from "./provision.ts";
-export { GIT_BASH_INSTALL_HINT, runWorkerSetup, SETUP_MARKETPLACE_NAME, SETUP_PLUGIN_NAME } from "./setup.ts";
-export type { SetupRunCommand, WorkerSetupOptions } from "./setup.ts";
-export type {
-	SessionStartAction,
-	SessionStartHookOptions,
-	SessionStartHookResult,
-	WorkerSpawnInvocation,
-} from "./hook.ts";
-export {
-	appendBootstrapLog,
-	BOOTSTRAP_DOCTOR_HINT,
-	defaultWorkerSteps,
-	parseBootstrapState,
-	parseWorkerFlags,
-	readBootstrapState,
-	readPluginVersion,
-	resolvePluginDataRoot,
-	runBootstrapWorker,
-} from "./worker.ts";
-export type {
-	DefaultWorkerStepsSeams,
-	BootstrapDegradedEntry,
-	BootstrapRunStatus,
-	BootstrapState,
-	BootstrapStepOutcome,
-	BootstrapWorkerContext,
-	BootstrapWorkerFlags,
-	BootstrapWorkerResult,
-	BootstrapWorkerSkipReason,
-	BootstrapWorkerStep,
-	RunBootstrapWorkerOptions,
-} from "./worker.ts";
+const HELP = "Asterline bootstrap 4.17.1\nUsage: asterline-bootstrap hook session-start | worker [--once] [--data-root <absolute-path>] | help\n";
 
-const TOP_LEVEL_HELP =
-	"Usage:\n  asterline-bootstrap hook session-start\n  asterline-bootstrap worker [--asterline-home <dir>] [--once] [--only <step>] [--manifest-dir <dir>]\n  asterline-bootstrap download <manifest> <platform> <destination-dir>\n  asterline-bootstrap help | --help | -h\n";
+type WorkerFlags = { readonly once: boolean; readonly dataRoot?: string };
 
-async function runDownloadCommand(args: readonly string[]): Promise<number> {
-	const [manifestName, platformKey, destinationDir] = args;
-	if (manifestName === undefined || platformKey === undefined || destinationDir === undefined) {
-		process.stderr.write(`[asterline-bootstrap] download requires <manifest> <platform> <destination-dir>\n${TOP_LEVEL_HELP}`);
-		return 1;
-	}
-	try {
-		const destination = await downloadFromManifest({ destinationDir, manifestName, platformKey });
-		process.stdout.write(`OK:${destination}\n`);
-		return 0;
-	} catch (error) {
-		process.stderr.write(`[asterline-bootstrap] download failed: ${error instanceof Error ? error.message : String(error)}\n`);
-		return 1;
-	}
-}
-
-async function runWorkerCommand(args: readonly string[]): Promise<number> {
-	let result;
-	try {
-		result = await runBootstrapWorker({ argv: args, env: process.env });
-	} catch (error) {
-		const message = error instanceof Error ? error.message : String(error);
-		if (/flag/.test(message)) {
-			process.stderr.write(`[asterline-bootstrap] ${message}\n${TOP_LEVEL_HELP}`);
-			return 1;
+function parseWorkerFlags(args: readonly string[]): WorkerFlags {
+	let once = false;
+	let dataRoot: string | undefined;
+	for (let index = 0; index < args.length; index += 1) {
+		const value = args[index];
+		if (value === "--once") {
+			once = true;
+			continue;
 		}
-		// Runtime worker failures must never surface as non-zero exits; the
-		// degraded ledger in state.json is the error channel.
-		process.stderr.write(`[asterline-bootstrap] worker error: ${message}\n`);
-		return 0;
+		if (value === "--data-root") {
+			dataRoot = args[index + 1];
+			if (dataRoot === undefined || dataRoot.startsWith("--")) throw new Error("--data-root requires a value");
+			index += 1;
+			continue;
+		}
+		throw new Error(`unknown worker option: ${value ?? ""}`);
 	}
-	process.stdout.write(
-		result.ran ? `[asterline-bootstrap] worker finished: ${result.status}\n` : `[asterline-bootstrap] worker skipped: ${result.reason}\n`,
-	);
-	return 0;
+	return { once, ...(dataRoot === undefined ? {} : { dataRoot }) };
 }
 
-async function main(): Promise<number> {
-	const argv = process.argv.slice(2);
-	const command = argv[0];
+async function main(args: readonly string[]): Promise<number> {
+	const command = args[0];
 	if (command === undefined || command === "help" || command === "--help" || command === "-h") {
-		process.stdout.write(TOP_LEVEL_HELP);
+		process.stdout.write(HELP);
 		return 0;
 	}
-	if (command === "hook" && argv[1] === "session-start") {
-		return runSessionStartHook({ env: process.env, stdin: process.stdin });
+	if (command === "hook" && args[1] === "session-start") {
+		await runSessionStart({ env: process.env });
+		return 0;
 	}
 	if (command === "worker") {
-		return runWorkerCommand(argv.slice(1));
+		const flags = parseWorkerFlags(args.slice(1));
+		const result = await runWorker({ env: process.env, once: flags.once, ...(flags.dataRoot === undefined ? {} : { dataOverride: flags.dataRoot }) });
+		process.stdout.write(`[asterline-bootstrap] ${result.kind === "ran" ? result.status : result.reason}\n`);
+		return 0;
 	}
-	if (command === "download") {
-		return runDownloadCommand(argv.slice(1));
-	}
-	process.stderr.write(`[asterline-bootstrap] unknown command: ${argv.join(" ")}\n${TOP_LEVEL_HELP}`);
+	process.stderr.write(`[asterline-bootstrap] unknown command\n${HELP}`);
 	return 1;
 }
 
-function isProcessEntry(): boolean {
-	const entry = process.argv[1];
-	if (entry === undefined) return false;
+function isEntry(): boolean {
+	const candidate = process.argv[1];
+	if (candidate === undefined) return false;
 	try {
-		return realpathSync(entry) === realpathSync(fileURLToPath(import.meta.url));
-	} catch {
-		return false;
+		return realpathSync(candidate) === realpathSync(fileURLToPath(import.meta.url));
+	} catch (error) {
+		if (error instanceof Error) return false;
+		throw error;
 	}
 }
 
-if (isProcessEntry()) {
-	main()
-		.then((code) => {
-			process.exit(code);
-		})
-		.catch((error: unknown) => {
-			// The SessionStart hook path must never fail the session: log and exit 0.
+if (isEntry()) {
+	main(process.argv.slice(2)).then(
+		(code) => { process.exitCode = code; },
+		(error: unknown) => {
 			process.stderr.write(`[asterline-bootstrap] ${error instanceof Error ? error.message : String(error)}\n`);
-			process.exit(0);
-		});
+			process.exitCode = 0;
+		},
+	);
 }

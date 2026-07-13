@@ -1,35 +1,29 @@
 #!/usr/bin/env node
+import { realpathSync } from "node:fs";
 import { spawnSync } from "node:child_process";
-import { existsSync, statSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
+import { bundleComponent } from "../../../scripts/bundle-component.mjs";
+
 const componentRoot = dirname(dirname(fileURLToPath(import.meta.url)));
-const bundlePath = join(componentRoot, "dist", "cli.js");
+const pluginRoot = resolve(componentRoot, "..", "..");
+const configuredBun = process.env["BUN"];
+const probe = configuredBun === undefined
+	? spawnSync("bun", ["--eval", "process.stdout.write(process.execPath)"], { encoding: "utf8", shell: false })
+	: undefined;
+if (configuredBun === undefined && (probe?.error !== undefined || probe?.status !== 0 || probe.stdout.trim().length === 0)) {
+	throw new Error(`Bun 1.3.14 is required to reproduce the bootstrap bundle: ${probe?.error?.message ?? probe?.stderr.trim()}`);
+}
+const bun = realpathSync(configuredBun ?? probe?.stdout.trim() ?? "");
 
-const result = spawnSync(
-	"bun",
-	["x", "esbuild", "src/cli.ts", "--bundle", "--platform=node", "--format=esm", "--outfile=dist/cli.js"],
-	{
-		cwd: componentRoot,
-		shell: process.platform === "win32",
-		stdio: "inherit",
+await bundleComponent({
+	source: pluginRoot,
+	output: join(componentRoot, "dist"),
+	config: {
+		schemaVersion: 1,
+		toolchain: { command: bun, version: "1.3.14" },
+		entries: [{ source: "components/bootstrap/src/cli.ts", output: "cli.js", executable: true }],
+		aliases: [],
 	},
-);
-
-if (result.error === undefined && result.status === 0) {
-	process.exit(0);
-}
-
-if (hasBundledDist()) {
-	console.log("Using bundled bootstrap dist");
-	process.exit(0);
-}
-
-console.error(`Bootstrap bundle failed and no bundled dist exists at ${bundlePath}.`);
-console.error("Install Bun (used via `bun x esbuild`) or ship a prebuilt dist/cli.js.");
-process.exit(result.status === null || result.status === undefined || result.status === 0 ? 1 : result.status);
-
-function hasBundledDist() {
-	return existsSync(bundlePath) && statSync(bundlePath).size > 0;
-}
+});

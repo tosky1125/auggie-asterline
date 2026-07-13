@@ -2,49 +2,35 @@
 
 ## OVERVIEW
 
-Non-blocking SessionStart bootstrap that launches a detached worker to stage agents, stamp config, link runtime bins, and provision checksum-pinned ast-grep/Windows Node assets.
+Fail-open Auggie `SessionStart` adapter. A short-lived hook launches a detached worker that provisions checksum-pinned native assets into mutable plugin data; the hook never blocks the session on provisioning.
 
 ## WHERE TO LOOK
 
 | Concern | Location |
 | --- | --- |
-| Fast SessionStart path | `src/hook.ts` |
-| Worker locks/state/degraded ledger | `src/worker.ts`, `src/environment.ts` |
-| Idempotent setup operations | `src/setup.ts` |
-| Download/checksum boundary | `src/download.ts`, `src/provision.ts` |
-| Pinned artifacts | `manifests/*.json` |
-| Windows pre-Node fallback | `scripts/bootstrap.ps1` |
-| Shipped runtime | `dist/cli.js` |
+| SessionStart decision/spawn | `src/hook.ts` |
+| Native provisioning/state | `src/worker.ts` |
+| Path containment | `src/paths.ts` |
+| Atomic state/stale locks | `src/state.ts` |
+| Reproducible F3 bundle | `scripts/build.mjs` |
+| Port provenance | `UPSTREAM-PROVENANCE.json` |
 
 ## LOCAL CONTRACTS
 
-- Runtime is Node; Bun is only the current test/esbuild driver.
-- Bootstrap source uses `.ts` imports because esbuild bundles it, unlike tsc sibling components.
-- Hook and worker failures degrade to state/log entries and must not block SessionStart.
-- Mutable state belongs under `PLUGIN_DATA`/`ASTERLINE_HOME`, never `PLUGIN_ROOT`.
-- Preserve bootstrap/auto-update lock coordination, idempotent setup, and the prohibition on writing permission policy.
-- Runtime downloads require pinned versions and SHA-256 verification. Only explicit manifest regeneration may discover network versions/hashes.
-- Preserve PowerShell 5.1 compatibility and the Windows Node/Git Bash fallback chain.
+- Runtime is Node; exact Bun 1.3.14 is only the build driver.
+- `AUGMENT_PLUGIN_ROOT` is the Auggie root signal; `PLUGIN_ROOT` remains a compatibility fallback.
+- Mutable state belongs under `ASTERLINE_PLUGIN_DATA`/`PLUGIN_DATA` or the derived user data root, never the marketplace cache.
+- Hook and worker failures are fail-open. Worker failures are persisted as degraded entries.
+- Native downloads are selected exclusively from `native/SBOM.json`, verified, probed, and atomically published by the shared native asset framework.
+- Do not restore Codex config writers, agent links, package-manager execution, vendor imports, telemetry, `matcher`, or `statusMessage`.
 
-## BUILD / TEST REALITY
+## COMMANDS
 
 ```bash
 bun test test/*.test.ts
+node scripts/build.mjs
 node dist/cli.js help
+node --test ../../test/v4171-bootstrap.test.mjs
 ```
 
-- `dist/cli.js` is a committed single bundle and must be reviewed after regeneration.
-- `scripts/build.mjs` invokes `bun x esbuild`, which may resolve/download tooling. Run it only with tooling already provisioned or explicit install/network authorization.
-- Build failure currently reuses a non-empty old bundle; `Using bundled bootstrap dist` is not proof that source rebuilt.
-- Source/tests reference absent upstream installer and ast-grep modules. Nine download tests pass, but environment/provision suites cannot currently load in this checkout.
-- `environment.ts`, `setup.ts`, and `worker.ts` are at or near the component file ceiling; split by responsibility before adding policy.
-
-## AGGREGATE INTEGRATION
-
-Installed wiring is parent `hooks/hooks.json` → `hooks/bin/bootstrap-session-start.sh` → this dist. The aggregate manifest does not use the component-local Windows command.
-
-## ANTI-PATTERNS
-
-- Do not accept a fallback build as source/dist verification.
-- Do not regenerate manifests during deterministic build/install.
-- Do not patch bundled output to hide absent source dependencies.
+The build uses the plugin F3 bundler and replaces `dist/` only after import and package-manager runtime audits pass.

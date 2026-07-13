@@ -1,20 +1,14 @@
 {
-	"name": "@sisyphuslabs/asterline-bootstrap",
-	"version": "4.10.0",
-	"description": "Asterline SessionStart bootstrap component that provisions Asterline runtime dependencies from a detached worker.",
+	"name": "@asterline/auggie-bootstrap",
+	"version": "4.17.1",
+	"description": "Fail-open Auggie SessionStart bootstrap for Asterline native runtime assets.",
 	"type": "module",
 	"private": true,
-	"files": [
-		"dist",
-		"hooks",
-		"scripts",
-		"manifests"
-	],
+	"files": ["dist", "hooks", "scripts", "runtime-audit.json", "UPSTREAM-PROVENANCE.json"],
 	"scripts": {
 		"build": "node scripts/build.mjs",
-		"test": "bun test test/*.test.ts"
+		"test": "bun test test/*.test.ts",
+		"check": "bun test test/*.test.ts && node scripts/build.mjs && node dist/cli.js help"
 	},
-	"engines": {
-		"node": ">=20.0.0"
-	}
+	"engines": { "node": ">=20.0.0" }
 }
