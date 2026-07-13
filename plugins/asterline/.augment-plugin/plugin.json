@@ -1,6 +1,6 @@
 {
   "name": "asterline",
-  "version": "4.10.0",
+  "version": "4.17.1",
   "description": "Asterline for Auggie: evidence-led planning, execution, code intelligence, review, debugging, cleanup, visual checks, and durable work loops.",
   "author": {
     "name": "Asterline maintainers"
@@ -23,7 +23,7 @@
   "interface": {
     "displayName": "Asterline",
     "shortDescription": "Auggie runtime with Asterline identity.",
-    "longDescription": "Asterline exposes rules, comment guard, Git Bash guidance, LSP diagnostics, deep research, durable work loops, run-plan continuation, bootstrap checks, and telemetry as one Auggie plugin namespace.",
+    "longDescription": "Asterline exposes rules, comment guard, Git Bash guidance, LSP diagnostics, deep research, durable work loops, run-plan continuation, and bootstrap checks as one Auggie plugin namespace.",
     "developerName": "Asterline maintainers",
     "category": "Developer Tools",
     "capabilities": [

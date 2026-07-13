@@ -98,11 +98,13 @@ test('Auggie hook manifest contains only supported events and properties', () =>
   }
 });
 
-test('Runtime package and telemetry identity are Asterline branded', () => {
+test('Runtime package identity is Asterline branded without published telemetry', () => {
   const pkg = readJson('package.json');
   assert.equal(pkg.name, '@asterline/auggie-plugin');
-  assert.equal(pkg.version, '4.10.0');
+  assert.equal(pkg.version, '4.17.1');
   assert(Object.keys(pkg.bin).every((name) => name.startsWith('asterline-')));
+  assert.equal(pkg.bin['asterline-telemetry'], undefined);
+  assert.equal(pkg.dependencies['posthog-node'], undefined);
   const identity = readFileSync(join(root, 'components/telemetry/dist/product-identity.js'), 'utf8');
   assert.match(identity, /asterline_daily_active/);
   assert.match(identity, /CACHE_DIR_NAME = "asterline"/);

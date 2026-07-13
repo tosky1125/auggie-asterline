@@ -1,12 +1,12 @@
 {
   "name": "auggie-asterline",
   "description": "Asterline for Auggie: a full Asterline-branded runtime workflow marketplace.",
-  "version": "4.10.0",
+  "version": "4.17.1",
   "plugins": [
     {
       "name": "asterline",
       "description": "Auggie-native delivery kit with deep research, work planning, durable execution loops, review, code intelligence, and hooks.",
-      "version": "4.10.0",
+      "version": "4.17.1",
       "source": "./plugins/asterline",
       "category": "productivity",
       "tags": [

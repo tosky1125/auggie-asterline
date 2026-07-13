@@ -79,6 +79,14 @@ for (const component of readdirSync(join(root, 'components'))) {
 const forbiddenPublicPattern = /\$omo:|\/omo:|\$lcx|lcx-|ulw-loop|ulw-plan|LazyCodex|lazycodex|lazycodex-ai|omo-codex|lazycodex-generated|\(omo\)|\bOmO\b|\bOMO\b|\bCodex\b|\bcodex\b|CODEX|\.codex|codex-|openai\/codex|create_goal|call_omo_agent|[A-Za-z]Codex|Codex[A-Za-z]/;
 const leaked = [...new Set(publicFiles)].filter((path) => forbiddenPublicPattern.test(readFileSync(join(root, path), 'utf8')));
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+if (pkg.bin?.['asterline-telemetry'] !== undefined) {
+  console.error('Asterline runtime validation failed: telemetry bin must not be published');
+  process.exit(1);
+}
+if (pkg.dependencies?.['posthog-node'] !== undefined) {
+  console.error('Asterline runtime validation failed: posthog-node dependency must not be published');
+  process.exit(1);
+}
 const entrypointFailures = [];
 for (const target of Object.values(pkg.bin ?? {})) {
   if (typeof target === 'string') {

@@ -161,19 +161,22 @@ const mcp = readJson("plugins/asterline/.mcp.json");
 const pkg = readJson("plugins/asterline/package.json");
 
 if (marketplace.name !== "auggie-asterline") fail("marketplace name mismatch");
-if (marketplace.version !== "4.10.0") fail("marketplace version mismatch");
+if (marketplace.version !== "4.17.1") fail("marketplace version mismatch");
 const entry = marketplace.plugins?.[0];
 if (entry?.name !== "asterline") fail("marketplace plugin name mismatch");
+if (entry?.version !== "4.17.1") fail("marketplace plugin version mismatch");
 if (entry?.source !== "./plugins/asterline") fail("marketplace source mismatch");
 
 if (plugin.name !== "asterline") fail("plugin name mismatch");
-if (plugin.version !== "4.10.0") fail("plugin version mismatch");
+if (plugin.version !== "4.17.1") fail("plugin version mismatch");
 for (const key of ["skills", "agents", "rules", "hooks", "mcpServers"]) {
   if (!plugin[key]) fail(`plugin manifest missing ${key}`);
 }
 
 if (pkg.name !== "@asterline/auggie-plugin") fail("runtime package name mismatch");
-if (pkg.version !== "4.10.0") fail("runtime package version mismatch");
+if (pkg.version !== "4.17.1") fail("runtime package version mismatch");
+if (pkg.bin?.["asterline-telemetry"] !== undefined) fail("runtime telemetry bin must not be published");
+if (pkg.dependencies?.["posthog-node"] !== undefined) fail("runtime posthog-node dependency must not be published");
 for (const binName of Object.keys(pkg.bin ?? {})) {
   if (!binName.startsWith("asterline-")) fail(`runtime bin is not Asterline branded: ${binName}`);
 }

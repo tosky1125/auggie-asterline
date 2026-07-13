@@ -1,6 +1,6 @@
 # auggie-asterline
 
-Asterline is an Auggie marketplace plugin that ports the upstream 4.10.0
+Asterline is an Auggie marketplace plugin that ports the upstream 4.17.1
 runtime surface into an Asterline-branded Auggie package. It provides durable
 planning loops, deep research, code intelligence, review pressure, cleanup,
 visual checks, hooks, and MCP servers through the `asterline` plugin namespace.

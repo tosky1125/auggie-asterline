@@ -1,6 +1,6 @@
 {
   "name": "@asterline/auggie-plugin",
-  "version": "4.10.0",
+  "version": "4.17.1",
   "description": "Asterline Auggie marketplace plugin with bundled runtime components.",
   "type": "module",
   "private": true,
@@ -13,7 +13,6 @@
     "asterline-git-flow": "./components/git-bash/dist/cli.js",
     "asterline-code-intel": "./components/lsp/dist/cli.js",
     "asterline-rule-sync": "./components/rules/dist/cli.js",
-    "asterline-telemetry": "./components/telemetry/dist/cli.js",
     "asterline-run-plan-continuation": "./components/start-work-continuation/dist/cli.js",
     "asterline-deep-research-engine": "./components/ultrawork/dist/cli.js",
     "asterline-work-loop-engine": "./components/work-loop/dist/cli.js"
@@ -26,7 +25,6 @@
   "dependencies": {
     "@code-yeongyu/lsp-daemon": "vendor/lsp-daemon",
     "@code-yeongyu/lsp-tools-mcp": "vendor/lsp-tools-mcp",
-    "picomatch": "vendor/picomatch",
-    "posthog-node": "vendor/posthog-node"
+    "picomatch": "vendor/picomatch"
   }
 }
