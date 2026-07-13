@@ -5,7 +5,7 @@ description: Use when Asterline needs to understand or respond to automatic comm
 
 # Asterline Comment Checker
 
-The plugin registers a `PostToolUse` hook for successful `apply_patch`, `write`, `edit`, `multi_edit`, and `multiedit` calls.
+The plugin registers a `PostToolUse` hook for successful Auggie `apply_patch`, `str-replace-editor`, and `save-file` calls.
 
 When comment-checker reports a warning after a patch, Asterline receives blocking feedback and should fix or explain the flagged comment before moving on.
 
@@ -13,4 +13,5 @@ When comment-checker reports a warning after a patch, Asterline receives blockin
 
 - No MCP tool is exposed.
 - Non-edit tools are ignored by this plugin.
+- Failed, cancelled, unknown, and malformed Auggie payloads fail open.
 - Missing checker binaries emit no hook output so normal Asterline work can continue.

@@ -1,43 +1,43 @@
 export type TextContent = {
-	type: "text";
-	text: string;
+	readonly type: "text";
+	readonly text: string;
 };
 
 export type ImageContent = {
-	type: "image";
-	data: string;
-	mimeType: string;
+	readonly type: "image";
+	readonly data: string;
+	readonly mimeType: string;
 };
 
 export type CheckerToolName = "Write" | "Edit" | "MultiEdit";
 
 export type CheckerEdit = {
-	old_string: string;
-	new_string: string;
+	readonly old_string: string;
+	readonly new_string: string;
 };
 
 export type CheckerToolInput = {
-	file_path: string;
-	content?: string;
-	old_string?: string;
-	new_string?: string;
-	edits?: CheckerEdit[];
+	readonly file_path: string;
+	readonly content?: string;
+	readonly old_string?: string;
+	readonly new_string?: string;
+	readonly edits?: readonly CheckerEdit[];
 };
 
 export type CommentCheckRequest = {
-	sourceToolName: string;
-	toolName: CheckerToolName;
-	filePath: string;
-	toolInput: CheckerToolInput;
+	readonly sourceToolName: string;
+	readonly toolName: CheckerToolName;
+	readonly filePath: string;
+	readonly toolInput: CheckerToolInput;
 };
 
 export type CommentCheckerHookInput = {
-	session_id: string;
-	tool_name: CheckerToolName;
-	transcript_path: string;
-	cwd: string;
-	hook_event_name: "PostToolUse";
-	tool_input: CheckerToolInput;
+	readonly session_id: string;
+	readonly tool_name: CheckerToolName;
+	readonly transcript_path: string;
+	readonly cwd: string;
+	readonly hook_event_name: "PostToolUse";
+	readonly tool_input: CheckerToolInput;
 };
 
 export type ToolResultContent = TextContent | ImageContent;

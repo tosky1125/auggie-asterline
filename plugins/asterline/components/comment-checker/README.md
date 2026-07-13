@@ -8,8 +8,9 @@ Asterline plugin that runs [`@code-yeongyu/comment-checker`](https://github.com/
 
 | Case | Result |
 |------|--------|
-| `apply_patch` succeeds | parses `tool_input.command` and checks added/updated files |
-| `write`, `edit`, `multi_edit`, or `multiedit` succeeds | maps the Asterline payload to the native checker hook input |
+| `apply_patch` succeeds | parses `tool_input.input` and checks added/updated files |
+| `str-replace-editor` or `save-file` succeeds | maps the Auggie payload to the native checker hook input |
+| Auggie reports failure, cancellation, or an unknown state | ignored without guessing from display text |
 | non-edit tool succeeds | ignored |
 | checker exits `2` | returns Asterline `PostToolUse` blocking feedback so the model fixes or explains the warning |
 | checker binary missing or unavailable on the current platform | emits no hook output |
@@ -33,45 +34,27 @@ node "${PLUGIN_ROOT}/dist/cli.js" hook post-tool-use
 
 No MCP server or `comment_check` tool is exposed.
 
-## Local Development
+## Rebuild And Test
+
+The committed runtime is rebuilt by the repository's pinned F3 bundler and then exercised directly with Node:
 
 ```bash
-npm install
-npm test
-npm run typecheck
-npm run check
-npm pack --dry-run
+node ../../scripts/bundle-component.mjs --source .. --output dist --config runtime/comment-checker.build.json
+node --test ../../test/v4171-comment-checker.test.mjs
 ```
 
-Smoke-test the hook:
+## Asterline Installation
 
-```bash
-node dist/cli.js hook post-tool-use < test/fixtures/post-tool-use.json
-```
+Install the parent Asterline marketplace through Auggie's plugin interface. The shipped hook bundle is self-contained and performs no dependency installation. The optional checker must be provisioned by the operator; set `ASTERLINE_COMMENT_CHECKER_BINARY` to its executable path.
 
-## Local Asterline Installation
-
-```bash
-npx asterline-ai install
-```
-
-The installer builds and copies the plugin into `~/.asterline/plugins/cache/sisyphuslabs/asterline/0.1.0`, registers the `sisyphuslabs` marketplace from the `asterline` Git repository, installs runtime dependencies there, and enables:
-
-```toml
-[features]
-plugins = true
-plugin_hooks = true
-
-[plugins."asterline@sisyphuslabs"]
-enabled = true
-```
+The checker deadline defaults to 30 seconds. Operators may lower it to 100–30000 milliseconds with `ASTERLINE_COMMENT_CHECKER_TIMEOUT_MS`; timeout and output-budget termination always reap the child before the hook returns.
 
 ## Branch Rules and Releases
 
 - `main` is protected by `.github/branch-ruleset.json`.
 - CI runs Node 20 and 22 on Ubuntu, macOS, and Windows.
 - Releases are GitHub Releases tagged as `v<semver>`.
-- Publishing runs from the `publish` workflow after a GitHub Release is published.
+- The parent marketplace owns release publication.
 
 ## Privacy
 

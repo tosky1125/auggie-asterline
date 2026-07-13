@@ -1,205 +1,163 @@
-import { readFileSync } from "node:fs";
 import { stdin as processStdin, stdout as processStdout } from "node:process";
 
 import {
-	type CommentCheckRequest,
-	extractCommentCheckRequests,
-	isRecord,
-	type ToolResultContent,
-	type ToolResultLike,
-	toHookInput,
-} from "./core.js";
+	type NormalizedToolEvent,
+	normalizeAuggieToolEventFailOpen,
+	type ToolExecutionState,
+} from "@asterline/hook-bridge";
+import { parseApplyPatchRequests } from "./apply-patch.js";
+import { toHookInput } from "./hook-input.js";
 import { type CommentCheckerRunner, runCommentChecker } from "./runner.js";
+import type { CheckerEdit, CommentCheckRequest } from "./types.js";
 
-export type AsterlinePostToolUseInput = {
-	session_id: string;
-	turn_id: string;
-	transcript_path: string | null;
-	cwd: string;
-	hook_event_name: "PostToolUse";
-	model: string;
-	permission_mode: string;
-	tool_name: string;
-	tool_input: Record<string, unknown>;
-	tool_response: unknown;
-	tool_use_id: string;
-};
+export type AsterlinePostToolUseInput = unknown;
+export type AsterlineHookOptions = { readonly run?: CommentCheckerRunner };
 
-export type AsterlineHookOptions = {
-	run?: CommentCheckerRunner;
-};
+const MAX_STDIN_CHARS = 1_048_576;
+const MAX_HOOK_FEEDBACK_CHARS = 8_000;
 
-const DEFAULT_MAX_HOOK_FEEDBACK_CHARS = 8000;
-const CONTEXT_PRESSURE_MAX_HOOK_FEEDBACK_CHARS = 1200;
-const CONTEXT_PRESSURE_MARKERS = [
-	"context compacted",
-	"context_length_exceeded",
-	"skill descriptions were shortened",
-	"context_too_large",
-	"asterline ran out of room in the model's context window",
-	"your input exceeds the context window",
-	"long threads and multiple compactions",
-] as const;
-
-export function extractAsterlineCommentCheckRequests(input: AsterlinePostToolUseInput): CommentCheckRequest[] {
-	return extractCommentCheckRequests(toToolResultLike(input));
+export function extractAsterlineCommentCheckRequests(raw: unknown): readonly CommentCheckRequest[] {
+	const event = normalizeAuggieToolEventFailOpen(raw);
+	if (event === null || event.phase !== "post" || !isSucceeded(event.state)) return [];
+	switch (event.tool) {
+		case "save-file":
+			return event.input.content.length === 0
+				? []
+				: [
+						request(event.tool, "Write", event.input.path, {
+							file_path: event.input.path,
+							content: event.input.content,
+						}),
+					];
+		case "str-replace-editor":
+			return replaceRequests(event);
+		case "apply_patch":
+			return parseApplyPatchRequests(event.input.patch, event.tool);
+		case "launch-process":
+			return [];
+		default:
+			return assertNever(event);
+	}
 }
 
-export async function runCommentCheckerPostToolUse(
-	input: AsterlinePostToolUseInput,
-	options: AsterlineHookOptions = {},
-): Promise<string> {
-	const requests = extractAsterlineCommentCheckRequests(input);
+export async function runCommentCheckerPostToolUse(raw: unknown, options: AsterlineHookOptions = {}): Promise<string> {
+	const event = normalizeAuggieToolEventFailOpen(raw);
+	if (event === null || event.workspaceRoots.length === 0) return "";
+	const requests = extractAsterlineCommentCheckRequests(event.raw);
 	if (requests.length === 0) return "";
-
-	const runner = options.run ?? runCommentChecker;
-	const warnings: Array<{ filePath: string; message: string }> = [];
-
-	for (const request of requests) {
-		const context = {
-			sessionId: input.session_id,
-			cwd: input.cwd,
-			...(input.transcript_path === null ? {} : { transcriptPath: input.transcript_path }),
-		};
-		const result = await runner(toHookInput(request, context));
-		if (result.status === "missing" || result.status === "pass") continue;
-		if (result.status === "error") continue;
-		const message = normalizeHookText(result.message);
-		if (message.length > 0) {
-			warnings.push({ filePath: request.filePath, message });
+	const run = options.run ?? runCommentChecker;
+	const warnings: { readonly filePath: string; readonly message: string }[] = [];
+	for (const item of requests) {
+		const result = await run(
+			toHookInput(item, {
+				sessionId: event.conversationId,
+				cwd: event.workspaceRoots[0] ?? "",
+			}),
+		);
+		switch (result.status) {
+			case "pass":
+			case "missing":
+			case "error":
+				break;
+			case "warning": {
+				const message = normalizeText(result.message);
+				if (message.length > 0) warnings.push({ filePath: item.filePath, message });
+				break;
+			}
+			default:
+				assertNever(result);
 		}
 	}
-
 	if (warnings.length === 0) return "";
-
 	return JSON.stringify({
 		decision: "block",
-		reason: limitHookText(formatWarnings(warnings), hookFeedbackLimit(input.transcript_path)),
+		reason: limitText(
+			warnings
+				.map(({ filePath, message }) => `comment-checker found issues in ${filePath}:\n${message}`)
+				.join("\n\n"),
+		),
 	});
 }
 
 export async function runAsterlineHookCli(): Promise<void> {
 	const input = await readStdin();
-	if (input.trim().length === 0) return;
-	const parsed = parseAsterlinePostToolUseInput(input);
-	if (!parsed) return;
-	const output = await runCommentCheckerPostToolUse(parsed);
-	if (output.length > 0) {
-		processStdout.write(output);
-		processStdout.write("\n");
+	if (input === undefined || input.trim().length === 0) return;
+	const output = await runCommentCheckerPostToolUse(input);
+	if (output.length > 0) processStdout.write(`${output}\n`);
+}
+
+export function parseAsterlinePostToolUseInput(input: string): unknown | undefined {
+	return normalizeAuggieToolEventFailOpen(input)?.raw;
+}
+
+function replaceRequests(
+	event: Extract<NormalizedToolEvent, { readonly tool: "str-replace-editor" }>,
+): readonly CommentCheckRequest[] {
+	const edits: CheckerEdit[] = event.input.edits
+		.filter((edit) => edit.newText !== undefined && edit.newText.length > 0)
+		.map((edit) => ({ old_string: edit.oldText ?? "", new_string: edit.newText ?? "" }));
+	if (edits.length === 0) return [];
+	const first = edits[0];
+	if (edits.length === 1 && first !== undefined) {
+		return [
+			request(event.tool, "Edit", event.input.path, {
+				file_path: event.input.path,
+				old_string: first.old_string,
+				new_string: first.new_string,
+			}),
+		];
+	}
+	return [request(event.tool, "MultiEdit", event.input.path, { file_path: event.input.path, edits })];
+}
+
+function request(
+	sourceToolName: string,
+	toolName: CommentCheckRequest["toolName"],
+	filePath: string,
+	toolInput: CommentCheckRequest["toolInput"],
+): CommentCheckRequest {
+	return { sourceToolName, toolName, filePath, toolInput };
+}
+
+function isSucceeded(state: ToolExecutionState): boolean {
+	switch (state.kind) {
+		case "succeeded":
+			return true;
+		case "pending":
+		case "failed":
+		case "cancelled":
+		case "unknown":
+			return false;
+		default:
+			return assertNever(state);
 	}
 }
 
-export function parseAsterlinePostToolUseInput(input: string): AsterlinePostToolUseInput | undefined {
-	let parsed: unknown;
-	try {
-		parsed = JSON.parse(input);
-	} catch {
-		return undefined;
-	}
-	return isAsterlinePostToolUseInput(parsed) ? parsed : undefined;
-}
-
-function toToolResultLike(input: AsterlinePostToolUseInput): ToolResultLike {
-	return {
-		toolName: input.tool_name,
-		input: normalizeToolInput(input.tool_name, input.tool_input),
-		content: normalizeToolResponse(input.tool_response),
-		isError: isErrorResponse(input.tool_response),
-		details: isRecord(input.tool_response) ? input.tool_response : undefined,
-	};
-}
-
-function normalizeToolInput(toolName: string, toolInput: Record<string, unknown>): Record<string, unknown> {
-	if (toolName === "apply_patch" && typeof toolInput["command"] === "string") {
-		return {
-			...toolInput,
-			input: toolInput["command"],
-			patch: toolInput["command"],
-		};
-	}
-	return toolInput;
-}
-
-function normalizeToolResponse(toolResponse: unknown): ToolResultContent[] {
-	if (typeof toolResponse === "string") {
-		return [{ type: "text", text: toolResponse }];
-	}
-	if (isRecord(toolResponse) && typeof toolResponse["text"] === "string") {
-		return [{ type: "text", text: toolResponse["text"] }];
-	}
-	return [];
-}
-
-function isErrorResponse(toolResponse: unknown): boolean {
-	return isRecord(toolResponse) && toolResponse["is_error"] === true;
-}
-
-function formatWarnings(warnings: Array<{ filePath: string; message: string }>): string {
-	return warnings
-		.map((warning) => `comment-checker found issues in ${warning.filePath}:\n${warning.message}`)
-		.join("\n\n");
-}
-
-function normalizeHookText(value: string): string {
+function normalizeText(value: string): string {
 	return value.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
 }
 
-function hookFeedbackLimit(transcriptPath: string | null): number {
-	return isContextPressureTranscript(transcriptPath)
-		? CONTEXT_PRESSURE_MAX_HOOK_FEEDBACK_CHARS
-		: DEFAULT_MAX_HOOK_FEEDBACK_CHARS;
+function limitText(text: string): string {
+	if (text.length <= MAX_HOOK_FEEDBACK_CHARS) return text;
+	const marker = "\n\n[Truncated hook output to protect the Auggie context window.]";
+	return `${text.slice(0, MAX_HOOK_FEEDBACK_CHARS - marker.length).trimEnd()}${marker}`;
 }
 
-function isContextPressureTranscript(transcriptPath: string | null): boolean {
-	if (transcriptPath === null) return false;
-	try {
-		return hasContextPressureMarker(readFileSync(transcriptPath, "utf8"));
-	} catch (error) {
-		if (error instanceof Error) return false;
-		throw error;
-	}
-}
-
-function hasContextPressureMarker(text: string): boolean {
-	const normalizedText = text.toLowerCase();
-	return CONTEXT_PRESSURE_MARKERS.some((marker) => normalizedText.includes(marker));
-}
-
-function limitHookText(text: string, maxChars: number): string {
-	if (text.length <= maxChars) return text;
-	const marker = `\n\n[Truncated hook output to ${maxChars} chars to avoid Asterline context overflow.]`;
-	if (marker.length >= maxChars) return marker.slice(0, maxChars);
-	const head = text.slice(0, maxChars - marker.length).replace(/[ \t\r\n]+$/, "");
-	return `${head}${marker}`;
-}
-
-function isAsterlinePostToolUseInput(value: unknown): value is AsterlinePostToolUseInput {
-	return (
-		isRecord(value) &&
-		value["hook_event_name"] === "PostToolUse" &&
-		typeof value["session_id"] === "string" &&
-		typeof value["turn_id"] === "string" &&
-		(typeof value["transcript_path"] === "string" || value["transcript_path"] === null) &&
-		typeof value["cwd"] === "string" &&
-		typeof value["model"] === "string" &&
-		typeof value["permission_mode"] === "string" &&
-		typeof value["tool_name"] === "string" &&
-		isRecord(value["tool_input"]) &&
-		typeof value["tool_use_id"] === "string"
-	);
-}
-
-function readStdin(): Promise<string> {
+function readStdin(): Promise<string | undefined> {
 	return new Promise((resolve, reject) => {
 		let data = "";
-		processStdin.setEncoding("utf-8");
+		let withinLimit = true;
+		processStdin.setEncoding("utf8");
 		processStdin.on("data", (chunk: string) => {
+			if (!withinLimit) return;
 			data += chunk;
+			if (data.length > MAX_STDIN_CHARS) withinLimit = false;
 		});
 		processStdin.once("error", reject);
-		processStdin.once("end", () => {
-			resolve(data);
-		});
+		processStdin.once("end", () => resolve(withinLimit ? data : undefined));
 	});
+}
+
+function assertNever(value: never): never {
+	throw new TypeError(`Unreachable variant: ${String(value)}`);
 }

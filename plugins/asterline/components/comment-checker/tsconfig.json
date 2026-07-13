@@ -20,8 +20,11 @@
 		"forceConsistentCasingInFileNames": true,
 		"resolveJsonModule": true,
 		"useDefineForClassFields": false,
+		"paths": {
+			"@asterline/hook-bridge": ["../hook-bridge/src/auggie-payload.ts"]
+		},
 		"types": ["node"],
 		"noEmit": true
 	},
-	"include": ["src/**/*", "test/**/*"]
+	"include": ["src/**/*", "../hook-bridge/src/**/*"]
 }

@@ -4,13 +4,15 @@
 
 ### Added
 
-- Restore `write`, `edit`, `multi_edit`, and `multiedit` PostToolUse coverage alongside `apply_patch`.
-- Forward Asterline `transcript_path` into native comment-checker hook input when available.
-- Add package smoke coverage for portable hook entrypoints.
+- Port the pinned 4.17.1 comment-checker contract to Auggie `str-replace-editor`, `save-file`, and `apply_patch` payloads.
+- Add a deterministic F3 recipe and self-contained Node runtime bundle.
 
 ### Changed
 
-- Treat the native checker binary as an optional dependency for unsupported platforms.
+- Use the shared `@asterline/hook-bridge` boundary and trust only explicit Auggie execution state.
+- Treat the operator-provisioned native checker as optional and fail open when it is absent or unhealthy.
+- Reap timed-out and output-flooding checker processes through a bounded TERM/KILL shutdown path.
+- Remove package installation guidance and unsupported Auggie `matcher`/`statusMessage` hook fields.
 - Cap child process stdout/stderr captured from the native checker.
 - Run CI on Windows in addition to Ubuntu and macOS.
 

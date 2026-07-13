@@ -1,0 +1,15 @@
+{
+	"release": "4.17.1",
+	"upstream": {
+		"repository": "https://github.com/code-yeongyu/oh-my-openagent",
+		"commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a",
+		"componentTree": "07c646675e56eefe6276446728b638e1d1447752",
+		"coreTree": "26fb378197ccb8e6c36be1eb73862b3b10d85b4a"
+	},
+	"adaptations": [
+		"Codex PostToolUse input is replaced by the committed @asterline/hook-bridge Auggie boundary.",
+		"Auggie str-replace-editor and save-file map to the upstream native checker contract.",
+		"The optional binary is operator-provisioned and missing or operational failures fail open.",
+		"The F3 bundler emits one self-contained Node.js executable with no runtime package-manager calls."
+	]
+}

@@ -9,8 +9,8 @@ Post-edit adapter that converts supported edit payloads into the optional native
 ```text
 parent PostToolUse wrapper
   -> dist/cli.js
-  -> strict hook input guard
-  -> request-extractor / apply-patch parser
+  -> @asterline/hook-bridge boundary
+  -> Auggie edit mapper / apply-patch parser
   -> native checker subprocess
   -> capped warning feedback
 ```
@@ -18,28 +18,28 @@ parent PostToolUse wrapper
 ## LOCAL CONTRACTS
 
 - Avoid `unknown` casts when handwritten boundary guards can narrow the payload.
-- Keep raw patch and structured metadata extraction behavior aligned. Structured `files`, `result.files`, or `metadata.files` takes precedence.
-- Ignore deletes, empty additions, failed tool output, and unsupported tool names.
-- Cap subprocess stdout/stderr and user feedback; preserve the tighter context-pressure feedback budget.
-- `@code-yeongyu/comment-checker` remains optional. Missing/native errors must not break the hook.
+- Consume the committed `@asterline/hook-bridge` contract; do not reinterpret raw Auggie success/failure strings.
+- Ignore deletes, empty additions, failed/cancelled/unknown states, malformed payloads, and unsupported tool names.
+- Cap subprocess stdout/stderr independently and together; timeout/output-budget aborts must reap the child before returning.
+- The checker is operator-provisioned. Missing/native errors must not break the hook or trigger dependency installation.
 - Preserve the stable PostToolUse JSON adapter and newline normalization.
 - Do not expose this component as an MCP server.
 
 ## INSTALLED WIRING
 
-The aggregate plugin uses `comment-guard-post-tool-use.sh` and Auggie matchers `str-replace-editor|save-file`. The extractor currently recognizes `write`, `edit`, `multiedit`, `multi_edit`, and `apply_patch`; wrappers do not translate names. Require an end-to-end Auggie payload test before claiming the installed hook checks edits.
+The aggregate plugin uses `comment-guard-post-tool-use.sh` for every `PostToolUse` event because Auggie 0.32 ignores `matcher`. The runtime itself recognizes `str-replace-editor`, `save-file`, and the shared `apply_patch` contract, then fails open for every other tool.
 
 The standalone README/package references a component plugin manifest that is absent here. The parent plugin manifest is authoritative for this checkout.
 
 ## VALIDATION
 
 ```bash
-npm run check
-npm test
-node dist/cli.js hook post-tool-use < test/fixtures/post-tool-use.json
+node ../../scripts/bundle-component.mjs --source .. --output dist --config runtime/comment-checker.build.json
+node --test ../../test/v4171-comment-checker.test.mjs
+node ../../scripts/audit-runtime-imports.mjs --root dist --config runtime/runtime-audit.json
 ```
 
-CLI tests execute committed dist while most unit tests import source. Then run the inherited plugin packaging gate.
+The v4.17.1 contract tests execute the committed dist. Then run the inherited plugin packaging gate.
 
 ## ANTI-PATTERNS
 
