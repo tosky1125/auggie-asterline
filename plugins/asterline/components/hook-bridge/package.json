@@ -1,0 +1,20 @@
+{
+  "name": "@asterline/hook-bridge",
+  "version": "4.17.1",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/auggie-payload.ts",
+      "import": "./dist/auggie-payload.js"
+    }
+  },
+  "scripts": {
+    "build": "bun build src/auggie-payload.ts --target=node --format=esm --outdir=dist --sourcemap=external",
+    "check": "bun run build && bun run test",
+    "test": "bun test test/auggie-payload.test.ts"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
