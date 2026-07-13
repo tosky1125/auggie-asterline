@@ -1,0 +1,1 @@
+upstream: https://github.com/code-yeongyu/ast-grep-skill @ 3148c69 (ast-grep 0.43.0). Asterline adaptation: public name, Auggie runtime resolution, package-manager-free diagnostics, and responsibility-focused internal modules; preserve helper semantics and license.
