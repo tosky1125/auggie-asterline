@@ -63,7 +63,7 @@ function fixture(t) {
 		ASTERLINE_HOME: join(home, ".asterline"),
 		ASTERLINE_PLUGIN_DATA: join(root, "data"),
 		ASTERLINE_LSP_DAEMON_DIR: join(root, "lsp-daemon"),
-		ASTERLINE_NATIVE_DOWNLOAD: "0",
+		ASTERLINE_BOOTSTRAP_DOWNLOAD: "0",
 		CODEGRAPH_TELEMETRY: "0",
 	}
 	t.after(async () => {
@@ -80,6 +80,12 @@ function run(command, args, env, input = "", timeout = 10_000) {
 function assertClean(result, label, accepted = [0]) {
 	assert.equal(result.error, undefined, `${label}: ${result.error?.message ?? ""}`)
 	assert.ok(accepted.includes(result.status), `${label}: exit=${result.status}\n${result.stderr}`)
+}
+
+function waitForFile(path) {
+	const signal = new Int32Array(new SharedArrayBuffer(4))
+	for (let attempt = 0; attempt < 250 && !existsSync(path); attempt += 1) Atomics.wait(signal, 0, 0, 20)
+	return existsSync(path)
 }
 
 test("Given an exact isolated install, every bin and hook runs without a package manager", { timeout: 60_000 }, (t) => {
@@ -122,6 +128,11 @@ test("Given an exact isolated install, every bin and hook runs without a package
 	for (const [name, input] of Object.entries(hookInputs)) {
 		assertClean(run("/bin/bash", [join(plugin, "hooks/bin", name)], env, input, 30_000), `hook ${name}`)
 	}
+	const bootstrapState = join(env.ASTERLINE_PLUGIN_DATA, "bootstrap/state.json")
+	assert.equal(waitForFile(bootstrapState), true, "bootstrap worker did not persist offline status")
+	const state = JSON.parse(readFileSync(bootstrapState, "utf8"))
+	assert.equal(state.lastStatus, "degraded")
+	assert.ok(state.degraded.every(({ reason }) => /download requires explicit allowDownload=true/.test(reason)))
 	assert.equal(existsSync(sentinel), false, "runtime invoked a package-manager sentinel")
 })
 
