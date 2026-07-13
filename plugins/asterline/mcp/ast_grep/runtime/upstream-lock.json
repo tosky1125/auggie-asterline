@@ -1,0 +1,19 @@
+{
+  "schemaVersion": 1,
+  "release": "4.10.0",
+  "sources": [
+    {
+      "id": "lazycodex-v410",
+      "tag": "v4.10.0",
+      "commit": "245fd8f45e37fe9b412ae57c1fb7cfbd672328b7",
+      "paths": [
+        {
+          "source": "plugins/omo/components/ast-grep-mcp/dist",
+          "destination": "legacy/ast-grep-mcp/dist",
+          "type": "tree",
+          "oid": "5fdc09f17301b062db87a82cca197a3b51b0a6a0"
+        }
+      ]
+    }
+  ]
+}

@@ -206,10 +206,7 @@ function createSgResultFromStdout(stdout) {
 // ../ast-grep-core/src/runner.ts
 var SG_BINARY_NOT_FOUND_MESSAGE = `ast-grep (sg) binary not found.
 
-` + `Install options:
-` + `  bun add -D @ast-grep/cli
-` + `  cargo install ast-grep --locked
-` + `  brew install ast-grep`;
+` + `Provision sg through the checksum-pinned Asterline bootstrap.`;
 function buildSgArgs(options, flags) {
   const args = ["run", "-p", options.pattern, "--lang", options.lang];
   if (flags.includeJson) {
@@ -673,8 +670,7 @@ import { existsSync as existsSync3 } from "node:fs";
 // src/bun-spawn-shim.ts
 import { spawn as nodeSpawn, spawnSync as nodeSpawnSync } from "node:child_process";
 import { Writable } from "node:stream";
-var runtime = globalThis;
-var IS_BUN = typeof runtime.Bun !== "undefined";
+
 function emptyReadableStream() {
   return new ReadableStream({
     start(controller) {
@@ -759,17 +755,8 @@ function wrapNodeProcess(proc) {
     }
   };
 }
-function wrapBunProcess(proc) {
-  return {
-    ...proc,
-    stdout: proc.stdout ?? emptyReadableStream(),
-    stderr: proc.stderr ?? emptyReadableStream()
-  };
-}
 function spawn(cmdOrOpts, opts) {
   const { cmd, opts: options } = resolveCommand(cmdOrOpts, opts);
-  if (IS_BUN)
-    return wrapBunProcess(runtime.Bun.spawn(cmd, options));
   const [bin, ...args] = cmd;
   if (!bin)
     throw new Error("spawn requires a command");
@@ -783,7 +770,7 @@ function spawn(cmdOrOpts, opts) {
 }
 
 // src/cli-binary-path-resolution.ts
-import { existsSync as existsSync2 } from "fs";
+import { existsSync as existsSync2 } from "node:fs";
 var resolvedCliPath2 = null;
 var initPromise = null;
 async function getAstGrepPath() {

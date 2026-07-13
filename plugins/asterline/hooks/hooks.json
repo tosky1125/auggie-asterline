@@ -22,7 +22,6 @@
     ],
     "PreToolUse": [
       {
-        "matcher": "^launch-process$",
         "hooks": [
           {
             "type": "command",
@@ -34,7 +33,6 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "^(str-replace-editor|save-file)$",
         "hooks": [
           {
             "type": "command",
@@ -60,6 +58,11 @@
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/run-plan-stop.sh\"'",
+            "timeout": 10000
+          },
+          {
+            "type": "command",
+            "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/work-loop-stop.sh\"'",
             "timeout": 10000
           }
         ]

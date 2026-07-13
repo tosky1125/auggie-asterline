@@ -22,8 +22,6 @@
     "components/rules/dist",
     "components/start-work-continuation/src",
     "components/start-work-continuation/dist",
-    "components/ultrawork/src",
-    "components/ultrawork/dist",
     "components/work-loop/src",
     "components/work-loop/dist",
     "components/work-loop/runtime",

@@ -119,8 +119,8 @@ pass "doctor produces output"
 # When doctor resolves ast-grep, then it reports that exact path.
 FAKE_ENV_SG="$OUTPUT_DIR/fake-env/sg"
 fake_sg "$FAKE_ENV_SG"
-ASTERLINE_AST_GREP_SG_PATH="$FAKE_ENV_SG" $HELPER doctor > "$OUTPUT_DIR/omo-env.out" 2>&1
-grep -Fq "ast-grep binary: $FAKE_ENV_SG" "$OUTPUT_DIR/omo-env.out" || fail "ASTERLINE_AST_GREP_SG_PATH was not preferred: $(cat "$OUTPUT_DIR/omo-env.out")"
+ASTERLINE_AST_GREP_SG_PATH="$FAKE_ENV_SG" $HELPER doctor > "$OUTPUT_DIR/asterline-env.out" 2>&1
+grep -Fq "ast-grep binary: $FAKE_ENV_SG" "$OUTPUT_DIR/asterline-env.out" || fail "ASTERLINE_AST_GREP_SG_PATH was not preferred: $(cat "$OUTPUT_DIR/asterline-env.out")"
 pass "ASTERLINE_AST_GREP_SG_PATH resolves first"
 
 # Given HOME has an Asterline runtime sg executable.

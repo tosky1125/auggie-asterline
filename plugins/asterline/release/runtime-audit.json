@@ -1,13 +1,27 @@
 {
   "schemaVersion": 1,
   "entries": [
+    "components/comment-checker/dist/cli.js",
+    "components/git-bash/dist/cli.js",
     "components/lsp/dist/cli.js",
     "components/rules/dist/cli.js",
+    "components/start-work-continuation/dist/cli.js",
+    "components/work-loop/dist/cli.js",
+    "mcp/ast_grep/dist/cli.js",
+    "mcp/codegraph/dist/serve.js",
+    "mcp/git_bash/dist/cli.js",
     "mcp/lsp/dist/cli.js"
   ],
   "files": [
+    "components/comment-checker/dist/cli.js",
+    "components/git-bash/dist/cli.js",
     "components/lsp/dist/cli.js",
     "components/rules/dist/cli.js",
+    "components/start-work-continuation/dist/cli.js",
+    "components/work-loop/dist/cli.js",
+    "mcp/ast_grep/dist/cli.js",
+    "mcp/codegraph/dist/serve.js",
+    "mcp/git_bash/dist/cli.js",
     "mcp/lsp/dist/cli.js"
   ]
 }

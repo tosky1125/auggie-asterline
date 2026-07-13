@@ -14,7 +14,6 @@
     "asterline-code-intel": "./components/lsp/dist/cli.js",
     "asterline-rule-sync": "./components/rules/dist/cli.js",
     "asterline-run-plan-continuation": "./components/start-work-continuation/dist/cli.js",
-    "asterline-deep-research-engine": "./components/ultrawork/dist/cli.js",
     "asterline-work-loop-engine": "./components/work-loop/dist/cli.js"
   },
   "scripts": {

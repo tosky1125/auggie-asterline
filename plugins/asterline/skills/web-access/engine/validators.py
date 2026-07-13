@@ -45,7 +45,7 @@ SMALL_BODY_THRESHOLD = 3000
 
 
 class Verdict(Enum):
-    """Three-level classification (Codex suggestion — avoid binary)."""
+    """Multi-level classification avoids a binary result."""
 
     STRONG_OK = "strong_ok"      # passes all layers incl. success_selectors
     WEAK_OK = "weak_ok"          # passes 1-3 but no positive proof available
@@ -90,8 +90,8 @@ def _selector_hits(body: str, selectors: list[str]) -> Optional[list[str]]:
     """Return matched-selector list, or None if BS4 is unavailable.
 
     Distinguishing None (dependency missing) from [] (nothing matched) lets
-    the caller classify as UNKNOWN vs CHALLENGE correctly (Codex review: do
-    not let dependency failure masquerade as a WAF outcome).
+    the caller classify UNKNOWN vs CHALLENGE correctly instead of treating
+    a dependency failure as a WAF outcome.
     """
     if BeautifulSoup is None:
         return None

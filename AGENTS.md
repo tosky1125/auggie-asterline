@@ -6,7 +6,7 @@
 
 ## OVERVIEW
 
-Auggie marketplace wrapper for the Asterline 4.10.0 runtime. The repository ships manifests, prompts, hook adapters, committed component builds, MCP bundles, and vendored dependencies rather than a reproducible root workspace.
+Auggie marketplace wrapper for the Asterline 4.17.1 runtime. The repository ships manifests, prompts, hook adapters, committed self-contained component builds, MCP bundles, and locked build sources.
 
 ## STRUCTURE
 
@@ -17,8 +17,8 @@ Auggie marketplace wrapper for the Asterline 4.10.0 runtime. The repository ship
 │   ├── components/                   # Source-bearing hook and workflow packages
 │   ├── hooks/                        # Aggregate Auggie event adapters
 │   ├── mcp/                          # Committed MCP runtime bundles
-│   ├── skills/                       # Twenty public skill contracts
-│   └── vendor/                       # Bundled runtime dependencies
+│   ├── skills/                       # Twenty-five public skill contracts
+│   └── release/build-sources/        # Build-only locked dependency sources
 ├── scripts/validate-marketplace.mjs  # Cross-repository acceptance contract
 └── scripts/smoke-auggie-local.sh     # Live command-surface smoke test
 ```
@@ -63,7 +63,7 @@ Codegraph indexed 255 first-party files. TypeScript LSP is not installed, so the
 
 ## ANTI-PATTERNS (THIS PROJECT)
 
-- Do not treat `plugins/asterline/dist`-style output or `vendor/` as disposable; committed artifacts are the shipped runtime.
+- Do not treat committed component/MCP `dist/` output as disposable; it is the shipped runtime.
 - Do not infer that the plugin `build` script compiles components. It only validates the committed payload.
 - Do not add Markdown inside `plugins/asterline/agents/` or `plugins/asterline/rules/`; those directories are loader roots.
 - Do not commit runtime state, local evidence, environment files, or dependency installs.
@@ -89,5 +89,5 @@ The smoke test requires `auggie` and writes ignored evidence under `.asterline/e
 ## NOTES
 
 - Aggregate validation does not run component TypeScript suites or prove source-to-dist reproducibility.
-- Several imported components retain documented path/name drift. Read the nearest component `AGENTS.md` before changing a runtime surface.
+- Rebuild imported runtime output only through its checked-in source/provenance recipe. Read the nearest component `AGENTS.md` before changing a runtime surface.
 - The TypeScript, Bash, Biome, and YAML language servers are absent in this checkout; use component checks when dependencies are available.

@@ -92,6 +92,8 @@ test('Given the Asterline adaptation, when public routing metadata is read, then
   assert.match(metadata, /\$web-access/);
   assert.match(skill, /Auggie/);
   assert.doesNotMatch(skill + metadata, /\$ultimate-browsing|\(OmO\)|mcp__playwright__|Claude session/);
+  const staleCookiePrefix = new RegExp(['omo', 'cookies-'].join('-'));
+  assert.doesNotMatch(readFileSync(join(skillRoot, 'scripts', 'extract_cookies.py'), 'utf8'), staleCookiePrefix);
 });
 
 test('Given executable skill assets, when package-manager commands are audited, then none install or invoke dependencies at runtime', () => {

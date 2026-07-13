@@ -118,7 +118,7 @@ process.stdin.on("end", () => {
 
 
 def _secure_cookie_db_copy(db_path: Path) -> Path:
-    handle = tempfile.NamedTemporaryFile(prefix="omo-cookies-", suffix=".sqlite", delete=False)
+    handle = tempfile.NamedTemporaryFile(prefix="asterline-cookies-", suffix=".sqlite", delete=False)
     tmp = Path(handle.name)
     handle.close()
     try:

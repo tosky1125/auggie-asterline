@@ -1,0 +1,20 @@
+{
+  "schemaVersion": 1,
+  "source": {
+    "repository": "https://github.com/code-yeongyu/lazycodex.git",
+    "tag": "v4.10.0",
+    "commit": "245fd8f45e37fe9b412ae57c1fb7cfbd672328b7",
+    "tree": "5fdc09f17301b062db87a82cca197a3b51b0a6a0",
+    "sha256": "ee377792c4c37cb19b7474d57b384ff4c8ec3684264a64d873c82d74f8b96ac7"
+  },
+  "build": "runtime/build-ast-grep.mjs",
+  "output": {
+    "path": "dist/cli.js",
+    "sha256": "5287ee5dad733c685853ded32e94adf46b31fa1723f4e420912e5b8d9032f99a"
+  },
+  "transforms": [
+    "normalize the Node fs builtin to node:fs",
+    "map runtime files, environment keys, and help text to Asterline identity",
+    "remove package-manager installation advice and disable the unused Bun compatibility branch"
+  ]
+}

@@ -14,7 +14,7 @@ asterline/
 ├── hooks/                       # Installed Auggie adapters
 ├── mcp/                         # Dist-only MCP payloads
 ├── rules/                       # Three loaded native policies; no extra Markdown
-├── skills/                      # Exact twenty-skill public API
+├── skills/                      # Exact twenty-five-skill public API
 ├── test/                        # Aggregate contract suite
 └── release/build-sources/       # Immutable build-only source closure
 ```
@@ -35,9 +35,9 @@ asterline/
 
 - `npm run build` runs `scripts/validate-runtime.mjs`; it validates existing artifacts and does not compile component source.
 - `dist/` is a runtime input. `release/build-sources/` is rebuild input only and must never be loaded at runtime.
-- Exactly twenty skill directories are public; aliases and extra skill directories fail the contract.
-- The static `.mcp.json` omits `git_bash` on every platform, although its Windows-only bundle remains shipped and load-checked. Bootstrap still expects a Windows registration path; treat this as unresolved adapter drift.
-- Local MCP commands and hook wrappers retain the installed marketplace path. Do not replace it with component-local `${PLUGIN_ROOT}` syntax in aggregate manifests.
+- Exactly twenty-five skill directories are public; aliases and extra skill directories fail the contract.
+- The static `.mcp.json` exposes `ast_grep`, `lsp`, and checksum-pinned `codegraph` locally plus explicitly typed `grep_app` and `context7` HTTP servers. `git_bash` remains unregistered cross-platform.
+- Local MCP commands and hook wrappers retain the installed marketplace path. Aggregate hooks use only Auggie-supported events and properties.
 - `agents/` and `rules/` are wholesale loader roots. Keep instruction files at this directory level, not inside those roots.
 
 ## VALIDATION

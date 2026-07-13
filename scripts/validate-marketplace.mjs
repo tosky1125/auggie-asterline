@@ -2,48 +2,11 @@
 import { spawnSync } from "node:child_process";
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { expectedSkills, requiredRuntime } from "./lib/marketplace-contract.mjs";
+import { scanPublicIdentity, scanPublicMetadata } from "./lib/public-identity.mjs";
 
 const root = process.cwd();
 const failures = [];
-
-const expectedSkills = [
-  "clean-ai-code",
-  "code-engineer",
-  "code-intel",
-  "code-intel-setup",
-  "comment-guard",
-  "debug-trace",
-  "deep-research",
-  "git-flow",
-  "health-check",
-  "init-knowledge",
-  "reshape-code",
-  "review-pass",
-  "rule-sync",
-  "run-plan",
-  "ui-polish",
-  "upstream-fix",
-  "upstream-report",
-  "visual-check",
-  "work-loop",
-  "work-plan",
-];
-
-const requiredRuntime = [
-  "components/comment-checker/dist/cli.js",
-  "components/git-bash/dist/cli.js",
-  "components/lsp/dist/cli.js",
-  "components/rules/dist/cli.js",
-  "components/start-work-continuation/dist/cli.js",
-  "components/ultrawork/dist/cli.js",
-  "components/work-loop/dist/cli.js",
-  "mcp/ast_grep/dist/cli.js",
-  "mcp/git_bash/dist/cli.js",
-  "mcp/lsp/dist/cli.js",
-  "release/build-sources.lock.json",
-  "release/build-sources/picomatch/LICENSE",
-  "release/runtime-audit.json",
-];
 
 function fail(message) {
   failures.push(message);
@@ -186,23 +149,28 @@ if (JSON.stringify(skillDirs) !== JSON.stringify(expectedSkills)) {
   fail(`skill set mismatch: ${skillDirs.join(", ")}`);
 }
 for (const skill of expectedSkills) exists(`plugins/asterline/skills/${skill}/SKILL.md`);
+const documentedSkills = [...readFileSync(abs("README.md"), "utf8").matchAll(/`\/asterline:([a-z-]+)`/g)].map((match) => match[1]);
+if (JSON.stringify(documentedSkills) !== JSON.stringify(expectedSkills)) {
+  fail(`README skill set mismatch: ${documentedSkills.join(", ")}`);
+}
 
 const hookText = JSON.stringify(hooks);
-if (!hookText.includes("^launch-process$")) fail("missing Auggie launch-process hook matcher");
-if (!hookText.includes("^(str-replace-editor|save-file)$")) fail("missing Auggie edit hook matcher");
+if (JSON.stringify(Object.keys(hooks.hooks ?? {}).sort()) !== JSON.stringify(["PostToolUse", "PreToolUse", "SessionStart", "Stop"])) {
+  fail("hook manifest contains unsupported Auggie events");
+}
+if (/matcher|statusMessage|UserPromptSubmit|PostCompact|SubagentStop/.test(hookText)) fail("hook manifest contains unsupported Auggie properties or events");
 for (const token of ["create_goal", "apply_patch", "LazyCodex", "OMO", "omo"]) {
   if (hookText.includes(token)) fail(`hook manifest contains legacy token: ${token}`);
 }
 for (const entries of Object.values(hooks.hooks ?? {})) {
   for (const entry of entries) {
-    if (typeof entry.matcher === "string") new RegExp(entry.matcher);
     for (const hook of entry.hooks ?? []) {
       if (!hook.command.includes("/hooks/bin/")) fail(`hook command does not use wrapper: ${hook.command}`);
     }
   }
 }
 
-for (const name of ["ast_grep", "grep_app", "context7", "lsp"]) {
+for (const name of ["ast_grep", "grep_app", "context7", "lsp", "codegraph"]) {
   if (!mcp.mcpServers?.[name]) fail(`missing MCP server ${name}`);
 }
 if (mcp.mcpServers?.git_bash) {
@@ -210,6 +178,10 @@ if (mcp.mcpServers?.git_bash) {
 }
 for (const name of ["ast_grep", "lsp"]) {
   mcpLocalEntrypoint(name, mcp.mcpServers?.[name]);
+}
+const codegraphCommand = mcp.mcpServers?.codegraph?.args?.[1];
+if (codegraphCommand !== 'exec node "$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/mcp/codegraph/dist/serve.js"') {
+  fail("CodeGraph MCP must use the installed Asterline marketplace path");
 }
 
 const publicFiles = [
@@ -229,9 +201,9 @@ const publicRuntimeDirs = [
   "plugins/asterline/components/lsp/dist",
   "plugins/asterline/components/rules/dist",
   "plugins/asterline/components/start-work-continuation/dist",
-  "plugins/asterline/components/ultrawork/dist",
   "plugins/asterline/components/work-loop/dist",
   "plugins/asterline/mcp/ast_grep/dist",
+  "plugins/asterline/mcp/codegraph/dist",
   "plugins/asterline/mcp/git_bash/dist",
   "plugins/asterline/mcp/lsp/dist",
 ];
@@ -266,60 +238,16 @@ for (const name of ["ast_grep", "lsp"]) {
     assertNodeEntrypointLoads(path);
   }
 }
+assertNodeEntrypointLoads("plugins/asterline/mcp/codegraph/dist/serve.js");
 publicFiles.push(...walk("plugins/asterline/components/work-loop/dist"));
-const forbidden = [
-  "$omo:",
-  "/omo:",
-  "$lcx",
-  "lcx-",
-  "ulw-loop",
-  "ulw-plan",
-  "LazyCodex",
-  "lazycodex",
-  "lazycodex-ai",
-  "omo-codex",
-  "lazycodex-generated",
-  "(omo)",
-  "OmO",
-  "OMO",
-  "Codex",
-  "codex",
-  "CODEX",
-  ".codex",
-  "codex-",
-  "openai/codex",
-  "create_goal",
-];
-const forbiddenPatterns = [
-  { label: "standalone omo", re: /(^|[^A-Za-z0-9_])omo([^A-Za-z0-9_]|$)/ },
-  { label: ".omo path", re: /(^|[^A-Za-z0-9_])\.omo(\/|\b)/ },
-  { label: "~/.omo path", re: /~\/\.omo(\/|\b)/ },
-  { label: "call_omo_agent", re: /call_omo_agent/ },
-  { label: "camel Codex identifier", re: /[A-Za-z]Codex|Codex[A-Za-z]/ },
-];
-for (const file of [...new Set(publicFiles)]) {
-  const text = readFileSync(abs(file), "utf8");
-  for (const token of forbidden) {
-    if (text.includes(token)) fail(`${file}: forbidden public token ${token}`);
-  }
-  for (const pattern of forbiddenPatterns) {
-    if (pattern.re.test(text)) fail(`${file}: forbidden public pattern ${pattern.label}`);
-  }
-}
+scanPublicIdentity(root, publicFiles, fail);
 
 const packagePublicMetadata = JSON.stringify({
   name: pkg.name,
   description: pkg.description,
   bin: Object.keys(pkg.bin ?? {}),
 });
-for (const token of forbidden) {
-  if (packagePublicMetadata.includes(token)) fail(`plugins/asterline/package.json: forbidden public metadata token ${token}`);
-}
-for (const pattern of forbiddenPatterns) {
-  if (pattern.re.test(packagePublicMetadata)) {
-    fail(`plugins/asterline/package.json: forbidden public metadata pattern ${pattern.label}`);
-  }
-}
+scanPublicMetadata("plugins/asterline/package.json", packagePublicMetadata, fail);
 
 if (hasPath("plugins/omo")) fail("old plugin tree must not exist");
 if (hasPath("plugins/asterline/commands")) fail("commands directory should not exist");

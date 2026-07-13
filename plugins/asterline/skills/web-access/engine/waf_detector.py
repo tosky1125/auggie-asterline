@@ -1,8 +1,8 @@
 """WAF-product detection from a live response.
 
 Returns a *ranking* of (profile_id, confidence) pairs — never a single verdict.
-Single-answer detectors cause cascading wrong plans when misfiring (Codex's
-critique). Planner consumes the ranking and tries top candidates in order.
+Single-answer detectors can cause cascading wrong plans when they misfire.
+The planner consumes the ranking and tries top candidates in order.
 
 All detectors operate on WAF-vendor artifacts (cookies / headers / body
 strings) — never site hostnames. See engine/waf_profiles.yaml for the

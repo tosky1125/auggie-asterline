@@ -41,6 +41,7 @@ const expectedSkills = [
   "comment-guard",
   "debug-trace",
   "deep-research",
+  "deep-work",
   "git-flow",
   "health-check",
   "init-knowledge",
@@ -48,10 +49,14 @@ const expectedSkills = [
   "review-pass",
   "rule-sync",
   "run-plan",
+  "session-history",
+  "structure-search",
+  "team-mode",
   "ui-polish",
   "upstream-fix",
   "upstream-report",
   "visual-check",
+  "web-access",
   "work-loop",
   "work-plan"
 ];
@@ -61,34 +66,26 @@ test('Asterline exposes the agreed public skill set with no aliases', () => {
   assert.deepEqual(actual, expectedSkills);
 });
 
-test('Auggie hook manifest uses Asterline wrappers and Auggie tool matchers', () => {
+test('Auggie hook manifest uses only supported events and wrapper commands', () => {
   const hooks = readJson('hooks/hooks.json').hooks;
-  assert.equal(hooks.PreToolUse[0].matcher, '^launch-process$');
-  assert.equal(hooks.PostToolUse[0].matcher, '^(str-replace-editor|save-file)$');
+  assert.deepEqual(Object.keys(hooks).sort(), ['PostToolUse', 'PreToolUse', 'SessionStart', 'Stop']);
   const serialized = JSON.stringify(hooks);
   assert.match(serialized, /hooks\/bin\/comment-guard-post-tool-use\.sh/);
+  assert.match(serialized, /hooks\/bin\/work-loop-stop\.sh/);
   assert.doesNotMatch(serialized, /telemetry-session-start/);
+  assert.doesNotMatch(serialized, /matcher|statusMessage|UserPromptSubmit|PostCompact|SubagentStop/);
   assert.doesNotMatch(serialized, /create_goal|apply_patch|\^Bash\$/);
   assert.doesNotMatch(serialized, /LazyCodex|lazycodex|OMO|omo|Codex|codex/);
 });
 
 test('Auggie hook manifest contains only supported events and properties', () => {
   const hooks = readJson('hooks/hooks.json').hooks;
-  const supportedEvents = new Set([
-    'PreToolUse',
-    'PostToolUse',
-    'Stop',
-    'SessionStart',
-    'SessionEnd',
-    'Notification',
-    'PromptSubmit',
-  ]);
-  const toolEvents = new Set(['PreToolUse', 'PostToolUse']);
+  const supportedEvents = new Set(['PreToolUse', 'PostToolUse', 'Stop', 'SessionStart']);
   const commandProperties = new Set(['type', 'command', 'args', 'timeout']);
 
   for (const [event, entries] of Object.entries(hooks)) {
     assert(supportedEvents.has(event), `unsupported Auggie hook event: ${event}`);
-    const entryProperties = new Set(toolEvents.has(event) ? ['matcher', 'hooks', 'metadata'] : ['hooks', 'metadata']);
+    const entryProperties = new Set(['hooks', 'metadata']);
     for (const entry of entries) {
       assert.deepEqual(Object.keys(entry).filter((key) => !entryProperties.has(key)), [], `${event} has unsupported entry properties`);
       for (const hook of entry.hooks ?? []) {
@@ -104,6 +101,7 @@ test('Runtime package identity is Asterline branded without a telemetry executab
   assert.equal(pkg.version, '4.17.1');
   assert(Object.keys(pkg.bin).every((name) => name.startsWith('asterline-')));
   assert.equal(pkg.bin['asterline-telemetry'], undefined);
+  assert.equal(pkg.bin['asterline-deep-research-engine'], undefined);
   assert.equal(pkg.dependencies?.['posthog-node'], undefined);
 });
 
@@ -111,6 +109,7 @@ test('MCP and runtime component dist files are present', () => {
   const mcp = readJson('.mcp.json').mcpServers;
   assert.equal(mcp.grep_app.url, 'https://mcp.grep.app');
   assert.equal(mcp.context7.url, 'https://mcp.context7.com/mcp');
+  assert.match(mcp.codegraph.args?.[1] ?? '', /mcp\/codegraph\/dist\/serve\.js/);
   assert.equal(mcp.git_bash, undefined);
   for (const name of ['ast_grep', 'lsp']) {
     const entrypoint = mcpLocalEntrypoint(mcp[name]);
@@ -121,6 +120,19 @@ test('MCP and runtime component dist files are present', () => {
   }
 });
 
+test('Obsolete unsupported hook wrappers and ultrawork component are absent', () => {
+  for (const path of [
+    'components/ultrawork',
+    'hooks/bin/code-intel-post-compact.sh',
+    'hooks/bin/deep-research-user-prompt-submit.sh',
+    'hooks/bin/git-flow-post-compact.sh',
+    'hooks/bin/rule-sync-post-compact.sh',
+    'hooks/bin/rules-user-prompt-submit.sh',
+    'hooks/bin/run-plan-subagent-stop.sh',
+    'hooks/bin/work-loop-user-prompt-submit.sh',
+  ]) assert.equal(existsSync(join(root, path)), false, path);
+});
+
 test('Runtime package bin and MCP entrypoints load successfully', () => {
   const pkg = readJson('package.json');
   const mcp = readJson('.mcp.json').mcpServers;
@@ -128,6 +140,7 @@ test('Runtime package bin and MCP entrypoints load successfully', () => {
   for (const name of ['ast_grep', 'lsp']) {
     assertEntrypointLoads(mcpLocalEntrypoint(mcp[name]));
   }
+  assertEntrypointLoads('mcp/codegraph/dist/serve.js');
 });
 
 test('Build-only dependency provenance is present', () => {
@@ -157,9 +170,9 @@ test('Public shipped surfaces contain no Codex-era identity tokens', () => {
     ...walk('components/lsp/dist'),
     ...walk('components/rules/dist'),
     ...walk('components/start-work-continuation/dist'),
-    ...walk('components/ultrawork/dist'),
     ...walk('components/work-loop/dist'),
     ...walk('mcp/ast_grep/dist'),
+    ...walk('mcp/codegraph/dist'),
     ...walk('mcp/git_bash/dist'),
     ...walk('mcp/lsp/dist'),
   ];
@@ -185,6 +198,7 @@ test('Public shipped surfaces contain no Codex-era identity tokens', () => {
 
   const forbidden = /\$omo:|\/omo:|\$lcx|lcx-|ulw-loop|ulw-plan|LazyCodex|lazycodex|lazycodex-ai|omo-codex|lazycodex-generated|\(omo\)|\bOmO\b|\bOMO\b|\bCodex\b|\bcodex\b|CODEX|\.codex|codex-|openai\/codex|create_goal|call_omo_agent|[A-Za-z]Codex|Codex[A-Za-z]/;
   for (const file of [...new Set(files)]) {
+    if (file.endsWith('/ATTRIBUTION.md') || file.endsWith('/NOTICE') || file.startsWith('skills/session-history/')) continue;
     const text = readFileSync(join(root, file), 'utf8');
     assert.doesNotMatch(text, forbidden, file);
   }
