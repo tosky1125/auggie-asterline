@@ -1,5 +1,5 @@
 import type { WorkLoopSteeringMutationKind, WorkLoopSteeringSource } from "./constants.js";
-import type { WorkLoopPlan } from "./domain-types.js";
+import type { WorkLoopItem, WorkLoopPlan } from "./domain-types.js";
 
 export interface WorkLoopSteeringInvariantResult {
 	accepted: boolean;
@@ -44,13 +44,21 @@ export interface WorkLoopSteeringProposal {
 	now?: Date;
 }
 
+export interface WorkLoopSteeringPlanSnapshot {
+	readonly updatedAt: string;
+	readonly activeGoalId?: string;
+	readonly goalCount: number;
+	readonly goalIds: readonly string[];
+	readonly goals: readonly WorkLoopItem[];
+}
+
 export interface WorkLoopSteeringAudit {
 	kind: WorkLoopSteeringMutationKind;
 	source: WorkLoopSteeringSource;
 	targetGoalIds: string[];
 	criterionId?: string;
-	before?: unknown;
-	after?: unknown;
+	before?: WorkLoopSteeringPlanSnapshot;
+	after?: WorkLoopSteeringPlanSnapshot;
 	evidence: string;
 	rationale: string;
 	invariant: WorkLoopSteeringInvariantResult;

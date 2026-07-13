@@ -1,12 +1,12 @@
 ---
 name: work-loop
-description: Goal-like loop that uses ultrawork mode to decompose work into systematic, evidence-bound steps.
+description: Durable evidence-bound goal loop for systematic Asterline delivery on Auggie.
 metadata:
-  short-description: Goal-like ultrawork loop for systematic decomposition
+  short-description: Durable evidence-bound work loop
 ---
 
 ## Role
-Expert goal orchestration agent. You conduct; right-sized parallel subagents play. Plan multi-goal work that survives across turns and sessions, fan independent work out to workers, QA every result yourself, record only proven evidence.
+Expert goal orchestration agent. Plan durable multi-goal work, split only independent bounded tasks in parallel, QA every returned result yourself, and record only proven evidence.
 Use GPT-5.x style: outcome-first, evidence-bound, atomic decisions, no nested branching prose.
 
 ## Goal
@@ -19,16 +19,17 @@ Audit each pass, fail, block, steering change, and checkpoint in `.asterline/wor
 Run each criterion's real-surface proof yourself through the channel that faithfully exercises it; capture the artifact before recording PASS.
 
 1. **HTTP call** — hit the live endpoint with `curl -i` (or a Playwright APIRequestContext); capture status line + headers + body.
-2. **tmux** — `tmux new-session -d -s ulw-qa-<criterion>`, drive with `send-keys`, dump via `tmux capture-pane -pS -E -`; transcript is the artifact.
+2. **tmux** — `tmux new-session -d -s work-loop-qa-<criterion>`, drive with `send-keys`, dump via `tmux capture-pane -pS -E -`; transcript is the artifact.
 3. **Browser use** — use Chrome to drive the REAL page; if Chrome is not available, download and use agent-browser (https://github.com/vercel-labs/agent-browser). Capture action log + screenshot path. Never downgrade to a non-browser surface for a browser-facing criterion.
 4. **Computer use** — when the surface is a desktop/GUI app rather than a page, drive it via OS-level automation (a computer-use agent, AppleScript, xdotool, etc.) against the running app; capture action log + screenshot. Use this for any non-browser GUI criterion.
 
 Auxiliary surfaces (CLI stdout / DB state diff / parsed config dump) are first-class evidence for CLI- or data-shaped criteria; use a channel scenario when the behavior is user-facing. `--dry-run`, printing the command, "should respond", and "looks correct" never count.
 
-## Delegation model (ATLAS-STYLE — YOU CONDUCT, WORKERS PLAY)
-You read, search, plan, integrate, and QA. You DELEGATE every code edit, test write, bug fix, and QA execution to a right-sized `multi_agent_v1.spawn_agent` worker, then verify what comes back. Fan out independent tasks in PARALLEL in a single response; serialize only on a NAMED dependency (one task consumes another's output or edits the same file).
+## Parallel task model
+Auggie supports parallel task decomposition only. It does not provide a work-loop contract for persistent teams, worker-to-worker messaging, worker resumption, or durable worker threads. Keep durable truth in the work-loop artifacts, launch only independent bounded tasks through the agent tool currently available, and verify each returned result. Serialize when one task consumes another's output or edits the same file.
 
-Size each worker to the task. Put the intended role, rigor level, and specialty inside the worker `message`.
+Size each assignment to the task and include its goal, exact file scope, constraints, failing-first proof, verification commands, and evidence path.
+A test that merely mirrors its implementation is tautological and does not count as proof; assert the observable contract instead.
 
 | Task shape | Message instruction |
 |---|---|
@@ -40,78 +41,37 @@ Size each worker to the task. Put the intended role, rigor level, and specialty 
 | External library / docs research | `TASK: act as a librarian. ...` |
 | Final verification audit | `TASK: act as a rigorous final verification reviewer. ...` |
 
-For reviewer work, use a self-contained reviewer assignment, tight scope, and explicit verification in `message`. Never spawn a context-only child for review.
-
-Every worker message MUST carry: goal + exact files in scope; the PIN + failing-first proof required before production code (Per-Criterion Cycle step 3); constraints + project rules; the verification commands to run; the ONE Manual-QA channel and the exact evidence artifact to capture; for git-tracked edits, require `git-master` plus repository-wide and touched-path commit history inspection before commit. Workers have NO interview context — be exhaustive, and forward accumulated learnings to every next worker.
-
-Asterline subagent reliability:
-- Start every `multi_agent_v1.spawn_agent` message with `TASK: <imperative assignment>`, then name `DELIVERABLE`, `SCOPE`, and `VERIFY`. State that it is an executable assignment, not a context handoff.
-- Use `fork_context: false` unless full history is truly required; paste only the context the child needs. Full-history forks can make the child continue old parent context instead of the delegated task.
-- Plan and reviewer agents may run for a long time; spawn them in the background, keep doing independent root work, and poll with short `multi_agent_v1.wait_agent` cycles. Never use a single long blocking wait for them.
-- For work likely to exceed one wait cycle, require the child to send `WORKING: <task> - <current phase>` before long reading, testing, or review passes, and `BLOCKED: <reason>` only when it cannot progress.
-- While any child is active, keep the parent visibly alive with active subagent count, agent names, latest `WORKING:` phase, and whether the parent is waiting for mailbox updates.
-- Track spawned agent names locally. Use `multi_agent_v1.wait_agent` for mailbox signals, not proof of completion. A timeout only means no new mailbox update arrived. Treat a running child as alive.
-- Fallback only when the child is completed without the deliverable, ack-only after followup, explicitly `BLOCKED:`, or no longer running. Then send `TASK STILL ACTIVE: return <deliverable> or BLOCKED: <reason>` when a targeted followup can still recover the lane; otherwise record inconclusive, do not count it as pass/review approval, close if safe, and respawn a smaller `fork_context: false` task with the missing deliverable.
+For reviewer work, use `review-pass` with a self-contained assignment, tight scope, and explicit verification. Never count a worker report as approval until the leader reproduces its evidence.
 
 ## Artifacts
 - `.asterline/work-loop/brief.md`: original brief and durable constraints.
 - `.asterline/work-loop/goals.json`: goals with embedded `successCriteria` per goal.
 - `.asterline/work-loop/ledger.jsonl`: append-only audit trail.
 - Read artifacts before resuming, steering, or checkpointing.
-- After any compaction or context loss, re-read brief + goals + ledger FIRST via `asterline sparkshell cat .asterline/work-loop/ledger.jsonl` (or read the paths directly), then `asterline work-loop status --json`, before any further action. Recover state from these artifacts; never re-plan from scratch or repeat completed work.
-- Never invent state outside `.asterline/work-loop` artifacts or `asterline work-loop status --json`.
+- After any compaction or context loss, re-read brief + goals + ledger FIRST with ordinary file reads, then `work_loop status --json`, before any further action. Recover state from these artifacts; never re-plan from scratch or repeat completed work.
+- Never invent state outside `.asterline/work-loop` artifacts or `work_loop status --json`.
 
 ## Bootstrap
 Do all three steps before execution. No edits, goal tools, or checkpointing before bootstrap completes.
 
 ### 1. Create goals from the brief
-Resolve the CLI before the first command. If `asterline` is absent from PATH or does not support `work-loop`, use the stable local installer bin or cached Asterline component CLI. This is the same work-loop CLI, so PATH absence is not a blocker. If PATH is empty, the fallback uses shell builtins and absolute Node locations before reporting guidance, and records the failure in `.asterline/work-loop/bootstrap-notepad.md`.
+Define the documented shell function before the first command. It invokes the self-contained bundle shipped by the Auggie marketplace plugin and does not depend on npm linking a package bin.
 ```sh
-ASTERLINE_HOME="${ASTERLINE_HOME:-$HOME/.asterline}"
-WORK_LOOP_NODE="$(command -v node 2>/dev/null || true)"
-if [ -z "$WORK_LOOP_NODE" ]; then
-  for candidate in /opt/homebrew/bin/node /usr/local/bin/node /usr/bin/node; do
-    [ -x "$candidate" ] || continue
-    WORK_LOOP_NODE="$candidate"
-    break
-  done
-fi
-
-WORK_LOOP_CLI=
-if command -v asterline >/dev/null 2>&1 && asterline work-loop help >/dev/null 2>&1; then
-  WORK_LOOP_CLI=asterline
-elif [ -n "$WORK_LOOP_NODE" ]; then
-  for candidate in "$HOME/.local/bin/asterline" "$ASTERLINE_HOME/bin/asterline" "$ASTERLINE_HOME"/plugins/cache/sisyphuslabs/asterline/*/components/work-loop/dist/cli.js; do
-    [ -f "$candidate" ] || [ -x "$candidate" ] || continue
-    if "$WORK_LOOP_NODE" "$candidate" work-loop help >/dev/null 2>&1; then
-      WORK_LOOP_CLI="$candidate"
-      break
-    fi
-  done
-
-  if [ -n "$WORK_LOOP_CLI" ] && [ -n "$WORK_LOOP_NODE" ]; then
-    asterline() { "$WORK_LOOP_NODE" "$WORK_LOOP_CLI" "$@"; }
-  fi
-fi
-
-if [ -z "${WORK_LOOP_CLI:-}" ]; then
-  /bin/mkdir -p .asterline/work-loop 2>/dev/null || mkdir -p .asterline/work-loop 2>/dev/null || true
-  NOTE="${NOTE:-.asterline/work-loop/bootstrap-notepad.md}"
-  printf '%s\n' "No work-loop-capable asterline executable found; PATH asterline may be the OpenCode CLI without the Asterline work-loop subcommand, and cached work-loop CLI was not found under ${ASTERLINE_HOME:-$HOME/.asterline}." >> "$NOTE" 2>/dev/null || true
-  printf '%s\n' "Install with npx asterline-ai install or set ASTERLINE_LOCAL_BIN_DIR to a PATH directory." >&2
-fi
+WORK_LOOP_CLI="$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/components/work-loop/dist/cli.js"
+work_loop() { node "$WORK_LOOP_CLI" work-loop "$@"; }
+test -f "$WORK_LOOP_CLI" || { printf '%s\n' "Asterline work-loop bundle is missing: $WORK_LOOP_CLI" >&2; return 1; }
 ```
-If `WORK_LOOP_CLI` is empty, open the durable notepad first, record the missing CLI evidence, then surface the installer issue.
+If the bundle is missing, record that exact installed path in the durable notepad and surface the marketplace installation issue.
 
 Run one form:
 ```sh
-asterline work-loop create-goals --brief "<brief>" --json
-asterline work-loop create-goals --brief-file <path> --json
-cat <brief> | asterline work-loop create-goals --from-stdin --json
+work_loop create-goals --brief "<brief>" --json
+work_loop create-goals --brief-file <path> --json
+cat <brief> | work_loop create-goals --from-stdin --json
 ```
 If the existing aggregate is already complete, do not steer or force the
 completed default state for unrelated new work. Start a fresh run with
-`asterline work-loop create-goals --session-id <new-id> ...`; use `--force`
+`work_loop create-goals --session-id <new-id> ...`; use `--force`
 only when deliberately overwriting completed evidence.
 Write state through the CLI path. Do not hand-edit state files.
 
@@ -128,14 +88,14 @@ Use evidence verbs from the channel table (tmux transcript, curl status+body, br
 Revise any criterion that lacks observable `expectedEvidence` or a named channel before execution.
 
 ### 3. Inspect state
-Run `asterline work-loop status --json`.
+Run `work_loop status --json`.
 Read pending goals, criteria IDs, current ledger head, blockers, and aggregate Asterline objective.
 
 ## Execution Loop
 Loop per goal. Cap at 5 cycles per goal. Cap identical same-criterion failures at 3.
 
 ### Acquire Next Goal
-1. Run `asterline work-loop complete-goals --json` and read the handoff, including criteria.
+1. Run `work_loop complete-goals --json` and read the handoff, including criteria.
 2. Call `get_goal` and inspect active Asterline state.
 3. Apply this table exactly:
 
@@ -144,55 +104,56 @@ Loop per goal. Cap at 5 cycles per goal. Cap identical same-criterion failures a
 | no active goal | Start the host goal with objective only from `instruction.json.objective`; do not copy lifecycle fields such as `status`. |
 | same aggregate objective active | Continue the current work-loop story. |
 | different goal active | STOP. Checkpoint blocked and surface the conflict. |
-4. If retrying failed work, run `asterline work-loop complete-goals --retry-failed --json`.
+4. If retrying failed work, run `work_loop complete-goals --retry-failed --json`.
 5. Never create a second host goal for the same aggregate objective.
 
 ### Per-Criterion Cycle
 1. PLAN: read `criterion.scenario`, `criterion.expectedEvidence`, prior ledger entries, and safety bounds. Identify which tasks in the current wave are independent.
 2. Register atomic todos via `update_plan` — one ultra-granular step per action, `path: <action> for <criterion> - verify by <check>`. Call `update_plan` on every transition (start → `in_progress`, finish → `completed`); exactly one `in_progress`, mark completed immediately, never batch, never let the rendered plan lag behind reality.
-3. DELEGATE-IN-PARALLEL: dispatch every independent task in the wave at once via right-sized `multi_agent_v1.spawn_agent` workers (Delegation table). Each worker captures evidence failing-first: when the task touches EXISTING behavior, PIN it FIRST — a characterization test that asserts the current observable behavior and PASSES on the unchanged code, as rigorous as the new-behavior scenario (exact inputs, exact observable, exact assertion). Then RED through the cheapest faithful channel — a unit test where a seam exists, an integration/e2e test where the behavior lives in wiring, or the criterion's scenario captured failing when no test seam exists — failing for the RIGHT reason (no syntax/import error). A test that mirrors its implementation (mock-call assertions, pinned constants, cannot fail under plausible regression) is not evidence; use the scenario as the failing proof instead. Then the SMALLEST GREEN change; before GREEN work that depends on external review, PR, issue, or branch state, refresh current branch/PR/issue state, preserve existing ordering/policy, and separate compatibility detection from policy changes unless the goal explicitly asks to change policy. A GREEN far larger than the criterion implies means the proof was too coarse — instruct a split. Serialize only on a NAMED dependency.
-4. INTEGRATE + CRITICAL SELF-QA + GIT CHECKPOINT (EVERY WORKER RETURN): do NOT trust the worker's report. Read the diff yourself, re-run its tests, and run LSP diagnostics on the changed files. Treat "done" as a claim to disprove. If the diff drifts, the test is hollow, or evidence is missing, RESPAWN the worker with the specific failure context. Once the work unit is verified, use `git-master` before staging: inspect recent repository commits and touched-path history to infer commit language, Conventional Commit scope, message shape, and unit size. Stage only that unit's files and commit in the observed style; do not carry verified work forward into a later omnibus commit. If no git-tracked files changed or committing is unsafe, record the no-commit reason as evidence. Forward every finding/learning to subsequent workers.
-5. EXECUTE-AS-SCENARIO: ACTUALLY run the Manual-QA scenario the criterion named (channel table above). Run it yourself for the orchestrator check; for heavier flows dispatch a dedicated QA worker (`worker`, `gpt-5.5`, `high`) whose ONLY job is to drive the channel and write the artifact to the named evidence path. If the scenario FAILS, respawn the implementing worker with the captured failure — do not hand-patch around it.
-6. CAPTURE: collect the observable artifact path: transcript, stdout, screenshot, assertion, status+body, diff, or parsed dump. No artifact written at the evidence path — not done; record BLOCKED and respawn QA.
-7. CLEAN (PAIRED, NEVER SKIP): tear down every runtime artifact step 5 spawned BEFORE recording — server PIDs (`kill`, verify `kill -0` fails), `tmux` sessions (`tmux kill-session -t ulw-qa-<criterion>`; confirm `tmux ls`), browser / Playwright contexts (`.close()`), containers (`docker rm -f`), bound ports (`lsof -i :<port>` empty), temp sockets / files / dirs (`rm -rf` the `mktemp` paths), QA-only env vars, AND `multi_agent_v1.close_agent` on every finished worker. Register each teardown as its own todo the moment the QA spawns the resource (scripts, tmux assets, browsers / agent-browser sessions, PIDs, ports) so none is forgotten. Embed a one-line cleanup receipt in the evidence string, e.g. `cleanup: killed 12345; tmux kill-session ulw-qa-foo; rm -rf /tmp/ulw.aB12cD; multi_agent_v1.close_agent w-3`. Missing receipt → record BLOCKED, not PASS.
+3. SPLIT-IN-PARALLEL: dispatch independent bounded tasks together through the agent tool available in the current Auggie host. Each task captures failing-first evidence: PIN existing behavior, prove RED through the cheapest faithful channel, then make the smallest GREEN change. Do not assume a persistent team, inter-worker messages, worker resumption, or durable threads. Serialize only on a named dependency.
+4. INTEGRATE + CRITICAL SELF-QA + GIT CHECKPOINT: do not trust a returned report. Read the diff, rerun tests, and inspect diagnostics. If the diff drifts or evidence is hollow, issue a fresh bounded assignment with the failure context. Use `git-flow` for authorized atomic commits.
+5. EXECUTE-AS-SCENARIO: actually run the Manual-QA scenario. For a heavy flow, a bounded QA assignment may drive one channel and return one artifact; the leader still reproduces or inspects it.
+6. CAPTURE: collect the observable artifact path. No artifact at that path means BLOCKED.
+7. CLEAN: tear down every process, tmux session (`work-loop-qa-<criterion>`), browser context, container, port, socket, file, directory, environment override, and worker resource before recording. Include the cleanup receipt in evidence.
 8. RECORD exactly one result:
-   - PASS: `asterline work-loop record-evidence --goal-id <id> --criterion-id <id> --status pass --evidence "<observable> | <cleanup receipt>" --json`
-   - FAIL: `asterline work-loop record-evidence --goal-id <id> --criterion-id <id> --status fail --evidence "<observable> | <cleanup receipt>" --notes "<diagnosis>" --json`
-   - BLOCKED: `asterline work-loop record-evidence --goal-id <id> --criterion-id <id> --status blocked --evidence "<observable>" --notes "<safety/blocker/leftover-state>" --json`
+   - PASS: `work_loop record-evidence --goal-id <id> --criterion-id <id> --status pass --evidence "<observable> | <cleanup receipt>" --json`
+   - FAIL: `work_loop record-evidence --goal-id <id> --criterion-id <id> --status fail --evidence "<observable> | <cleanup receipt>" --notes "<diagnosis>" --json`
+   - BLOCKED: `work_loop record-evidence --goal-id <id> --criterion-id <id> --status blocked --evidence "<observable>" --notes "<safety/blocker/leftover-state>" --json`
 9. If actual does not match expected, diagnose, respawn the right-sized worker with the failure context to fix minimally, and rerun the SAME criterion (including a fresh cleanup).
 10. After 3 same-criterion failures, exit the goal with diagnosis.
 11. After 5 cycles on one goal without all criteria passing, checkpoint failed.
 12. Continue only when the next pending criterion has a concrete `expectedEvidence` target.
 
 ### Goal Completion
-1. Confirm every criterion is `pass` with `asterline work-loop criteria --goal-id <id> --json`.
+1. Confirm every essential criterion is `pass` for an intermediate aggregate goal; final completion requires every criterion across the plan.
 2. Call `get_goal` for a fresh snapshot.
-3. Run `asterline work-loop checkpoint --goal-id <id> --status complete --evidence "<criteria evidence summary>" --host-goal-json <snapshot> --json`.
+3. Run `work_loop checkpoint --goal-id <id> --status complete --evidence "<criteria evidence summary>" --host-goal-json <snapshot> --json`.
 4. If blocked or failed, checkpoint with `--status blocked` or `--status failed` and include diagnosis evidence.
 5. If this is the final goal, run the final quality gate first and pass `--quality-gate-json`.
 
 ## Final Quality Gate
 Trigger only when one goal remains and all its criteria are passing.
 1. Run targeted verification for changed behavior.
-2. Run `ai-slop-cleaner` on changed files. If no relevant edits exist, record a passed no-op cleaner report.
+2. Run `clean-ai-code` on changed files. If no relevant edits exist, record a passed no-op cleaner report.
 3. Rerun verification after cleanup.
-4. HEAVY tier — or any goal you are unsure is sound — spawns a rigorous reviewer with `multi_agent_v1.spawn_agent({"message":"TASK: act as a rigorous final verification reviewer. DELIVERABLE: approve or cite blockers. SCOPE: <changed files and goal>. VERIFY: inspect diff and verification evidence.","fork_context":false})`. LIGHT tier: review the diff yourself and record `codeReview` with `evidence` starting `UNCONDITIONAL APPROVAL` plus a one-line justification of why the tier held.
-5. Clean review means `codeReview.recommendation == "APPROVE"` and `codeReview.architectStatus == "CLEAR"`.
-6. If review is non-clean, run `asterline work-loop record-review-blockers --goal-id <id> --title "<...>" --objective "<...>" --evidence "<review findings>" --host-goal-json <snapshot> --json`.
+4. Run `review-pass` with bounded `judge`, `operator`, and `skeptic` assignments. The leader reproduces all evidence.
+5. Clean review means `codeReview.recommendation == "APPROVE"`, `codeReview.codeQualityStatus` is `CLEAR` or documented `WATCH`, and both blocker arrays are empty.
+6. If review is non-clean, run `work_loop record-review-blockers --goal-id <id> --title "<...>" --objective "<...>" --evidence "<review findings>" --host-goal-json <snapshot> --json`.
 7. If clean, checkpoint final completion:
 ```sh
-asterline work-loop checkpoint --goal-id <id> --status complete --evidence "<e2e evidence + manual QA notes>" --host-goal-json <snapshot> --quality-gate-json <json-or-path> --json
+work_loop checkpoint --goal-id <id> --status complete --evidence "<e2e evidence + manual QA notes>" --host-goal-json <snapshot> --quality-gate-json <json-or-path> --json
 ```
 `--quality-gate-json` shape:
 ```json
 {
-  "aiSlopCleaner": { "status": "passed", "evidence": "cleaner report" },
-  "verification": { "status": "passed", "commands": ["npm test"], "evidence": "post-cleaner verification" },
-  "codeReview": { "recommendation": "APPROVE", "architectStatus": "CLEAR", "evidence": "review synthesis" },
-  "criteriaCoverage": { "totalCriteria": N, "passCount": N, "adversarialClassesCovered": ["malformed_input", "..."] }
+  "codeReview": { "by": "judge", "recommendation": "APPROVE", "codeQualityStatus": "CLEAR", "reportPath": "<currentAttemptDir>/code.md", "evidence": "review synthesis", "blockers": [] },
+  "manualQa": { "by": "operator", "status": "passed", "evidence": "real-surface QA", "surfaceEvidence": [{ "id": "S1", "criterionRef": "C001", "surface": "cli", "invocation": "node --test", "verdict": "passed", "artifactRefs": ["A1"] }], "adversarialCases": [{ "id": "X1", "criterionRef": "C002", "scenario": "malformed input", "expectedBehavior": "typed rejection", "verdict": "passed", "artifactRefs": ["A1"] }], "artifactRefs": [{ "id": "A1", "kind": "cli-transcript", "description": "QA transcript", "path": "<currentAttemptDir>/qa.log" }] },
+  "gateReview": { "by": "skeptic", "recommendation": "APPROVE", "reportPath": "<currentAttemptDir>/gate.md", "evidence": "gate review", "blockers": [] },
+  "iteration": { "fullRerun": true, "status": "passed", "rerunCommands": ["node --test"], "evidence": "post-cleaner rerun" },
+  "criteriaCoverage": { "totalCriteria": N, "passCount": N, "originalIntent": "...", "desiredOutcome": "...", "userOutcomeReview": "...", "adversarialClassesCovered": ["malformed_input"] }
 }
 ```
-A LIGHT goal with no triggered adversarial class records `"adversarialClassesCovered": ["none-applicable: <reason>"]`.
+Obtain `<currentAttemptDir>` from `work_loop status --json`. Every referenced file must already exist there and be non-empty. If no adversarial class applies, record `"adversarialClassesCovered": ["none-applicable: <reason>"]` and a structured `not_applicable` adversarial case with its reason.
 
 ## Dynamic Steering
 Use steering only for structured evidence-backed mutation. Reject natural-language steering requests.
@@ -207,14 +168,14 @@ Use steering only for structured evidence-backed mutation. Reject natural-langua
 | annotate_ledger | Audit-only note | `--evidence`, `--rationale` |
 | mark_blocked_superseded | Old story replaced by new evidence | `--goal-id`, `--replacements?`, `--evidence`, `--rationale` |
 
-Command form: `asterline work-loop steer --kind <kind> [<kind-specific-fields>] --evidence "<...>" --rationale "<...>" --json`.
-Structured prompt directives accepted: `ASTERLINE_WORK_LOOP_STEER: { ... }`, `asterline.work-loop.steer: {...}`, `asterline work-loop steer: {...}`.
+Command form: `work_loop steer --kind <kind> [<kind-specific-fields>] --evidence "<...>" --rationale "<...>" --json`.
+Structured prompt directives accepted: `ASTERLINE_WORK_LOOP_STEER: { ... }` and `asterline.work-loop.steer: {...}`.
 
 ## Constraints
 1. NEVER call `update_goal` mid-aggregate; only on final story after the quality gate passes.
 2. Never start a new host goal when `get_goal` shows a different active goal.
 3. NEVER mark `criterion.status == "pass"` without captured observable evidence in `record-evidence`.
-4. NEVER bypass the criteria gate at checkpoint; all criteria must be `pass` before `--status complete`.
+4. NEVER bypass the criteria gate: intermediate aggregate goals require essential criteria; final completion requires every plan criterion.
 5. Baseline build/lint/typecheck/test commands are necessary evidence, NOT SUFFICIENT completion proof. Criteria coverage with observable evidence is the gate.
 6. Treat `.asterline/work-loop/ledger.jsonl` as the durable audit trail; checkpoint after every success or failure.
 7. Per-story host goal mode is opt-in only with `--host-goal-mode per-story`; default is aggregate.
@@ -224,7 +185,7 @@ Structured prompt directives accepted: `ASTERLINE_WORK_LOOP_STEER: { ... }`, `as
 11. After completing an aggregate work-loop run, clear the host goal manually with `/goal clear` before starting another in the same session.
 12. The shell command emits a model-facing handoff; only the Asterline agent manages the host goal lifecycle tools.
 13. NEVER record `--status pass` while a QA-spawned process, `tmux` session, browser context, bound port, container, or temp file / dir is still alive, or while any worker is still open. The evidence string MUST include the cleanup receipt. Leftover runtime state = BLOCKED, not PASS.
-14. DELEGATE all code edits, test writes, fixes, and QA execution to right-sized `multi_agent_v1.spawn_agent` workers (Delegation table); you read, search, plan, integrate, and QA. NEVER record `--status pass` from a worker's self-report — only from evidence you re-verified yourself. Dispatch independent tasks in parallel; serialize only on a NAMED dependency.
+14. Split independent bounded edits and QA tasks in parallel through the current Auggie agent tool. Never infer persistent teams, messaging, resumption, or threads, and never record PASS from a worker report without leader verification.
 15. Every verified work unit that touched git-tracked files must leave either an atomic `git-master`-style commit hash or explicit no-commit blocker evidence before the next unit starts.
 
 ## Stop Rules

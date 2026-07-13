@@ -38,9 +38,9 @@ describe("work-loop*Path helpers", () => {
 });
 
 describe("normalizeWorkLoopSessionId", () => {
-	it("#given traversal-like input #when normalized #then returns a path-safe session segment", () => {
+	it("#given traversal-like input #when parsed #then rejects the colliding session id", () => {
 		// when/then
-		expect(normalizeWorkLoopSessionId("../bad/id")).toBe("bad-id");
+		expect(() => normalizeWorkLoopSessionId("../bad/id")).toThrowError(/Session id/u);
 	});
 
 	it("#given blank input #when normalized #then returns null", () => {

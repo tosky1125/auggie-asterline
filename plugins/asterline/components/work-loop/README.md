@@ -1,74 +1,30 @@
-# asterline-work-loop
+# Asterline work-loop
 
-[![ci](https://img.shields.io/badge/ci-pending-lightgrey.svg)](#) [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
+Self-contained Auggie runtime for durable, repository-scoped goals, evidence, checkpoints, steering, quality gates, and third-occurrence authorization escalation.
 
-Asterline plugin scaffold for durable repo-native multi-goal orchestration with embedded success criteria and observable evidence audit.
+State is stored under `.asterline/work-loop[/<session>]/{brief.md,goals.json,ledger.jsonl}`. Goal mutations use an atomic cross-process lock and atomic plan replacement. Session identifiers and existing path components are validated before access.
 
-## Behavior
+New plans use evidence layout v2. `status --json` advertises the active `currentAttemptDir` under `.asterline/evidence/work-loop/`; final review reports and manual-QA artifacts must exist, be non-empty, and remain inside that directory. Intermediate aggregate goals require their essential criteria, while final completion requires every criterion across the plan.
 
-| Subcommand | Purpose |
-|------------|---------|
-| `asterline work-loop create-goals` | Create repo-native goals from a brief and seed criteria. |
-| `asterline work-loop record-evidence` | Record observable evidence for the active criterion. |
-| `asterline work-loop criteria` | Inspect or revise goal success criteria. |
-| `asterline work-loop complete-goals` | Complete eligible goals after criteria pass. |
-| `asterline work-loop checkpoint` | Refuse completion until criteria and evidence gates pass. |
-| `asterline work-loop steer` | Apply steering updates to the plan. |
-| `asterline work-loop status` | Report active goal, criteria, and evidence state. |
+## Commands
 
-Wave 1 is scaffold only. Command behavior lands in later waves.
-
-## Asterline Plugin
-
-The plugin ships:
-
-- `.augment-plugin/plugin.json` for Asterline plugin discovery.
-- `hooks/hooks.json` for the `UserPromptSubmit` hook.
-- `skills/work-loop/` as the future skill directory.
-
-The hook command is:
-
-```bash
-node "${PLUGIN_ROOT}/dist/cli.js" hook user-prompt-submit
+```sh
+node "$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/components/work-loop/dist/cli.js" work-loop create-goals --brief "..." --json
+node "$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/components/work-loop/dist/cli.js" work-loop status --json
+node "$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/components/work-loop/dist/cli.js" work-loop complete-goals --json
+node "$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/components/work-loop/dist/cli.js" work-loop record-evidence --goal-id G001 --criterion-id C001 --status pass --evidence "..." --json
+node "$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/components/work-loop/dist/cli.js" work-loop checkpoint --goal-id G001 --status complete --evidence "..." --host-goal-json "..." --json
 ```
 
-No MCP server or Asterline tool is exposed in this scaffold.
+The committed `dist/cli.js` is a self-contained Node.js bundle. Build and runtime do not resolve packages or invoke a package manager.
 
-## Local Development
-
-```bash
-npm install
-npm test
-npm run typecheck
-npm run check
-npm pack --dry-run
+```sh
+node runtime/build-work-loop.mjs
+node --test ../../test/v4171-work-loop.test.mjs
 ```
 
-## Local Asterline Installation
+## Auggie limits
 
-```bash
-npx asterline-ai install
-```
+The installed component registers no unsupported hook event. Its explicit hook CLI remains available for protocol testing and reports public session identities as `auggie:<session_id>`. Parallel task decomposition is supported by the `team-mode` skill; persistent team messaging, resumption, and durable worker threads are not.
 
-The installer builds and copies the plugin into `~/.asterline/plugins/cache/sisyphuslabs/asterline/0.1.0`, registers the `sisyphuslabs` marketplace from the `asterline` Git repository, installs runtime dependencies there, and enables:
-
-```toml
-[features]
-plugins = true
-plugin_hooks = true
-
-[plugins."asterline@sisyphuslabs"]
-enabled = true
-```
-
-## Privacy
-
-This plugin runs locally. The scaffold does not call a network service by itself.
-
-## License
-
-[MIT](LICENSE).
-
-## Related
-
-- [asterline](https://github.com/code-yeongyu/asterline) - Sisyphus Labs Asterline marketplace repository.
+See [NOTICE](NOTICE) for pinned v4.17.1 provenance and [LICENSE](LICENSE) for licensing.

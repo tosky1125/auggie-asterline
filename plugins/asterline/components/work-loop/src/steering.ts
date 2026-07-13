@@ -2,7 +2,8 @@
 import { isWorkLoopDone } from "./goal-status.js";
 import type { WorkLoopScope } from "./paths.js";
 import { seedDefaultSuccessCriteria } from "./plan-crud.js";
-import { appendLedger, readSteeringLedgerEntries, readWorkLoopPlan, withWorkLoopMutationLock, writePlan } from "./plan-io.js";
+import { appendLedger, findAcceptedSteeringLedgerEntry, readWorkLoopPlan, withWorkLoopMutationLock, writePlan } from "./plan-io.js";
+import { buildSteeringPlanSnapshot, changedGoalIdsBetween } from "./steering-snapshot.js";
 import type {
 	SteerWorkLoopResult,
 	WorkLoopItem,
@@ -245,13 +246,20 @@ export async function steerWorkLoop(repoRoot: string, proposal: WorkLoopSteering
 	return withWorkLoopMutationLock(repoRoot, scope, async () => {
 		const plan = await readWorkLoopPlan(repoRoot, scope);
 		const key = proposal.idempotencyKey ?? proposal.promptSignature;
-		const prior = key === undefined ? undefined : (await readSteeringLedgerEntries(repoRoot, scope)).find((entry) => entry.steering?.invariant.accepted === true && (entry.idempotencyKey === key || entry.steering.idempotencyKey === key || entry.steering.promptSignature === key));
-		if (prior?.steering !== undefined) return { plan, accepted: true, audit: { ...prior.steering, deduped: true }, rejectedReasons: [], deduped: true };
+		const prior = key === undefined ? undefined : await findAcceptedSteeringLedgerEntry(repoRoot, key, scope);
+		if (prior?.steering !== undefined) {
+			const { before: _before, after: _after, ...compactPrior } = prior.steering;
+			return { plan, accepted: true, audit: { ...compactPrior, deduped: true }, rejectedReasons: [], deduped: true };
+		}
 		const audit = validateWorkLoopSteeringProposal(plan, proposal);
 		const accepted = audit.invariant.accepted;
 		const next = accepted ? applySteeringMutation(plan, proposal, audit) : plan;
-		const finalAudit: WorkLoopSteeringAudit = { ...audit, before: plan };
-		if (accepted) finalAudit.after = next;
+		const finalAudit: WorkLoopSteeringAudit = { ...audit };
+		if (accepted) {
+			const changed = changedGoalIdsBetween(plan, next);
+			finalAudit.before = buildSteeringPlanSnapshot(plan, changed);
+			finalAudit.after = buildSteeringPlanSnapshot(next, changed);
+		}
 		if (accepted) await writePlan(repoRoot, next, scope);
 		await appendLedger(repoRoot, ledgerEntry(proposal, finalAudit, proposal.now?.toISOString() ?? iso()), scope);
 		return { plan: next, accepted, audit: finalAudit, rejectedReasons: audit.invariant.rejectedReasons, deduped: false };
@@ -264,7 +272,5 @@ function ledgerEntry(proposal: WorkLoopSteeringProposal, audit: WorkLoopSteering
 	if (goalId !== undefined) entry.goalId = goalId;
 	if (proposal.criterionId !== undefined) entry.criterionId = proposal.criterionId;
 	if (proposal.idempotencyKey !== undefined) entry.idempotencyKey = proposal.idempotencyKey;
-	if (audit.before !== undefined) entry.before = audit.before;
-	if (audit.after !== undefined) entry.after = audit.after;
 	return entry;
 }

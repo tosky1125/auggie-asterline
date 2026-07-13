@@ -15,7 +15,7 @@ import { WorkLoopError } from "../src/types.js";
 const NOW = "2026-05-23T00:00:00.000Z";
 const VALID_GATE = {
 	aiSlopCleaner: { status: "passed", evidence: "no slop detected after cleaner run" },
-	verification: { status: "passed", commands: ["npm test"], evidence: "all tests pass" },
+	verification: { status: "passed", commands: ["node --test"], evidence: "all tests pass" },
 	codeReview: { recommendation: "APPROVE", architectStatus: "CLEAR", evidence: "ship it" },
 	criteriaCoverage: { totalCriteria: 2, passCount: 2, adversarialClassesCovered: ["malformed_input"] },
 } as const;

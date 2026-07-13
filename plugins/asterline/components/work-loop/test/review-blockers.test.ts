@@ -129,24 +129,24 @@ describe("recordFinalReviewBlockers happy path", () => {
 });
 
 describe("recordFinalReviewBlockers error cases", () => {
-	it("throws ulw_loop_goal_not_found for unknown goalId", async () => {
+	it("throws WORK_LOOP_GOAL_NOT_FOUND for unknown goalId", async () => {
 		const repo = await bootstrapRepo(finalPlan());
 		await expectWorkLoopCode(
 			() => recordFinalReviewBlockers(repo, { ...validArgs, goalId: "G999" }),
-			"ulw_loop_goal_not_found",
+			"WORK_LOOP_GOAL_NOT_FOUND",
 		);
 	});
 
-	it("throws ulw_loop_goal_not_in_progress when goal.status !== in_progress", async () => {
+	it("throws WORK_LOOP_GOAL_NOT_IN_PROGRESS when goal.status !== in_progress", async () => {
 		const repo = await bootstrapRepo(
 			makePlan({
 				goals: [makeGoal({ id: "G001", status: "in_progress" }), makeGoal({ id: "G002", status: "pending" })],
 			}),
 		);
-		await expectWorkLoopCode(() => recordFinalReviewBlockers(repo, validArgs), "ulw_loop_goal_not_in_progress");
+		await expectWorkLoopCode(() => recordFinalReviewBlockers(repo, validArgs), "WORK_LOOP_GOAL_NOT_IN_PROGRESS");
 	});
 
-	it("throws ulw_loop_not_final_story when other unresolved goals remain", async () => {
+	it("throws WORK_LOOP_NOT_FINAL_GOAL when other unresolved goals remain", async () => {
 		const repo = await bootstrapRepo(
 			makePlan({
 				goals: [makeGoal({ id: "G001", status: "in_progress" }), makeGoal({ id: "G002", status: "pending" })],
@@ -154,17 +154,17 @@ describe("recordFinalReviewBlockers error cases", () => {
 		);
 		await expectWorkLoopCode(
 			() => recordFinalReviewBlockers(repo, { ...validArgs, goalId: "G001" }),
-			"ulw_loop_not_final_story",
+			"WORK_LOOP_NOT_FINAL_GOAL",
 		);
 	});
 
-	it("throws ulw_loop_asterline_snapshot_mismatch when objective mismatches", async () => {
+	it("throws WORK_LOOP_ASTERLINE_SNAPSHOT_MISMATCH when objective mismatches", async () => {
 		const repo = await bootstrapRepo(finalPlan());
 		const hostGoalJson = JSON.stringify({ goal: { objective: "wrong", status: "active" } });
 
 		await expectWorkLoopCode(
 			() => recordFinalReviewBlockers(repo, { ...validArgs, hostGoalJson }),
-			"ulw_loop_asterline_snapshot_mismatch",
+			"WORK_LOOP_ASTERLINE_SNAPSHOT_MISMATCH",
 		);
 	});
 });

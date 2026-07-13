@@ -2,6 +2,7 @@ export const WORK_LOOP_DIR = ".asterline/work-loop";
 export const WORK_LOOP_BRIEF = "brief.md";
 export const WORK_LOOP_GOALS = "goals.json";
 export const WORK_LOOP_LEDGER = "ledger.jsonl";
+export const INSTALLED_WORK_LOOP_COMMAND = 'node "$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/components/work-loop/dist/cli.js" work-loop';
 
 export type WorkLoopStatus =
 	| "pending"

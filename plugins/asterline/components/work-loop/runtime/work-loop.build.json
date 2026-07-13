@@ -1,0 +1,15 @@
+{
+	"schemaVersion": 1,
+	"toolchain": {
+		"command": "bun",
+		"version": "1.3.14"
+	},
+	"entries": [
+		{
+			"source": "work-loop/src/cli.ts",
+			"output": "cli.js",
+			"executable": true
+		}
+	],
+	"aliases": []
+}

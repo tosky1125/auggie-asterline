@@ -17,10 +17,10 @@ beforeEach(async () => {
 	out = [];
 	err = [];
 	originalAsterlineSessionId = process.env["ASTERLINE_SESSION_ID"];
-	originalAsterlineThreadId = process.env["ASTERLINE_THREAD_ID"];
+	originalAsterlineThreadId = process.env["AUGGIE_SESSION_ID"];
 	originalOmoSessionId = process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
 	delete process.env["ASTERLINE_SESSION_ID"];
-	delete process.env["ASTERLINE_THREAD_ID"];
+	delete process.env["AUGGIE_SESSION_ID"];
 	delete process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
 	vi.spyOn(process, "cwd").mockReturnValue(testDir);
 	vi.spyOn(process.stdout, "write").mockImplementation((chunk: string | Uint8Array): boolean => {
@@ -37,8 +37,8 @@ afterEach(async () => {
 	vi.restoreAllMocks();
 	if (originalAsterlineSessionId === undefined) delete process.env["ASTERLINE_SESSION_ID"];
 	else process.env["ASTERLINE_SESSION_ID"] = originalAsterlineSessionId;
-	if (originalAsterlineThreadId === undefined) delete process.env["ASTERLINE_THREAD_ID"];
-	else process.env["ASTERLINE_THREAD_ID"] = originalAsterlineThreadId;
+	if (originalAsterlineThreadId === undefined) delete process.env["AUGGIE_SESSION_ID"];
+	else process.env["AUGGIE_SESSION_ID"] = originalAsterlineThreadId;
 	if (originalOmoSessionId === undefined) delete process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
 	else process.env["ASTERLINE_WORK_LOOP_SESSION_ID"] = originalOmoSessionId;
 	await rm(testDir, { recursive: true, force: true });

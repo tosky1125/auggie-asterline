@@ -1,4 +1,5 @@
 import { hostGoalMode, expectedAsterlineObjective, isFinalRunCompletionCandidate } from "./goal-status.js";
+import { INSTALLED_WORK_LOOP_COMMAND } from "./constants.js";
 import type { WorkLoopHostGoalMode, WorkLoopItem, WorkLoopPlan, WorkLoopSuccessCriterion } from "./types.js";
 
 export interface AsterlineCreateGoalPayload {
@@ -64,7 +65,7 @@ function modeConstraintLines(mode: WorkLoopHostGoalMode, isFinal: boolean): read
 		];
 	}
 	return [
-		"- host goal = the whole asterline work-loop run; ASTERLINE G001/G002/etc. = ledger stories.",
+		"- host goal = the whole Asterline work-loop run; ASTERLINE G001/G002/etc. = ledger stories.",
 		"- First call get_goal. If no active goal exists, call native goal activation with the aggregate payload below.",
 		"- If get_goal reports the same aggregate objective as active, continue this ASTERLINE story without creating a new host goal.",
 		"- If a different active or incomplete host goal exists, finish/checkpoint that goal before starting this work-loop.",
@@ -99,13 +100,13 @@ function formatCriterionLine(criterion: WorkLoopSuccessCriterion): string {
 
 function finalSection(plan: WorkLoopPlan, goal: WorkLoopItem, isFinal: boolean, aggregate: boolean): string {
 	if (!isFinal)
-		return "- This is not the final work-loop story; do not run the final ai-slop-cleaner/code-review gate yet.";
+		return "- This is not the final work-loop story; do not run the final clean-ai-code/review-pass gate yet.";
 	const option = sessionOption(plan);
-	const blockerCommand = `asterline work-loop record-review-blockers${option} --goal-id ${goal.id} --title "Resolve final code-review blockers" --objective "<blocker-resolution objective>" --evidence "<review findings>" --host-goal-json "<active get_goal JSON or path>"`;
-	const checkpointCommand = `asterline work-loop checkpoint${option} --goal-id ${goal.id} --status complete --evidence "<tests/files/PR evidence>" --host-goal-json "<fresh complete get_goal JSON or path>" --quality-gate-json "<quality gate JSON or path>"`;
+	const blockerCommand = `${INSTALLED_WORK_LOOP_COMMAND} record-review-blockers${option} --goal-id ${goal.id} --title "Resolve final code-review blockers" --objective "<blocker-resolution objective>" --evidence "<review findings>" --host-goal-json "<active get_goal JSON or path>"`;
+	const checkpointCommand = `${INSTALLED_WORK_LOOP_COMMAND} checkpoint${option} --goal-id ${goal.id} --status complete --evidence "<tests/files/PR evidence>" --host-goal-json "<fresh complete get_goal JSON or path>" --quality-gate-json "<quality gate JSON or path>"`;
 	return joinLines([
 		"Final story — run mandatory quality gate before update_goal:",
-		"- Run ai-slop-cleaner on changed files even when it is a no-op, rerun verification, then run the code review (multi_agent_v1.spawn_agent(agent_type=\"asterline-work-reviewer\", fork_context=false, ...); fall back to agent_type=\"worker\" with a scoped reviewer assignment if unavailable).",
+		"- Run clean-ai-code on changed files even when it is a no-op, rerun verification, then run review-pass. Auggie may split bounded review tasks in parallel but does not provide persistent team messaging, resumption, or threads.",
 		"- If the final review is not APPROVE with architect status CLEAR, do not call update_goal. Record blocker work first:",
 		`  ${blockerCommand}`,
 		aggregate

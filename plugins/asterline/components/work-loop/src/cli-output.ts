@@ -1,16 +1,17 @@
+import { INSTALLED_WORK_LOOP_COMMAND } from "./constants.js";
 import type { WorkLoopHostGoalMode, WorkLoopItem, WorkLoopPlan } from "./types.js";
 import { WorkLoopError } from "./types.js";
 
 export const WORK_LOOP_HELP = `Usage:
-  asterline work-loop create-goals --brief "..." [--brief-file <path>] [--from-stdin] [--host-goal-mode aggregate|per_story] [--force] [--json]
-  asterline work-loop status [--json]
-  asterline work-loop complete-goals [--retry-failed] [--json]
-  asterline work-loop criteria --goal-id <id> [--json]
-  asterline work-loop record-evidence --goal-id <id> --criterion-id <id> --status pass|fail|blocked --evidence "..." [--notes "..."] [--json]
-  asterline work-loop checkpoint --goal-id <id> --status complete|failed|blocked --evidence "..." --host-goal-json <...> [--quality-gate-json <...>] [--json]
-  asterline work-loop steer --kind <kind> ... --evidence "..." --rationale "..." [--json]
-  asterline work-loop add-goal --title "..." --objective "..." [--json]
-  asterline work-loop record-review-blockers --goal-id <id> --title "..." --objective "..." --evidence "..." --host-goal-json <...> [--json]
+  ${INSTALLED_WORK_LOOP_COMMAND} create-goals --brief "..." [--brief-file <path>] [--from-stdin] [--host-goal-mode aggregate|per_story] [--force] [--json]
+  ${INSTALLED_WORK_LOOP_COMMAND} status [--json]
+  ${INSTALLED_WORK_LOOP_COMMAND} complete-goals [--retry-failed] [--json]
+  ${INSTALLED_WORK_LOOP_COMMAND} criteria --goal-id <id> [--json]
+  ${INSTALLED_WORK_LOOP_COMMAND} record-evidence --goal-id <id> --criterion-id <id> --status pass|fail|blocked --evidence "..." [--notes "..."] [--json]
+  ${INSTALLED_WORK_LOOP_COMMAND} checkpoint --goal-id <id> --status complete|failed|blocked --evidence "..." --host-goal-json <...> [--quality-gate-json <...>] [--json]
+  ${INSTALLED_WORK_LOOP_COMMAND} steer --kind <kind> ... --evidence "..." --rationale "..." [--json]
+  ${INSTALLED_WORK_LOOP_COMMAND} add-goal --title "..." --objective "..." [--json]
+  ${INSTALLED_WORK_LOOP_COMMAND} record-review-blockers --goal-id <id> --title "..." --objective "..." --evidence "..." --host-goal-json <...> [--json]
 
 All subcommands accept [--session-id <id>] to isolate state under .asterline/work-loop/<id>/; without it, Asterline session env is used when present.`;
 

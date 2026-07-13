@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Durable goal CLI/state machine with evidence, completion gates, steering, host-goal reconciliation, and UserPromptSubmit integration.
+Durable goal CLI/state machine with evidence, completion gates, steering, host-goal reconciliation, and explicit protocol-test hook CLIs.
 
 ## ARCHITECTURE
 
@@ -14,7 +14,7 @@ Durable goal CLI/state machine with evidence, completion gates, steering, host-g
 | Host integration | `host-goal-snapshot`, `host-goal-instruction` |
 | Domain contracts | `types`, `domain-types`, `command-types`, `steering-types`, `runtime` |
 
-State lives under `.asterline/work-loop[/<session>]/{brief.md,goals.json,ledger.jsonl}`. Plan writes use temp+rename; ledger writes append JSONL; locking is process-local only.
+State lives under `.asterline/work-loop[/<session>]/{brief.md,goals.json,ledger.jsonl}`. Plan writes use temp+rename, ledger writes append JSONL, and mutations use process-local ordering plus an atomic cross-process lock.
 
 ## LOCAL CONTRACTS
 
@@ -23,27 +23,27 @@ State lives under `.asterline/work-loop[/<session>]/{brief.md,goals.json,ledger.
 - Treat `readWorkLoopPlan()` as potentially mutating because it performs legacy migration.
 - Hooks fail open; CLI commands return typed `WorkLoopError` codes.
 - Keep source files below 250 pure LOC. `steering.ts` is already near the ceiling; `checkpoint.ts` is the densest policy module.
-- Preserve `.asterline/work-loop/` state paths, the `ASTERLINE_WORK_LOOP_*` environment prefix, and the `asterline work-loop` CLI form; do not introduce alternate aliases.
+- Preserve `.asterline/work-loop/` state paths, the `ASTERLINE_WORK_LOOP_*` environment prefix, and the installed self-contained bundle command; do not claim an npm-linked executable exists.
 - Repository history for this component uses atomic Conventional Commits whose build/tests pass independently.
 
 ## INSTALLED WIRING / DRIFT
 
-Source implements UserPromptSubmit steering and a PreToolUse goal guard. Component and aggregate hook manifests currently register only UserPromptSubmit, while package smoke expects the guard. Do not claim the guard is installed until aggregate wiring and payload coverage exist.
+Source retains explicit steering and goal-guard protocol CLIs, but the component hook manifest registers only Auggie's supported `Stop` continuation. Auggie 0.32 does not accept `UserPromptSubmit`; do not claim that adapter is installed.
 
-README/changelog retain scaffold-era paths/version/command claims. Code and tests are authoritative, but update docs when touching the affected surface. Remove remaining alternate CLI aliases rather than normalizing them in new examples.
+README, committed runtime, and tests describe the v4.17.1 surface. Remove alternate CLI aliases rather than normalizing them in new examples.
 
 ## VALIDATION
 
 ```bash
-npm run check
-npm test
+node ../../scripts/bundle-component.mjs --source .. --output dist --config runtime/work-loop.build.json
+node --test ../../test/v4171-work-loop.test.mjs
 node dist/cli.js --help
 ```
 
-`check` does not run tests. Current checkout lacks component dependencies, so record missing-tool failures rather than treating them as product failures. Then run the inherited plugin packaging gate.
+The release build emits one self-contained `dist/cli.js` and runs runtime import and package-manager audits. Then run the inherited plugin packaging gate.
 
 ## ANTI-PATTERNS
 
-- Do not assume process-local locking is cross-process transactional safety.
+- Do not weaken or bypass the cross-process lock, stale-owner recovery, or symlink containment checks.
 - Do not add compact one-line policy to evade the file ceiling.
 - Do not test only source when shipped CLI behavior depends on committed dist.

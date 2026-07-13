@@ -198,8 +198,9 @@ describe("parseRecordEvidenceArgs", () => {
 });
 
 describe("WORK_LOOP_HELP", () => {
-	it("mentions asterline work-loop + every subcommand", () => {
-		expect(WORK_LOOP_HELP).toContain("asterline work-loop");
+	it("mentions the installed bundle + every subcommand", () => {
+		expect(WORK_LOOP_HELP).toContain("components/work-loop/dist/cli.js");
+		expect(WORK_LOOP_HELP).not.toContain("asterline work-loop");
 		expect(WORK_LOOP_HELP).toContain("create-goals");
 		expect(WORK_LOOP_HELP).toContain("complete-goals");
 		expect(WORK_LOOP_HELP).toContain("status");

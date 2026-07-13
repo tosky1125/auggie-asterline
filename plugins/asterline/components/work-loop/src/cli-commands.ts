@@ -6,7 +6,7 @@ import { blockedDecisionHandoff, normalizeHostGoalMode, printJson, printJsonErro
 import { parseSteeringProposal, printSteerResult } from "./cli-steering.js";
 import { buildHostGoalInstruction } from "./host-goal-instruction.js";
 import { recordEvidence } from "./evidence.js";
-import { resolveWorkLoopSessionIdFromEnv, type WorkLoopScope } from "./paths.js";
+import { resolveWorkLoopSessionIdFromEnv, type WorkLoopScope, workLoopAttemptEvidenceDir } from "./paths.js";
 import { addWorkLoopGoal, createWorkLoopPlan, startNextWorkLoop, summarizeWorkLoopPlan } from "./plan-crud.js";
 import { readWorkLoopPlan } from "./plan-io.js";
 import { recordFinalReviewBlockers } from "./review-blockers.js";
@@ -79,7 +79,9 @@ async function createGoals(repoRoot: string, argv: readonly string[], json: bool
 
 async function status(repoRoot: string, json: boolean, scope?: WorkLoopScope): Promise<number> {
 	const plan = await readWorkLoopPlan(repoRoot, scope);
-	if (json) printJson({ ok: true, plan, summary: summarizeWorkLoopPlan(plan) });
+	const active = plan.goals.find((goal) => goal.id === plan.activeGoalId);
+	const currentAttemptDir = plan.evidenceLayoutVersion === 2 && active ? workLoopAttemptEvidenceDir(active.id, active.attempt, scope) : undefined;
+	if (json) printJson({ ok: true, plan, summary: summarizeWorkLoopPlan(plan), ...(currentAttemptDir === undefined ? {} : { currentAttemptDir }) });
 	else printStatus(plan);
 	return 0;
 }

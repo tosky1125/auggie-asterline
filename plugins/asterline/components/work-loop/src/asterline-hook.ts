@@ -72,6 +72,7 @@ export async function applyUserPromptWorkLoopSteering(payload: UserPromptSubmitP
 			kind: result.audit.kind,
 			source: result.audit.source,
 			deduped: result.deduped,
+			sessionId: `auggie:${payload.session_id}`,
 		});
 	} catch (error) {
 		if (error instanceof Error) return "";

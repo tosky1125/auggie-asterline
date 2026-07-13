@@ -3,4 +3,8 @@ asterline-work-loop
 This package provides the work-loop feature in a Asterline plugin repository.
 
 The plugin targets Asterline plugin manifests and plugin-bundled lifecycle hooks.
-The orchestration engine is added in later port waves.
+Its v4.17.1 behavior is ported at LazyCodex commit
+3d7416bff3e6c80ebf5542b4dd12f5c76298d46d and canonical source commit
+ed0241d1af225d38de55fdbcf0baa0abc9a1465a. Asterline-specific durable
+checkpoint policy is retained; unsupported Auggie team messaging and thread
+resume behavior is intentionally not claimed.

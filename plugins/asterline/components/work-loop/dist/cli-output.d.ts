@@ -1,7 +1,0 @@
-import type { WorkLoopHostGoalMode, WorkLoopPlan } from "./types.js";
-export declare const WORK_LOOP_HELP = "Usage:\n  asterline work-loop create-goals --brief \"...\" [--brief-file <path>] [--from-stdin] [--host-goal-mode aggregate|per_story] [--force] [--json]\n  asterline work-loop status [--json]\n  asterline work-loop complete-goals [--retry-failed] [--json]\n  asterline work-loop criteria --goal-id <id> [--json]\n  asterline work-loop record-evidence --goal-id <id> --criterion-id <id> --status pass|fail|blocked --evidence \"...\" [--notes \"...\"] [--json]\n  asterline work-loop checkpoint --goal-id <id> --status complete|failed|blocked --evidence \"...\" --host-goal-json <...> [--quality-gate-json <...>] [--json]\n  asterline work-loop steer --kind <kind> ... --evidence \"...\" --rationale \"...\" [--json]\n  asterline work-loop add-goal --title \"...\" --objective \"...\" [--json]\n  asterline work-loop record-review-blockers --goal-id <id> --title \"...\" --objective \"...\" --evidence \"...\" --host-goal-json <...> [--json]\n\nAll subcommands accept [--session-id <id>] to isolate state under .asterline/work-loop/<id>/; without it, Asterline session env is used when present.";
-export declare function printJson(value: unknown): void;
-export declare function printJsonError(error: unknown): void;
-export declare function printStatus(plan: WorkLoopPlan): void;
-export declare function blockedDecisionHandoff(plan: WorkLoopPlan): string;
-export declare function normalizeHostGoalMode(value: string | undefined): WorkLoopHostGoalMode;

@@ -1,9 +1,10 @@
 #!/usr/bin/env node
 import { isWorkLoopSubcommand, workLoopCommand } from "./cli-commands.js";
 import { runPreToolUseGoalBudgetGuardCli, runWorkLoopHookCli } from "./asterline-hook.js";
+import { INSTALLED_WORK_LOOP_COMMAND } from "./constants.js";
+import { runStopContinuationCli } from "./stop-continuation.js";
 
-const TOP_LEVEL_HELP =
-	"Usage:\n  asterline work-loop <subcommand> [args]\n  asterline hook user-prompt-submit         (Asterline UserPromptSubmit hook)\n  asterline help | --help | -h              (this message)\n\nRun `asterline work-loop help` for work-loop subcommands.\n";
+const TOP_LEVEL_HELP = `Usage:\n  ${INSTALLED_WORK_LOOP_COMMAND} <subcommand> [args]\n\nRun \`${INSTALLED_WORK_LOOP_COMMAND} help\` for work-loop subcommands.\n`;
 
 async function main(): Promise<number> {
 	const argv = process.argv.slice(2);
@@ -21,6 +22,10 @@ async function main(): Promise<number> {
 		}
 		if (sub === "pre-tool-use") {
 			await runPreToolUseGoalBudgetGuardCli(process.stdin, process.stdout);
+			return 0;
+		}
+		if (sub === "stop") {
+			await runStopContinuationCli(process.stdin, process.stdout);
 			return 0;
 		}
 		process.stderr.write(`[asterline] unknown hook subcommand: ${sub ?? "(none)"}\n`);

@@ -49,14 +49,14 @@ export async function recordFinalReviewBlockers(
 	return withWorkLoopMutationLock(repoRoot, scope, async () => {
 		const plan = await readWorkLoopPlan(repoRoot, scope);
 		const goal = plan.goals.find((candidate) => candidate.id === args.goalId);
-		if (goal === undefined) workLoopError(`Unknown work-loop id: ${args.goalId}`, "ulw_loop_goal_not_found");
-		if (goal.status !== "in_progress") workLoopError(`${goal.id} is ${goal.status}.`, "ulw_loop_goal_not_in_progress");
-		if (!isFinalRunCompletionCandidate(plan, goal)) workLoopError(`${goal.id} is not final.`, "ulw_loop_not_final_story");
+		if (goal === undefined) workLoopError(`Unknown work-loop id: ${args.goalId}`, "WORK_LOOP_GOAL_NOT_FOUND");
+		if (goal.status !== "in_progress") workLoopError(`${goal.id} is ${goal.status}.`, "WORK_LOOP_GOAL_NOT_IN_PROGRESS");
+		if (!isFinalRunCompletionCandidate(plan, goal)) workLoopError(`${goal.id} is not final.`, "WORK_LOOP_NOT_FINAL_GOAL");
 
 		const snapshot = await readHostGoalSnapshotInput(args.hostGoalJson, repoRoot);
 		const aggregate = hostGoalMode(plan) === "aggregate";
 		const reconciliation = reconcileHostGoalSnapshot(snapshot, { expectedObjective: expectedAsterlineObjective(plan, goal), ...(aggregate ? { acceptedObjectives: compatibleAsterlineObjectives(plan) } : {}), allowedStatuses: ["active"], requireSnapshot: true, requireComplete: false });
-		if (!reconciliation.ok) workLoopError(reconciliation.errors.join(" "), "ulw_loop_asterline_snapshot_mismatch");
+		if (!reconciliation.ok) workLoopError(reconciliation.errors.join(" "), "WORK_LOOP_ASTERLINE_SNAPSHOT_MISMATCH");
 
 		const now = iso();
 		for (const field of BLOCKER_FIELDS) Reflect.deleteProperty(goal, field);

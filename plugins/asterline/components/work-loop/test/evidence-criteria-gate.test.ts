@@ -92,7 +92,7 @@ describe("requireAllCriteriaPass", () => {
 		} catch (error) {
 			expect(error).toBeInstanceOf(WorkLoopError);
 			if (!(error instanceof WorkLoopError)) throw error;
-			expect(error.code).toBe("ulw_loop_criteria_not_all_pass");
+			expect(error.code).toBe("WORK_LOOP_CRITERIA_NOT_ALL_PASS");
 			expect(error.details?.["goalId"]).toBe("G001");
 			expect(Array.isArray(error.details?.["unresolved"])).toBe(true);
 		}

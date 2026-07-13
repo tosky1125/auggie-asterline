@@ -1,5 +1,5 @@
 // biome-ignore-all format: keep this module under the mandated pure LOC budget.
-import { hasAllCriteriaPass } from "./goal-status.js";
+import { essentialCriteriaOf, hasAllCriteriaPass, hasEssentialCriteriaPass } from "./goal-status.js";
 import type { WorkLoopScope } from "./paths.js";
 import { appendLedger, readWorkLoopPlan, withWorkLoopMutationLock, writePlan } from "./plan-io.js";
 import type { WorkLoopItem, WorkLoopLedgerEntry, WorkLoopPlan, WorkLoopSuccessCriterion } from "./types.js";
@@ -114,9 +114,27 @@ export function criteriaSummary(plan: WorkLoopPlan): { totalCriteria: number; pa
 
 export function unresolvedCriteriaOf(goal: WorkLoopItem): WorkLoopSuccessCriterion[] { return goal.successCriteria.filter((criterion) => criterion.status !== "pass"); }
 
+export function unresolvedEssentialCriteriaOf(goal: WorkLoopItem): readonly WorkLoopSuccessCriterion[] {
+	const ids = new Set(essentialCriteriaOf(goal).map((criterion) => criterion.id));
+	return goal.successCriteria.filter((criterion) => ids.has(criterion.id) && criterion.status !== "pass");
+}
+
 export function requireAllCriteriaPass(goal: WorkLoopItem): void {
 	if (hasAllCriteriaPass(goal)) return;
-	throw new WorkLoopError(`Goal ${goal.id} has unresolved success criteria.`, "ulw_loop_criteria_not_all_pass", {
+	throw new WorkLoopError(`Goal ${goal.id} has unresolved success criteria.`, "WORK_LOOP_CRITERIA_NOT_ALL_PASS", {
 		details: { goalId: goal.id, unresolved: unresolvedCriteriaOf(goal).map((criterion) => ({ id: criterion.id, status: criterion.status })) },
+	});
+}
+
+export function requireAllPlanCriteriaPass(plan: WorkLoopPlan): void {
+	const unresolved = plan.goals.flatMap((goal) => unresolvedCriteriaOf(goal).map((criterion) => ({ goalId: goal.id, id: criterion.id, status: criterion.status })));
+	if (unresolved.length === 0) return;
+	throw new WorkLoopError("Work-loop aggregate has unresolved success criteria.", "WORK_LOOP_CRITERIA_NOT_ALL_PASS", { details: { unresolved } });
+}
+
+export function requireEssentialCriteriaPass(goal: WorkLoopItem): void {
+	if (hasEssentialCriteriaPass(goal)) return;
+	throw new WorkLoopError(`Goal ${goal.id} has unresolved essential success criteria.`, "WORK_LOOP_CRITERIA_NOT_ALL_PASS", {
+		details: { goalId: goal.id, unresolved: unresolvedEssentialCriteriaOf(goal).map((criterion) => ({ id: criterion.id, status: criterion.status })) },
 	});
 }

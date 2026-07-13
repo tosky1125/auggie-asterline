@@ -17,7 +17,7 @@ type CliResult = {
 function sanitizedEnv(): NodeJS.ProcessEnv {
 	const env = { ...process.env };
 	delete env["ASTERLINE_SESSION_ID"];
-	delete env["ASTERLINE_THREAD_ID"];
+	delete env["AUGGIE_SESSION_ID"];
 	delete env["ASTERLINE_WORK_LOOP_SESSION_ID"];
 	return env;
 }
@@ -47,8 +47,9 @@ async function runCli(args: readonly string[]): Promise<CliResult> {
 }
 
 beforeAll(async () => {
-	const build = await runProcess("npm", ["run", "build"], componentRoot);
-	expect(build.code, `npm run build failed:\n${build.stderr}`).toBe(0);
+	const script = resolve(componentRoot, "runtime", "build-work-loop.mjs");
+	const build = await runProcess(process.execPath, [script], componentRoot);
+	expect(build.code, `release bundle failed:\n${build.stderr}`).toBe(0);
 }, 120_000);
 
 beforeEach(async () => {
@@ -83,7 +84,7 @@ describe("dist/cli.js entrypoint dispatch", () => {
 
 		expect(result.code).toBe(0);
 		expect(result.stdout).toContain("Usage:");
-		expect(result.stdout).toContain("asterline work-loop <subcommand>");
+		expect(result.stdout).toContain("components/work-loop/dist/cli.js\" work-loop <subcommand>");
 	});
 
 	it("#given a command outside the work-loop vocabulary #when invoked with 'frobnicate' #then fails as unknown command", async () => {

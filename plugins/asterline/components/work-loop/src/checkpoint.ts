@@ -1,12 +1,13 @@
 // biome-ignore-all format: keep checkpoint orchestration below the pure LOC budget.
-import { existsSync } from "node:fs";
+import { existsSync, statSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
+import { INSTALLED_WORK_LOOP_COMMAND } from "./constants.js";
 
 import { formatHostGoalReconciliation, readHostGoalSnapshotInput, reconcileHostGoalSnapshot } from "./host-goal-snapshot.js";
-import { requireAllCriteriaPass } from "./evidence.js";
+import { requireAllCriteriaPass, requireAllPlanCriteriaPass, requireEssentialCriteriaPass } from "./evidence.js";
 import { hostGoalMode, compatibleAsterlineObjectives, expectedAsterlineObjective, isFinalRunCompletionCandidate } from "./goal-status.js";
-import { type WorkLoopScope, workLoopBriefPath } from "./paths.js";
+import { type WorkLoopScope, workLoopAttemptEvidenceDir, workLoopBriefPath } from "./paths.js";
 import { appendLedger, readWorkLoopPlan, withWorkLoopMutationLock, writePlan } from "./plan-io.js";
 import { classifyExternalAuthorizationBlocker, clearGoalBlockerFields, sameBlockerOccurrences, validateQualityGate } from "./quality-gate.js";
 import type { WorkLoopAggregateCompletion, WorkLoopItem, WorkLoopLedgerEntry, WorkLoopPlan, WorkLoopQualityGate } from "./types.js";
@@ -17,8 +18,8 @@ export interface CheckpointWorkLoopResult { readonly plan: WorkLoopPlan; readonl
 
 function workLoopFail(message: string, code: string): never { throw new WorkLoopError(message, code); }
 function normalizeObjective(value: string): string { return value.replace(/\s+/g, " ").trim(); }
-function nonEmptyEvidence(value: string): string { const trimmed = value.trim(); return trimmed || workLoopFail("Evidence must be a non-empty string.", "ulw_loop_evidence_required"); }
-function findGoal(plan: WorkLoopPlan, goalId: string): WorkLoopItem { const goal = plan.goals.find((candidate) => candidate.id === goalId); return goal ?? workLoopFail(`Unknown work-loop id: ${goalId}.`, "ulw_loop_goal_not_found"); }
+function nonEmptyEvidence(value: string): string { const trimmed = value.trim(); return trimmed || workLoopFail("Evidence must be a non-empty string.", "WORK_LOOP_EVIDENCE_REQUIRED"); }
+function findGoal(plan: WorkLoopPlan, goalId: string): WorkLoopItem { const goal = plan.goals.find((candidate) => candidate.id === goalId); return goal ?? workLoopFail(`Unknown work-loop id: ${goalId}.`, "WORK_LOOP_GOAL_NOT_FOUND"); }
 
 function textMentionsWorkLoopPlanArtifact(value: string | undefined): boolean {
 	const normalized = (value ?? "").toLowerCase();
@@ -64,8 +65,8 @@ async function canReconcileActiveFinalTaskScopedAggregateSnapshot(repoRoot: stri
 
 function buildCompletedLegacyGoalRemediation(goal: WorkLoopItem): string {
 	return [
-		"If get_goal returns a different completed legacy/thread objective, do not repeat --status complete in this thread.",
-		`Record a non-terminal blocker with: asterline work-loop checkpoint --goal-id ${goal.id} --status blocked --evidence "<completed legacy host goal blocks native goal activation in this thread>" --host-goal-json "<different completed get_goal JSON or path>".`,
+		"If get_goal returns a different completed objective, do not repeat --status complete in this Auggie session.",
+		`Record a non-terminal blocker with: ${INSTALLED_WORK_LOOP_COMMAND} checkpoint --goal-id ${goal.id} --status blocked --evidence "<completed host goal blocks native goal activation in this Auggie session>" --host-goal-json "<different completed get_goal JSON or path>".`,
 		"Then continue only from a host goal context with no active/completed conflicting goal, in the same repo/worktree, and create the intended goal there.",
 	].join(" ");
 }
@@ -82,8 +83,8 @@ async function readJsonInput(raw: string | undefined, repoRoot: string): Promise
 	const trimmed = raw.trim();
 	try { return JSON.parse(trimmed); } catch (error) { if (!(error instanceof SyntaxError)) throw error; }
 	const path = resolve(repoRoot, trimmed);
-	if (!existsSync(path)) return workLoopFail("Quality gate JSON is neither valid JSON nor a readable path.", "ulw_loop_json_input_invalid");
-	try { return JSON.parse(await readFile(path, "utf8")); } catch (error) { return workLoopFail(`Quality gate path does not contain valid JSON${error instanceof Error ? `: ${error.message}` : "."}`, "ulw_loop_json_input_invalid"); }
+	if (!existsSync(path)) return workLoopFail("Quality gate JSON is neither valid JSON nor a readable path.", "WORK_LOOP_JSON_INPUT_INVALID");
+	try { return JSON.parse(await readFile(path, "utf8")); } catch (error) { return workLoopFail(`Quality gate path does not contain valid JSON${error instanceof Error ? `: ${error.message}` : "."}`, "WORK_LOOP_JSON_INPUT_INVALID"); }
 }
 
 function makeAggregateCompletion(now: string, evidence: string, hostGoal: unknown): WorkLoopAggregateCompletion {
@@ -124,7 +125,6 @@ export async function checkpointWorkLoop(repoRoot: string, args: CheckpointWorkL
 	return withWorkLoopMutationLock(repoRoot, scope, async () => {
 		const plan = await readWorkLoopPlan(repoRoot, scope);
 		const goal = findGoal(plan, args.goalId);
-		if (args.status === "complete") requireAllCriteriaPass(goal);
 		const evidence = nonEmptyEvidence(args.evidence);
 		const now = iso();
 		let aggregateCompletion: WorkLoopAggregateCompletion | undefined;
@@ -133,6 +133,9 @@ export async function checkpointWorkLoop(repoRoot: string, args: CheckpointWorkL
 		if (args.status === "complete") {
 			const aggregate = hostGoalMode(plan) === "aggregate";
 			const final = isFinalRunCompletionCandidate(plan, goal);
+			if (final) { requireAllCriteriaPass(goal); requireAllPlanCriteriaPass(plan); }
+			else if (aggregate) requireEssentialCriteriaPass(goal);
+			else requireAllCriteriaPass(goal);
 			const snapshot = await readHostGoalSnapshotInput(args.hostGoalJson, repoRoot);
 			const reconciliation = reconcileHostGoalSnapshot(snapshot, { expectedObjective: expectedAsterlineObjective(plan, goal), ...(aggregate ? { acceptedObjectives: compatibleAsterlineObjectives(plan) } : {}), allowedStatuses: aggregate ? (final ? ["complete"] : ["active"]) : ["complete"], requireSnapshot: true, requireComplete: !aggregate || final });
 			hostGoal = reconciliation.snapshot.raw;
@@ -142,11 +145,14 @@ export async function checkpointWorkLoop(repoRoot: string, args: CheckpointWorkL
 				const completedTaskScoped = mismatchedTaskObjective && snapshot.status === "complete" && await canReconcileCompletedTaskScopedAggregateSnapshot(repoRoot, plan, goal, objective, evidence, scope);
 				const activeFinalTaskScoped = mismatchedTaskObjective && snapshot.status === "active" && await canReconcileActiveFinalTaskScopedAggregateSnapshot(repoRoot, plan, goal, objective, evidence, scope);
 				const taskScoped = completedTaskScoped || activeFinalTaskScoped;
-				if (!taskScoped) throw new WorkLoopError(`${formatHostGoalReconciliation(reconciliation)}${aggregate && snapshot?.status === "complete" && objective !== undefined ? buildTaskScopedAggregateReconciliationHint(goal, final) : ""}`, "ulw_loop_asterline_snapshot_mismatch");
+				if (!taskScoped) throw new WorkLoopError(`${formatHostGoalReconciliation(reconciliation)}${aggregate && snapshot?.status === "complete" && objective !== undefined ? buildTaskScopedAggregateReconciliationHint(goal, final) : ""}`, "WORK_LOOP_ASTERLINE_SNAPSHOT_MISMATCH");
 				aggregateCompletion = makeAggregateCompletion(now, evidence, hostGoal);
 			}
 			if (final) aggregateCompletion = makeAggregateCompletion(now, evidence, hostGoal);
-			if (final || aggregateCompletion !== undefined) qualityGate = validateQualityGate(await readJsonInput(args.qualityGateJson, repoRoot));
+			if (final || aggregateCompletion !== undefined) {
+				const gateOptions = plan.evidenceLayoutVersion === 2 ? { repoRoot, fs: { existsSync, statSync }, currentAttemptDir: workLoopAttemptEvidenceDir(goal.id, goal.attempt, scope) } : undefined;
+				qualityGate = validateQualityGate(await readJsonInput(args.qualityGateJson, repoRoot), gateOptions);
+			}
 			goal.status = "complete";
 			goal.completedAt = now;
 			goal.evidence = evidence;

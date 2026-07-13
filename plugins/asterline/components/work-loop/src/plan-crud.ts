@@ -1,9 +1,10 @@
 // biome-ignore-all format: keep this port under the mandated pure LOC budget.
 import { existsSync } from "node:fs";
-import { mkdir, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
+import { INSTALLED_WORK_LOOP_COMMAND } from "./constants.js";
 
 import { aggregateAsterlineObjectiveForScope, isWorkLoopDone } from "./goal-status.js";
-import { type WorkLoopScope, workLoopBriefPath, workLoopBriefRelativePath, workLoopDir, workLoopGoalsPath, workLoopGoalsRelativePath, workLoopLedgerPath, workLoopLedgerRelativePath } from "./paths.js";
+import { ensureWorkLoopDir, type WorkLoopScope, workLoopBriefPath, workLoopBriefRelativePath, workLoopGoalsPath, workLoopGoalsRelativePath, workLoopLedgerPath, workLoopLedgerRelativePath } from "./paths.js";
 import { appendLedger, readWorkLoopPlan, withWorkLoopMutationLock, writePlan } from "./plan-io.js";
 import type { WorkLoopHostGoalMode, WorkLoopItem, WorkLoopPlan, WorkLoopSuccessCriterion } from "./types.js";
 import { iso, WorkLoopError } from "./types.js";
@@ -20,11 +21,11 @@ function truncateObjective(objective: string): string { return objective.length 
 export function seedDefaultSuccessCriteria(goalIndex: number, objective: string): WorkLoopSuccessCriterion[] {
 	const subject = truncateObjective(normalizeObjective(objective) || `Goal ${goalIndex + 1}`);
 	const rows = [
-		["C001", "happy", `happy path for: ${subject}`, `Replace via revise_criterion with observable happy-path proof for goal ${goalIndex + 1}.`],
-		["C002", "edge", "edge case (boundary/empty/malformed)", `Replace via revise_criterion with boundary or malformed-input proof for: ${subject}.`],
-		["C003", "regression", "regression: adjacent surface still works", `Replace via revise_criterion with regression proof for neighboring behavior after: ${subject}.`],
+		["C001", "happy", `happy path for: ${subject}`, `Replace via revise_criterion with observable happy-path proof for goal ${goalIndex + 1}.`, true],
+		["C002", "edge", "edge case (boundary/empty/malformed)", `Replace via revise_criterion with boundary or malformed-input proof for: ${subject}.`, true],
+		["C003", "regression", "regression: adjacent surface still works", `Replace via revise_criterion with regression proof for neighboring behavior after: ${subject}.`, false],
 	] as const;
-	return rows.map(([id, userModel, scenario, expectedEvidence]) => ({ id, scenario, userModel, expectedEvidence, capturedEvidence: null, status: "pending" }));
+	return rows.map(([id, userModel, scenario, expectedEvidence, essential]) => ({ id, scenario, userModel, expectedEvidence, essential, capturedEvidence: null, status: "pending" }));
 }
 
 export function deriveGoalCandidates(brief: string): Array<{ title: string; objective: string }> {
@@ -62,9 +63,9 @@ export async function createWorkLoopPlan(repoRoot: string, args: { brief: string
 		}
 		const now = iso();
 		const goals = deriveGoalCandidates(args.brief).map((goal, index) => makeGoal(goal.title, goal.objective, index, now));
-		const plan: WorkLoopPlan = { version: 1, createdAt: now, updatedAt: now, briefPath: workLoopBriefRelativePath(scope), goalsPath: workLoopGoalsRelativePath(scope), ledgerPath: workLoopLedgerRelativePath(scope), hostGoalMode: args.hostGoalMode ?? "aggregate", goals };
+		const plan: WorkLoopPlan = { version: 1, evidenceLayoutVersion: 2, createdAt: now, updatedAt: now, briefPath: workLoopBriefRelativePath(scope), goalsPath: workLoopGoalsRelativePath(scope), ledgerPath: workLoopLedgerRelativePath(scope), hostGoalMode: args.hostGoalMode ?? "aggregate", goals };
 		if (plan.hostGoalMode === "aggregate") plan.asterlineObjective = aggregateAsterlineObjectiveForScope(scope);
-		await mkdir(workLoopDir(repoRoot, scope), { recursive: true });
+		await ensureWorkLoopDir(repoRoot, scope);
 		await writeFile(workLoopBriefPath(repoRoot, scope), args.brief.endsWith("\n") ? args.brief : `${args.brief}\n`, "utf8");
 		await writePlan(repoRoot, plan, scope);
 		await writeFile(workLoopLedgerPath(repoRoot, scope), "", "utf8");
@@ -77,7 +78,7 @@ function completedPlanExistsError(scope?: WorkLoopScope): WorkLoopError {
 	return new WorkLoopError(
 		[
 			`Existing work-loop aggregate is already complete at ${workLoopGoalsRelativePath(scope)}.`,
-			"Start a new run with `asterline work-loop create-goals --session-id <new-id> ...` to isolate fresh state.",
+			`Start a new run with \`${INSTALLED_WORK_LOOP_COMMAND} create-goals --session-id <new-id> ...\` to isolate fresh state.`,
 			"Use --force only when you intentionally want to overwrite the completed evidence.",
 		].join(" "),
 		"WORK_LOOP_PLAN_EXISTS_COMPLETE",

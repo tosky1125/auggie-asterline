@@ -52,10 +52,12 @@ async function runShell(script: string, env: NodeJS.ProcessEnv): Promise<ShellRe
 }
 
 describe("package.json", () => {
-	it("declares ESM + npm + Node >=20", async () => {
+	it("declares ESM + Node >=20 without dependency installation metadata", async () => {
 		const pkg = await readJson("package.json") as Record<string, unknown>;
 		expect(pkg["type"]).toBe("module");
-		expect(pkg["packageManager"]).toBe("npm@11.12.1");
+		expect(pkg["packageManager"]).toBeUndefined();
+		expect(pkg["dependencies"]).toBeUndefined();
+		expect(pkg["devDependencies"]).toBeUndefined();
 		expect((pkg["engines"] as Record<string, unknown>)["node"]).toBe(">=20.0.0");
 	});
 
@@ -65,7 +67,7 @@ describe("package.json", () => {
 		expect(bin["asterline-work-loop"]).toBe("./dist/cli.js");
 	});
 
-	it("ships the expected files for npm publish", async () => {
+	it("ships the expected release files", async () => {
 		const pkg = await readJson("package.json") as Record<string, unknown>;
 		const files = pkg["files"] as readonly string[];
 		expect(files).toContain("dist");
@@ -82,22 +84,12 @@ describe("component plugin identity", () => {
 });
 
 describe("hooks/hooks.json", () => {
-	it("registers UserPromptSubmit with PLUGIN_ROOT interpolation", async () => {
+	it("registers only supported Auggie Stop without unsupported properties", async () => {
 		const hooks = await readJson("hooks/hooks.json") as Record<string, unknown>;
-		const events = (hooks["hooks"] as Record<string, unknown>)["UserPromptSubmit"] as readonly Record<string, unknown>[];
-		expect(events.length).toBeGreaterThan(0);
-		const command = ((events[0]?.["hooks"] as readonly Record<string, unknown>[])[0]?.["command"]) as string;
-		expect(command).toContain(`$${"{PLUGIN_ROOT}"}`);
-		expect(command).toContain("dist/cli.js");
-		expect(command).toContain("hook user-prompt-submit");
-	});
-
-	it("#given work-loop component is enabled #when hooks are inspected #then create_goal PreToolUse guard is registered", async () => {
-		const text = await readText("hooks/hooks.json");
-
-		expect(text).toContain('"PreToolUse"');
-		expect(text).toContain('"matcher": "^create_goal$"');
-		expect(text).toContain("hook pre-tool-use");
+		const events = hooks["hooks"] as Record<string, unknown>;
+		expect(Object.keys(events)).toEqual(["Stop"]);
+		expect(JSON.stringify(events)).not.toContain("matcher");
+		expect(JSON.stringify(events)).not.toContain("statusMessage");
 	});
 });
 
@@ -125,7 +117,7 @@ describe("skills/work-loop/SKILL.md", () => {
 
 		expect(text).toContain('display_name: "work-loop (asterline)"');
 		expect(text).not.toContain("work-loop / work-loop");
-		expect(text).toContain('short_description: "Goal-like ultrawork loop for systematic decomposition"');
+		expect(text).toContain('short_description: "Durable evidence-bound work loop"');
 		expect(text).toContain("Use $work-loop");
 	});
 
@@ -136,27 +128,26 @@ describe("skills/work-loop/SKILL.md", () => {
 		expect(text).toContain('- "work-loop"');
 	});
 
-	it("#given PATH asterline lacks work-loop #when bootstrap runs #then falls back to cached work-loop CLI", async () => {
+	it("#given the marketplace payload #when bootstrap runs #then it invokes the installed work-loop bundle", async () => {
 		const text = await readText("skills/work-loop/references/full-workflow.md");
 		const bootstrap = bootstrapScriptFrom(text);
 		const root = await mkdtemp(join(tmpdir(), "asterline-work-loop-bootstrap-"));
 		try {
 			const badBin = join(root, "bad-bin");
 			const home = join(root, "home");
-			const asterlineHome = join(home, ".asterline");
-			const cachedCli = join(asterlineHome, "plugins", "cache", "sisyphuslabs", "asterline", "0.1.0", "components", "work-loop", "dist", "cli.js");
+			const installedCli = join(home, ".augment", "plugins", "marketplaces", "auggie-asterline", "plugins", "asterline", "components", "work-loop", "dist", "cli.js");
 			await mkdir(badBin, { recursive: true });
-			await mkdir(dirname(cachedCli), { recursive: true });
+			await mkdir(dirname(installedCli), { recursive: true });
 			await writeFile(join(badBin, "asterline"), "#!/bin/sh\nprintf '%s\\n' \"error: unknown command 'work-loop'\" >&2\nexit 1\n");
 			await chmod(join(badBin, "asterline"), 0o755);
 			await writeFile(
-				cachedCli,
+				installedCli,
 				[
 					"#!/usr/bin/env node",
 					"const args = process.argv.slice(2);",
 					"if (args[0] === 'work-loop' && args[1] === 'help') process.exit(0);",
 					"if (args[0] === 'work-loop' && args[1] === 'status' && args.includes('--json')) {",
-					"  console.log(JSON.stringify({ ok: true, source: 'cached-work-loop' }));",
+					"  console.log(JSON.stringify({ ok: true, source: 'installed-work-loop' }));",
 					"  process.exit(0);",
 					"}",
 					"console.error('unexpected args: ' + args.join(' '));",
@@ -165,15 +156,14 @@ describe("skills/work-loop/SKILL.md", () => {
 				].join("\n"),
 			);
 
-			const result = await runShell(`${bootstrap}\nomo work-loop status --json`, {
+			const result = await runShell(`${bootstrap}\nwork_loop status --json`, {
 				...process.env,
-				ASTERLINE_HOME: asterlineHome,
 				HOME: home,
 				PATH: `${badBin}:${process.env["PATH"] ?? ""}`,
 			});
 
 			expect(result.code).toBe(0);
-			expect(result.stdout).toContain('"source":"cached-work-loop"');
+			expect(result.stdout).toContain('"source":"installed-work-loop"');
 			expect(result.stderr).not.toContain("unknown command");
 		} finally {
 			await rm(root, { recursive: true, force: true });

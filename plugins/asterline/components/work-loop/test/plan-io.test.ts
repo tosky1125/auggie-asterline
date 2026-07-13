@@ -76,7 +76,7 @@ describe("readWorkLoopPlan", () => {
 	it("throws WorkLoopError when goals.json is missing", async () => {
 		// when/then
 		await expect(readWorkLoopPlan(repoRoot)).rejects.toThrow(WorkLoopError);
-		await expect(readWorkLoopPlan(repoRoot)).rejects.toThrow("asterline work-loop create-goals");
+		await expect(readWorkLoopPlan(repoRoot)).rejects.toThrow("components/work-loop/dist/cli.js");
 	});
 
 	it("returns parsed plan when fixture is present", async () => {

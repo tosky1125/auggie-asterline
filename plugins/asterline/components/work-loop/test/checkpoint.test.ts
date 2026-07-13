@@ -71,21 +71,21 @@ function passGoal(id: string, overrides: Partial<WorkLoopItem> = {}): WorkLoopIt
 }
 
 describe("checkpointWorkLoop status=complete criteria gate", () => {
-	it("THROWS ulw_loop_criteria_not_all_pass when any criterion is pending", async () => {
+	it("THROWS WORK_LOOP_CRITERIA_NOT_ALL_PASS when any criterion is pending", async () => {
 		const repo = await repoWith(await samplePlan({ goals: [goal({ successCriteria: [criterion("C001", "pass"), criterion("C002", "pending"), criterion("C003", "pass")] })] }));
-		await expectCode(() => checkpointWorkLoop(repo, { goalId: "G001", status: "complete", evidence: "done" }), "ulw_loop_criteria_not_all_pass");
+		await expectCode(() => checkpointWorkLoop(repo, { goalId: "G001", status: "complete", evidence: "done" }), "WORK_LOOP_CRITERIA_NOT_ALL_PASS");
 	});
 
 	it("THROWS when any criterion is fail or blocked", async () => {
 		for (const status of ["fail", "blocked"] satisfies WorkLoopSuccessCriterion["status"][]) {
 			const repo = await repoWith(plan([goal({ successCriteria: [criterion("C001", "pass"), criterion("C002", status), criterion("C003", "pass")] })]));
-			await expectCode(() => checkpointWorkLoop(repo, { goalId: "G001", status: "complete", evidence: "done" }), "ulw_loop_criteria_not_all_pass");
+			await expectCode(() => checkpointWorkLoop(repo, { goalId: "G001", status: "complete", evidence: "done" }), "WORK_LOOP_CRITERIA_NOT_ALL_PASS");
 		}
 	});
 
 	it("THROWS when criteria list is empty", async () => {
 		const repo = await repoWith(plan([goal({ successCriteria: [] }), goal({ id: "G002", status: "pending" })]));
-		await expectCode(() => checkpointWorkLoop(repo, { goalId: "G001", status: "complete", evidence: "done", hostGoalJson: snapshot("active") }), "ulw_loop_criteria_not_all_pass");
+		await expectCode(() => checkpointWorkLoop(repo, { goalId: "G001", status: "complete", evidence: "done", hostGoalJson: snapshot("active") }), "WORK_LOOP_CRITERIA_NOT_ALL_PASS");
 	});
 
 	it("ACCEPTS complete when ALL criteria pass (with valid snapshot)", async () => {
@@ -104,12 +104,12 @@ describe("checkpointWorkLoop reconciliation (status=complete)", () => {
 
 	it("throws on mismatched objective", async () => {
 		const repo = await repoWith(plan([passGoal("G001"), goal({ id: "G002", status: "pending" })]));
-		await expectCode(() => checkpointWorkLoop(repo, { goalId: "G001", status: "complete", evidence: "work complete and validation passed", hostGoalJson: snapshot("active", "wrong objective") }), "ulw_loop_asterline_snapshot_mismatch");
+		await expectCode(() => checkpointWorkLoop(repo, { goalId: "G001", status: "complete", evidence: "work complete and validation passed", hostGoalJson: snapshot("active", "wrong objective") }), "WORK_LOOP_ASTERLINE_SNAPSHOT_MISMATCH");
 	});
 
 	it("throws on mismatched status (snapshot complete when expected active)", async () => {
 		const repo = await repoWith(plan([passGoal("G001"), goal({ id: "G002", status: "pending" })]));
-		await expectCode(() => checkpointWorkLoop(repo, { goalId: "G001", status: "complete", evidence: "work complete and validation passed", hostGoalJson: snapshot("complete") }), "ulw_loop_asterline_snapshot_mismatch");
+		await expectCode(() => checkpointWorkLoop(repo, { goalId: "G001", status: "complete", evidence: "work complete and validation passed", hostGoalJson: snapshot("complete") }), "WORK_LOOP_ASTERLINE_SNAPSHOT_MISMATCH");
 	});
 });
 

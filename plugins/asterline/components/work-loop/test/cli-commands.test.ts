@@ -1,4 +1,4 @@
-import { mkdtemp, readFile, rm } from "node:fs/promises";
+import { mkdir, mkdtemp, readFile, rm, writeFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -18,10 +18,10 @@ beforeEach(async () => {
 	out = [];
 	err = [];
 	originalAsterlineSessionId = process.env["ASTERLINE_SESSION_ID"];
-	originalAsterlineThreadId = process.env["ASTERLINE_THREAD_ID"];
+	originalAsterlineThreadId = process.env["AUGGIE_SESSION_ID"];
 	originalOmoSessionId = process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
 	delete process.env["ASTERLINE_SESSION_ID"];
-	delete process.env["ASTERLINE_THREAD_ID"];
+	delete process.env["AUGGIE_SESSION_ID"];
 	delete process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
 	vi.spyOn(process, "cwd").mockReturnValue(testDir);
 	vi.spyOn(process.stdout, "write").mockImplementation((chunk: string | Uint8Array): boolean => {
@@ -38,8 +38,8 @@ afterEach(async () => {
 	vi.restoreAllMocks();
 	if (originalAsterlineSessionId === undefined) delete process.env["ASTERLINE_SESSION_ID"];
 	else process.env["ASTERLINE_SESSION_ID"] = originalAsterlineSessionId;
-	if (originalAsterlineThreadId === undefined) delete process.env["ASTERLINE_THREAD_ID"];
-	else process.env["ASTERLINE_THREAD_ID"] = originalAsterlineThreadId;
+	if (originalAsterlineThreadId === undefined) delete process.env["AUGGIE_SESSION_ID"];
+	else process.env["AUGGIE_SESSION_ID"] = originalAsterlineThreadId;
 	if (originalOmoSessionId === undefined) delete process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
 	else process.env["ASTERLINE_WORK_LOOP_SESSION_ID"] = originalOmoSessionId;
 	await rm(testDir, { recursive: true, force: true });
@@ -55,12 +55,16 @@ function stdoutJson(): Record<string, unknown> {
 function asterlineSnapshot(status: "active" | "complete" = "active"): string {
 	return JSON.stringify({ goal: { objective: WORK_LOOP_AGGREGATE_ASTERLINE_OBJECTIVE, status } });
 }
-function qualityGate(): string {
+async function qualityGate(): Promise<string> {
+	const attemptDir = ".asterline/evidence/work-loop/session/G001-finished/a0";
+	await mkdir(join(testDir, attemptDir), { recursive: true });
+	for (const name of ["code.md", "gate.md", "qa.log"]) await writeFile(join(testDir, attemptDir, name), `${name} verified\n`);
 	return JSON.stringify({
-		aiSlopCleaner: { status: "passed", evidence: "no-op" },
-		verification: { status: "passed", commands: ["vitest"], evidence: "green" },
-		codeReview: { recommendation: "APPROVE", architectStatus: "CLEAR", evidence: "small test fixture" },
-		criteriaCoverage: { totalCriteria: 3, passCount: 3, adversarialClassesCovered: ["stale_state"] },
+		codeReview: { by: "judge", recommendation: "APPROVE", codeQualityStatus: "CLEAR", reportPath: `${attemptDir}/code.md`, evidence: "review passed", blockers: [] },
+		manualQa: { by: "operator", status: "passed", evidence: "manual QA passed", surfaceEvidence: [{ id: "S1", criterionRef: "C001", surface: "cli", invocation: "vitest", verdict: "passed", artifactRefs: ["A1"] }], adversarialCases: [{ id: "X1", criterionRef: "C002", scenario: "stale state", expectedBehavior: "reject stale evidence", verdict: "passed", artifactRefs: ["A1"] }], artifactRefs: [{ id: "A1", kind: "cli-transcript", description: "QA transcript", path: `${attemptDir}/qa.log` }] },
+		gateReview: { by: "skeptic", recommendation: "APPROVE", reportPath: `${attemptDir}/gate.md`, evidence: "gate passed", blockers: [] },
+		iteration: { fullRerun: true, status: "passed", rerunCommands: ["vitest"], evidence: "green" },
+		criteriaCoverage: { totalCriteria: 3, passCount: 3, originalIntent: "finish plan", desiredOutcome: "verified completion", userOutcomeReview: "outcome met", adversarialClassesCovered: ["stale_state"] },
 	});
 }
 
@@ -92,7 +96,7 @@ async function passCriterion(goalId: string, criterionId: string): Promise<void>
 describe("workLoopCommand help", () => {
 	it("prints usage when no subcommand", async () => {
 		expect(await workLoopCommand([])).toBe(0);
-		expect(out.join("")).toContain("asterline work-loop");
+		expect(out.join("")).toContain("components/work-loop/dist/cli.js");
 	});
 });
 
@@ -124,7 +128,7 @@ describe("workLoopCommand create-goals", () => {
 				"--host-goal-json",
 				asterlineSnapshot("complete"),
 				"--quality-gate-json",
-				qualityGate(),
+				await qualityGate(),
 			]),
 		).toBe(0);
 		resetOutput();
@@ -158,18 +162,18 @@ describe("workLoopCommand create-goals", () => {
 	});
 
 	it("#given Asterline thread env #when creating goals #then uses the thread as the session scope", async () => {
-		process.env["ASTERLINE_THREAD_ID"] = "thread-123";
+		process.env["AUGGIE_SESSION_ID"] = "session-123";
 
 		expect(await workLoopCommand(["create-goals", "--brief", "- Thread scoped", "--json"])).toBe(0);
 		resetOutput();
 
-		expect(await readFile(join(testDir, ".asterline/work-loop/thread-123/goals.json"), "utf8")).toContain("Thread scoped");
+		expect(await readFile(join(testDir, ".asterline/work-loop/session-123/goals.json"), "utf8")).toContain("Thread scoped");
 		expect(await workLoopCommand(["status", "--json"])).toBe(0);
-		expect(stdoutJson()).toHaveProperty("plan.goalsPath", ".asterline/work-loop/thread-123/goals.json");
+		expect(stdoutJson()).toHaveProperty("plan.goalsPath", ".asterline/work-loop/session-123/goals.json");
 	});
 
 	it("#given Asterline thread env and explicit session id #when creating goals #then the explicit session wins", async () => {
-		process.env["ASTERLINE_THREAD_ID"] = "thread-123";
+		process.env["AUGGIE_SESSION_ID"] = "session-123";
 
 		expect(
 			await workLoopCommand(["create-goals", "--session-id", "manual-456", "--brief", "- Manual scoped", "--json"]),
@@ -385,7 +389,7 @@ describe("workLoopCommand add-goal", () => {
 describe("workLoopCommand unknown", () => {
 	it("returns 1 + prints help on unknown subcommand", async () => {
 		expect(await workLoopCommand(["wat"])).toBe(1);
-		expect(out.join("")).toContain("asterline work-loop");
+		expect(out.join("")).toContain("components/work-loop/dist/cli.js");
 	});
 });
 

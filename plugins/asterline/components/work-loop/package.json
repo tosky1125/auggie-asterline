@@ -1,9 +1,8 @@
 {
 	"name": "@code-yeongyu/asterline-work-loop",
-	"version": "4.10.0",
+	"version": "4.17.1",
 	"description": "Asterline plugin: durable repo-native multi-goal orchestration with embedded success criteria and observable evidence audit.",
 	"type": "module",
-	"packageManager": "npm@11.12.1",
 	"license": "MIT",
 	"homepage": "https://github.com/code-yeongyu/asterline-work-loop",
 	"repository": {
@@ -35,19 +34,9 @@
 		"CHANGELOG.md"
 	],
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json",
-		"test": "vitest --run",
-		"test:watch": "vitest",
-		"typecheck": "tsc --noEmit",
-		"lint": "biome check .",
-		"lint:fix": "biome check --write .",
-		"check": "tsc --noEmit && biome check . && npm run build"
-	},
-	"devDependencies": {
-		"@biomejs/biome": "2.4.16",
-		"@types/node": "^25.9.3",
-		"typescript": "^6.0.3",
-		"vitest": "^4.1.8"
+		"build": "node runtime/build-work-loop.mjs",
+		"test": "node --test ../../test/v4171-work-loop.test.mjs",
+		"check": "node runtime/build-work-loop.mjs && node --test ../../test/v4171-work-loop.test.mjs"
 	},
 	"engines": {
 		"node": ">=20.0.0"

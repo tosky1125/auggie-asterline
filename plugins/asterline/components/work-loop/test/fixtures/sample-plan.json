@@ -79,8 +79,8 @@
           "id": "C001",
           "scenario": "all int tests green",
           "userModel": "happy",
-          "expectedEvidence": "npm run test:integration exit 0",
-          "capturedEvidence": "npm run test:integration exit 0, 12/12 tests",
+          "expectedEvidence": "node --test test/integration exit 0",
+          "capturedEvidence": "node --test test/integration exit 0, 12/12 tests",
           "status": "pass",
           "capturedAt": "2026-05-23T00:30:00.000Z"
         },
