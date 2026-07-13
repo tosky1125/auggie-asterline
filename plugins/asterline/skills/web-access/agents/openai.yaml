@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asterline web-access"
+  short_description: "Escalate blocked web access without runtime installers"
+  default_prompt: "Use $web-access to route this blocked or interactive web task through the cheapest available Auggie-compatible tier."
