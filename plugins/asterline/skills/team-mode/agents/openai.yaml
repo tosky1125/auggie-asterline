@@ -1,0 +1,4 @@
+interface:
+  display_name: "Auggie Parallel Team Mode"
+  short_description: "Split bounded work across one-shot Auggie workers"
+  default_prompt: "Use $team-mode to split this task into independent one-shot Auggie workers."
