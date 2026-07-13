@@ -1,0 +1,7 @@
+{
+	"name": "asterline-rule-sync",
+	"version": "4.17.1",
+	"description": "Auggie rule injection using the Asterline v4.17.1 runtime.",
+	"hooks": "./hooks/hooks.json",
+	"skills": "./skills/"
+}

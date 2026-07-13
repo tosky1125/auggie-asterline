@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Standalone rule discovery/matching/injection engine for SessionStart, UserPromptSubmit, PostToolUse, and PostCompact. It is separate from the parent `plugins/asterline/rules/*.md` native Auggie policy surface.
+Standalone rule discovery/matching/injection engine for Auggie SessionStart and PostToolUse. It is separate from the parent `plugins/asterline/rules/*.md` native Auggie policy surface.
 
 ## ARCHITECTURE
 
@@ -10,7 +10,7 @@ Standalone rule discovery/matching/injection engine for SessionStart, UserPrompt
 - `src/static-injection.ts`, `persistent-cache.ts`: budgets, transcript dedup, locks, compaction recovery.
 - `src/rules/`: deterministic discovery → parse/frontmatter → match/order → truncate/format.
 - `createRulesEngine`: dependency-injected core boundary.
-- `dist/`: tracked one-to-one JS/declaration output consumed by the marketplace.
+- `dist/cli.js`: tracked self-contained F3 bundle consumed by the marketplace.
 
 ## LOCAL CONTRACTS
 
@@ -22,9 +22,9 @@ Standalone rule discovery/matching/injection engine for SessionStart, UserPrompt
 
 ## SOURCE / DIST HAZARD
 
-`src/rules/matcher.ts` imports bare `picomatch`, while committed marketplace dist points directly into `../../../../vendor/picomatch`. The normal tsc build does not reproduce that rewrite and may overwrite the packaged-safe import. Fix/document the post-build transformation before treating `npm run check` as a reproducible package build.
+`src/rules/matcher.ts` imports bare `picomatch`; `scripts/build.mjs` must declare the exact source alias and the F3 bundler must inline it. Runtime bare imports or vendor paths are release blockers.
 
-Component-local hooks use standalone `${PLUGIN_ROOT}` commands and upstream matchers. Parent aggregate hooks use wrappers and Auggie matchers. Verify both targets deliberately.
+Component-local hooks use standalone `${PLUGIN_ROOT}` commands. Auggie 0.32 ignores `matcher`, so tool filtering belongs at the hook-bridge boundary.
 
 ## VALIDATION
 
@@ -33,7 +33,7 @@ npm run typecheck
 npm run lint
 ```
 
-The Vitest suite owns hook payload fixtures for all four events, but one process test invokes the build and rewrites dist. Run tests in a reviewable worktree, then regenerate dist, reapply the audited picomatch vendor-import transform, and confirm that only intended generated changes remain before the inherited plugin packaging gate.
+The component suite retains upstream engine characterization, while `plugins/asterline/test/v4171-rules-runtime.test.mjs` owns actual Auggie payload and dist behavior. Rebuild before runtime tests and confirm the emitted bundle passes both auditors.
 
 ## ANTI-PATTERNS
 

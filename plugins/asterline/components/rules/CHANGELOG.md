@@ -1,14 +1,15 @@
 # Changelog
 
-## Unreleased
+## 4.17.1
 
-- Restrict the default `PostToolUse` hook matcher to Asterline's canonical `apply_patch` tool name.
+- Adapt SessionStart and PostToolUse to the Auggie hook-bridge payload contract without unsupported manifest matchers.
+- Emit one deterministic self-contained runtime bundle and remove the obsolete multi-file benchmark entrypoint.
 - Add opt-in `NODE_DEBUG=asterline-rules` phase timing logs for `PostToolUse` debugging.
 - Harden dynamic hook coverage for additional-context JSON output, disabled/static modes, failed tool responses, and duplicate suppression.
 - Remove redundant apply_patch path scanning and stale tracked-tool constants.
 - Use portable Asterline hook interpolation and add package smoke coverage for hook entrypoints.
 - Cap recursive rule directory scans and run CI on Windows in addition to Ubuntu and macOS.
-- Replace the external glob matcher dependency with an internal matcher so clean Asterline plugin installs run without `node_modules`.
+- Inline the exact glob matcher into the committed runtime bundle.
 
 ## 0.1.0 - 2026-05-15
 

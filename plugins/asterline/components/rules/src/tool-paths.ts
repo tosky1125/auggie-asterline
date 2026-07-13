@@ -1,5 +1,5 @@
 import { existsSync, statSync } from "node:fs";
-import { isAbsolute, resolve } from "node:path";
+import { isAbsolute, relative, resolve } from "node:path";
 
 export interface AsterlinePostToolUseLike {
 	tool_name: string;
@@ -9,6 +9,8 @@ export interface AsterlinePostToolUseLike {
 
 const COMMAND_TOOL_NAMES = new Set(["bash", "shell_command", "exec_command"]);
 const TRACKED_TOOL_NAMES = new Set([
+	"save-file",
+	"str-replace-editor",
 	"read",
 	"read_file",
 	"mcp__filesystem__read_file",
@@ -67,7 +69,7 @@ function addPatchPayloadPaths(paths: Set<string>, input: Record<string, unknown>
 
 function addPatchHeaderPaths(paths: Set<string>, patch: string, cwd: string): void {
 	for (const line of patch.split("\n")) {
-		for (const prefix of ["*** Add File: ", "*** Update File: ", "*** Move to: "]) {
+		for (const prefix of ["*** Add File: ", "*** Update File: ", "*** Delete File: ", "*** Move to: "]) {
 			if (line.startsWith(prefix)) {
 				addPath(paths, line.slice(prefix.length).trim(), cwd, false);
 			}
@@ -113,10 +115,16 @@ function addPath(paths: Set<string>, value: unknown, cwd: string, mustExist: boo
 	}
 
 	const path = resolvePath(cwd, value);
+	if (!isSameOrChildPath(cwd, path)) return;
 	if (mustExist && !isExistingFile(path)) {
 		return;
 	}
 	paths.add(path);
+}
+
+function isSameOrChildPath(root: string, candidate: string): boolean {
+	const path = relative(resolve(root), resolve(candidate));
+	return path === "" || (!path.startsWith("..") && !isAbsolute(path));
 }
 
 function resolvePath(cwd: string, filePath: string): string {

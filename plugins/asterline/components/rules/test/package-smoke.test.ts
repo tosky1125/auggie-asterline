@@ -3,7 +3,6 @@ import { describe, expect, it } from "vitest";
 
 type PackageJson = {
 	readonly type: string;
-	readonly packageManager: string;
 	readonly bin: Record<string, string>;
 	readonly files: readonly string[];
 	readonly dependencies?: Record<string, unknown>;
@@ -17,10 +16,7 @@ type HookCommand = {
 	readonly command: string;
 };
 
-type HookEntry = {
-	readonly matcher?: string;
-	readonly hooks: readonly HookCommand[];
-};
+type HookEntry = { readonly hooks: readonly HookCommand[] };
 
 type HooksJson = {
 	readonly hooks: Record<string, readonly HookEntry[]>;
@@ -58,16 +54,12 @@ describe("plugin package metadata", () => {
 		const pluginRoot = ["$", "{PLUGIN_ROOT}"].join("");
 		const commands = [
 			hookConfig["SessionStart"]?.[0]?.hooks[0]?.command,
-			hookConfig["UserPromptSubmit"]?.[0]?.hooks[0]?.command,
 			hookConfig["PostToolUse"]?.[0]?.hooks[0]?.command,
-			hookConfig["PostCompact"]?.[0]?.hooks[0]?.command,
 		];
-		const postToolUseMatcher = hookConfig["PostToolUse"]?.[0]?.matcher ?? "";
 
 		// then
 		expect(packageJson.type).toBe("module");
-		expect(packageJson.packageManager).toBe("npm@11.12.1");
-		expect(packageJson.dependencies ?? {}).toEqual({ picomatch: "^4.0.3" });
+		expect(packageJson.dependencies).toBeUndefined();
 		expect(packageJson.bin["asterline-rules"]).toBe("./dist/cli.js");
 		expect(packageJson.files).toContain("bundled-rules");
 		expect(bundledRules).toContain("windows-git-bash.md");
@@ -75,35 +67,9 @@ describe("plugin package metadata", () => {
 		expect(cliSource.startsWith("#!/usr/bin/env node")).toBe(true);
 		expect(commands).toEqual([
 			`node "${pluginRoot}/dist/cli.js" hook session-start`,
-			`node "${pluginRoot}/dist/cli.js" hook user-prompt-submit`,
 			`node "${pluginRoot}/dist/cli.js" hook post-tool-use`,
-			`node "${pluginRoot}/dist/cli.js" hook post-compact`,
 		]);
-		expect(postToolUseMatcher).toBe("^apply_patch$");
-		const postToolUseMatcherRegex = new RegExp(postToolUseMatcher);
-		expect(postToolUseMatcherRegex.test("apply_patch")).toBe(true);
-		expect(
-			[
-				"read",
-				"Read",
-				"read_file",
-				"mcp__filesystem__read_file",
-				"mcp__filesystem__read_multiple_files",
-				"mcp__filesystem__write_file",
-				"mcp__filesystem__edit_file",
-				"write",
-				"Write",
-				"edit",
-				"Edit",
-				"multi_edit",
-				"MultiEdit",
-				"multiedit",
-				"exec_command",
-				"shell_command",
-				"bash",
-				"Bash",
-			].some((toolName) => postToolUseMatcherRegex.test(toolName)),
-		).toBe(false);
+		expect(JSON.stringify(hooksJson)).not.toMatch(/matcher|statusMessage/);
 	});
 });
 
@@ -112,7 +78,6 @@ function isPackageJson(value: unknown): value is PackageJson {
 	const dependencies = value["dependencies"];
 	return (
 		value["type"] === "module" &&
-		value["packageManager"] === "npm@11.12.1" &&
 		isStringRecord(value["bin"]) &&
 		isStringArray(value["files"]) &&
 		(dependencies === undefined || isRecord(dependencies))

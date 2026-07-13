@@ -6,46 +6,18 @@
 					{
 						"type": "command",
 						"command": "node \"${PLUGIN_ROOT}/dist/cli.js\" hook session-start",
-						"timeout": 10,
-						"statusMessage": "Asterline(4.10.0): Loading Project Rules"
-					}
-				]
-			}
-		],
-		"UserPromptSubmit": [
-			{
-				"hooks": [
-					{
-						"type": "command",
-						"command": "node \"${PLUGIN_ROOT}/dist/cli.js\" hook user-prompt-submit",
-						"timeout": 10,
-						"statusMessage": "Asterline(4.10.0): Loading Project Rules"
+						"timeout": 10
 					}
 				]
 			}
 		],
 		"PostToolUse": [
 			{
-				"matcher": "^apply_patch$",
 				"hooks": [
 					{
 						"type": "command",
 						"command": "node \"${PLUGIN_ROOT}/dist/cli.js\" hook post-tool-use",
-						"timeout": 10,
-						"statusMessage": "Asterline(4.10.0): Matching Project Rules"
-					}
-				]
-			}
-		],
-		"PostCompact": [
-			{
-				"matcher": "manual|auto",
-				"hooks": [
-					{
-						"type": "command",
-						"command": "node \"${PLUGIN_ROOT}/dist/cli.js\" hook post-compact",
-						"timeout": 10,
-						"statusMessage": "Asterline(4.10.0): Resetting Project Rule Cache"
+						"timeout": 10
 					}
 				]
 			}

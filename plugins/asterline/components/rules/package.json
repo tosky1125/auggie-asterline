@@ -1,9 +1,8 @@
 {
 	"name": "@code-yeongyu/asterline-rules",
-	"version": "4.10.0",
+	"version": "4.17.1",
 	"description": "Asterline plugin that injects project rule files into model context through lifecycle hooks.",
 	"type": "module",
-	"packageManager": "npm@11.12.1",
 	"license": "MIT",
 	"homepage": "https://github.com/code-yeongyu/asterline-rules",
 	"repository": {
@@ -34,20 +33,17 @@
 		"LICENSE",
 		"NOTICE",
 		"README.md",
-		"CHANGELOG.md"
+		"CHANGELOG.md",
+		"UPSTREAM-PROVENANCE.json"
 	],
 	"scripts": {
-		"build": "tsc -p tsconfig.build.json",
+		"build": "node scripts/build.mjs",
 		"test": "vitest --run",
 		"test:watch": "vitest",
-		"bench": "npm run build --silent && node scripts/bench-asterline-rules.mjs",
 		"typecheck": "tsc --noEmit",
 		"lint": "biome check .",
 		"lint:fix": "biome check --write .",
-		"check": "tsc --noEmit && biome check . && npm run build"
-	},
-	"dependencies": {
-		"picomatch": "^4.0.3"
+		"check": "tsc --noEmit && biome check . && node scripts/build.mjs"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.4.16",

@@ -2,16 +2,15 @@
 
 Asterline plugin that injects local project rule files into model context through lifecycle hooks.
 
-It ports the `pi-rules` rule injector to Asterline:
+It ports the v4.17.1 rule engine to Asterline:
 
-- `SessionStart` and `UserPromptSubmit` load static project instructions once per session.
-- `PostToolUse` watches Asterline `apply_patch` by default, then injects matching file-specific rules as additional context.
-- `PostCompact` clears the per-session injection cache after manual or automatic compaction so relevant rules can be reintroduced into the compacted conversation.
+- `SessionStart` loads static project instructions once per Auggie conversation.
+- `PostToolUse` watches `apply_patch`, `str-replace-editor`, and `save-file`, then injects matching file-specific rules as additional context.
 - Session-level deduplication prevents the same rule from being repeated after it has been injected.
 
 `PostToolUse` output is context-only: it emits `hookSpecificOutput.additionalContext` and does not rewrite tool output.
 
-The runtime has no npm production dependencies, so a clean Asterline marketplace copy can run without a follow-up `npm install`.
+The committed runtime is a self-contained Node.js bundle and never invokes a package manager.
 
 ## Rule Sources
 
@@ -38,31 +37,6 @@ alwaysApply: false
 Prefer strict TypeScript and keep runtime imports ESM-compatible.
 ```
 
-## Install Locally
-
-```bash
-npx asterline-ai install
-```
-
-The local installer builds the plugin and copies a clean cache entry to:
-
-```text
-~/.asterline/plugins/cache/sisyphuslabs/asterline/0.1.0
-```
-
-It also enables:
-
-```toml
-[features]
-plugins = true
-plugin_hooks = true
-multi_agent = true
-child_agents_md = true
-
-[plugins."asterline@sisyphuslabs"]
-enabled = true
-```
-
 ## Configuration
 
 Use `ASTERLINE_RULES_*` environment variables:
@@ -74,6 +48,7 @@ Use `ASTERLINE_RULES_*` environment variables:
 | `ASTERLINE_RULES_MAX_RULE_CHARS` | positive integer | `12000` |
 | `ASTERLINE_RULES_MAX_RESULT_CHARS` | positive integer | `40000` |
 | `ASTERLINE_RULES_ENABLED_SOURCES` | comma-separated source names or `auto` | `auto` (excludes `AGENTS.md`, `~/.claude/rules`, `~/.claude/CLAUDE.md`) |
+| `ASTERLINE_RULES_MODEL` | optional model family for bundled rule variants | `gpt-5.5` ruleset |
 
 For migration from `pi-rules`, equivalent `PI_RULES_*` variables are accepted as fallbacks.
 
@@ -87,7 +62,7 @@ NODE_DEBUG=asterline-rules node dist/cli.js hook post-tool-use < fixture.json
 
 Debug lines go to stderr and hook JSON stays on stdout. The log includes `PostToolUse` phases such as `extract`, `fingerprint`, `load`, `persist`, elapsed `ms`, target counts, pending counts, rule counts, and output bytes. It does not log rule bodies or tool response contents.
 
-The default `PostToolUse` hook matcher is intentionally strict: it matches only Asterline's canonical `apply_patch` hook tool name. Read tools, MCP filesystem tools, shell commands, and Claude-style `Write`/`Edit` aliases are not registered by default.
+The Auggie manifest does not use `matcher`, because Auggie 0.32 ignores that property. The hook-bridge boundary accepts only the three edit tools and fails open for every other tool.
 
 ## Development
 
@@ -99,19 +74,11 @@ npm run typecheck
 npm pack --dry-run
 ```
 
-Performance smoke test:
-
-```bash
-npm run bench
-```
-
-Benchmark timings depend on the local machine. Use the relative counters and repeat-output checks when comparing runs.
-
 Hook smoke test:
 
 ```bash
 npm run build
-printf '%s\n' '{"session_id":"s","transcript_path":null,"cwd":"/path/to/project","hook_event_name":"SessionStart","model":"gpt-5.5","permission_mode":"default","source":"startup"}' \
+printf '%s\n' '{"hook_event_name":"SessionStart","conversation_id":"s","workspace_roots":["/path/to/project"]}' \
   | PLUGIN_DATA=/tmp/asterline-rules-data node dist/cli.js hook session-start
 ```
 

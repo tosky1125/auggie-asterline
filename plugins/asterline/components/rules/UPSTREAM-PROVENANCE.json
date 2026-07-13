@@ -1,0 +1,18 @@
+{
+	"schemaVersion": 1,
+	"upstream": {
+		"repository": "https://github.com/code-yeongyu/oh-my-openagent",
+		"tag": "v4.17.1",
+		"commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a",
+		"componentPath": "packages/omo-codex/plugin/components/rules",
+		"componentTree": "d42886c9e03e0ef4c5274f1d3116286a112ad37c",
+		"enginePath": "packages/rules-engine",
+		"engineTree": "2d16db1c98437dc6524fdc50b734b80e1b8ee8b0"
+	},
+	"adaptations": [
+		"Codex hook envelopes are replaced by the committed Auggie hook-bridge boundary.",
+		"Only Auggie SessionStart and PostToolUse lifecycle events are registered.",
+		"Rule sources and public workflow names use Asterline identities.",
+		"The F3 bundler emits a self-contained Node.js executable without runtime package-manager calls."
+	]
+}

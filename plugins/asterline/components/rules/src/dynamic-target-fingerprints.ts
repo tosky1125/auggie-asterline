@@ -18,6 +18,7 @@ export function fingerprintDynamicTargets(
 	cwd: string,
 	targetPaths: ReadonlyArray<string>,
 	config: PiRulesConfig,
+	model?: string,
 ): DynamicTargetFingerprint[] {
 	const disabledSources = disabledSourcesFromConfig(config);
 	const discoveryCache = createRuleDiscoveryCache();
@@ -34,6 +35,7 @@ export function fingerprintDynamicTargets(
 			targetFile: string;
 			disabledSources?: ReadonlySet<string>;
 			cache: ReturnType<typeof createRuleDiscoveryCache>;
+			model?: string;
 		} = {
 			projectRoot,
 			targetFile: targetPath,
@@ -42,6 +44,7 @@ export function fingerprintDynamicTargets(
 		if (disabledSources !== undefined) {
 			findOptions.disabledSources = disabledSources;
 		}
+		if (model !== undefined) findOptions.model = model;
 		const candidates = findRuleCandidates(findOptions);
 		const candidateFingerprint = sortCandidates(candidates).map(fingerprintCandidate).join("\u0001");
 		const cacheKey = dynamicTargetCacheKey(targetPath);
@@ -52,6 +55,7 @@ export function fingerprintDynamicTargets(
 				[
 					"v1",
 					config.enabledSources === "auto" ? "auto" : config.enabledSources.join(","),
+					model ?? "",
 					projectRoot ?? "",
 					cacheKey,
 					candidateFingerprint,

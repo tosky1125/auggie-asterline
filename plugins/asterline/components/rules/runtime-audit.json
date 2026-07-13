@@ -1,0 +1,4 @@
+{
+	"entries": ["dist/cli.js"],
+	"files": ["dist/cli.js", "hooks/hooks.json"]
+}
