@@ -6,61 +6,16 @@
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/rules-session-start.sh\"'",
-            "timeout": 10000,
-            "statusMessage": "Asterline(4.10.0): Loading Project Rules"
+            "timeout": 10000
           }
         ]
       },
       {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/telemetry-session-start.sh\"'",
-            "timeout": 5000,
-            "statusMessage": "Asterline(4.10.0): Recording Session Telemetry"
-          }
-        ]
-      },
-      {
-        "matcher": "^startup$",
         "hooks": [
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/bootstrap-session-start.sh\"'",
-            "timeout": 30000,
-            "statusMessage": "Asterline(4.10.0): Checking Bootstrap Provisioning"
-          }
-        ]
-      }
-    ],
-    "UserPromptSubmit": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/rules-user-prompt-submit.sh\"'",
-            "timeout": 10000,
-            "statusMessage": "Asterline(4.10.0): Loading Project Rules"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/deep-research-user-prompt-submit.sh\"'",
-            "timeout": 5000,
-            "statusMessage": "Asterline(4.10.0): Checking Deep Research Trigger"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/work-loop-user-prompt-submit.sh\"'",
-            "timeout": 10000,
-            "statusMessage": "Asterline(4.10.0): Checking Work Loop Steering"
+            "timeout": 30000
           }
         ]
       }
@@ -72,8 +27,7 @@
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/git-flow-pre-tool-use.sh\"'",
-            "timeout": 5000,
-            "statusMessage": "Asterline(4.10.0): Recommending Git Bash MCP"
+            "timeout": 5000
           }
         ]
       }
@@ -85,55 +39,17 @@
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/comment-guard-post-tool-use.sh\"'",
-            "timeout": 30000,
-            "statusMessage": "Asterline(4.10.0): Checking Comments"
+            "timeout": 30000
           },
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/code-intel-post-tool-use.sh\"'",
-            "timeout": 60000,
-            "statusMessage": "Asterline(4.10.0): Checking Code Intelligence Diagnostics"
+            "timeout": 60000
           },
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/rule-sync-post-tool-use.sh\"'",
-            "timeout": 10000,
-            "statusMessage": "Asterline(4.10.0): Matching Project Rules"
-          }
-        ]
-      }
-    ],
-    "PostCompact": [
-      {
-        "matcher": "manual|auto",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/git-flow-post-compact.sh\"'",
-            "timeout": 5000,
-            "statusMessage": "Asterline(4.10.0): Resetting Git Bash MCP Reminder"
-          }
-        ]
-      },
-      {
-        "matcher": "manual|auto",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/rule-sync-post-compact.sh\"'",
-            "timeout": 10000,
-            "statusMessage": "Asterline(4.10.0): Resetting Project Rule Cache"
-          }
-        ]
-      },
-      {
-        "matcher": "manual|auto",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/code-intel-post-compact.sh\"'",
-            "timeout": 5000,
-            "statusMessage": "Asterline(4.10.0): Resetting Code Intelligence Diagnostics Cache"
+            "timeout": 10000
           }
         ]
       }
@@ -144,20 +60,7 @@
           {
             "type": "command",
             "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/run-plan-stop.sh\"'",
-            "timeout": 10000,
-            "statusMessage": "Asterline(4.10.0): Checking Run-Plan Continuation"
-          }
-        ]
-      }
-    ],
-    "SubagentStop": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/run-plan-subagent-stop.sh\"'",
-            "timeout": 10000,
-            "statusMessage": "Asterline(4.10.0): Checking Run-Plan Continuation"
+            "timeout": 10000
           }
         ]
       }

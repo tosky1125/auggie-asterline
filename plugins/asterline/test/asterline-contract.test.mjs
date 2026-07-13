@@ -67,8 +67,35 @@ test('Auggie hook manifest uses Asterline wrappers and Auggie tool matchers', ()
   assert.equal(hooks.PostToolUse[0].matcher, '^(str-replace-editor|save-file)$');
   const serialized = JSON.stringify(hooks);
   assert.match(serialized, /hooks\/bin\/comment-guard-post-tool-use\.sh/);
+  assert.doesNotMatch(serialized, /telemetry-session-start/);
   assert.doesNotMatch(serialized, /create_goal|apply_patch|\^Bash\$/);
   assert.doesNotMatch(serialized, /LazyCodex|lazycodex|OMO|omo|Codex|codex/);
+});
+
+test('Auggie hook manifest contains only supported events and properties', () => {
+  const hooks = readJson('hooks/hooks.json').hooks;
+  const supportedEvents = new Set([
+    'PreToolUse',
+    'PostToolUse',
+    'Stop',
+    'SessionStart',
+    'SessionEnd',
+    'Notification',
+    'PromptSubmit',
+  ]);
+  const toolEvents = new Set(['PreToolUse', 'PostToolUse']);
+  const commandProperties = new Set(['type', 'command', 'args', 'timeout']);
+
+  for (const [event, entries] of Object.entries(hooks)) {
+    assert(supportedEvents.has(event), `unsupported Auggie hook event: ${event}`);
+    const entryProperties = new Set(toolEvents.has(event) ? ['matcher', 'hooks', 'metadata'] : ['hooks', 'metadata']);
+    for (const entry of entries) {
+      assert.deepEqual(Object.keys(entry).filter((key) => !entryProperties.has(key)), [], `${event} has unsupported entry properties`);
+      for (const hook of entry.hooks ?? []) {
+        assert.deepEqual(Object.keys(hook).filter((key) => !commandProperties.has(key)), [], `${event} has unsupported command properties`);
+      }
+    }
+  }
 });
 
 test('Runtime package and telemetry identity are Asterline branded', () => {
