@@ -21,10 +21,5 @@
     "build": "node scripts/validate-runtime.mjs",
     "test": "node --test test/*.test.mjs",
     "check": "npm run build && npm test"
-  },
-  "dependencies": {
-    "@code-yeongyu/lsp-daemon": "vendor/lsp-daemon",
-    "@code-yeongyu/lsp-tools-mcp": "vendor/lsp-tools-mcp",
-    "picomatch": "vendor/picomatch"
   }
 }

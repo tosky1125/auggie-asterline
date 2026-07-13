@@ -34,17 +34,15 @@ const requiredRuntime = [
   "components/git-bash/dist/cli.js",
   "components/lsp/dist/cli.js",
   "components/rules/dist/cli.js",
-  "components/telemetry/dist/cli.js",
   "components/start-work-continuation/dist/cli.js",
   "components/ultrawork/dist/cli.js",
   "components/work-loop/dist/cli.js",
   "mcp/ast_grep/dist/cli.js",
   "mcp/git_bash/dist/cli.js",
   "mcp/lsp/dist/cli.js",
-  "vendor/picomatch/package.json",
-  "vendor/posthog-node/package.json",
-  "vendor/lsp-daemon/package.json",
-  "vendor/lsp-tools-mcp/package.json",
+  "release/build-sources.lock.json",
+  "release/build-sources/picomatch/LICENSE",
+  "release/runtime-audit.json",
 ];
 
 function fail(message) {
@@ -230,7 +228,6 @@ const publicRuntimeDirs = [
   "plugins/asterline/components/git-bash/dist",
   "plugins/asterline/components/lsp/dist",
   "plugins/asterline/components/rules/dist",
-  "plugins/asterline/components/telemetry/dist",
   "plugins/asterline/components/start-work-continuation/dist",
   "plugins/asterline/components/ultrawork/dist",
   "plugins/asterline/components/work-loop/dist",

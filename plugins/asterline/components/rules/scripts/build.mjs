@@ -24,6 +24,6 @@ await bundleComponent({
 		schemaVersion: 1,
 		toolchain: { command: bun, version: "1.3.14" },
 		entries: [{ source: "components/rules/src/cli.ts", output: "cli.js", executable: true }],
-		aliases: [{ specifier: "picomatch", source: "vendor/picomatch/index.js" }],
+		aliases: [{ specifier: "picomatch", source: "release/build-sources/picomatch/index.js" }],
 	},
 });

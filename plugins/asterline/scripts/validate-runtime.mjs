@@ -9,7 +9,6 @@ const required = [
   'components/git-bash/dist/cli.js',
   'components/lsp/dist/cli.js',
   'components/rules/dist/cli.js',
-  'components/telemetry/dist/cli.js',
   'components/start-work-continuation/dist/cli.js',
   'components/ultrawork/dist/cli.js',
   'components/work-loop/dist/cli.js',
@@ -18,10 +17,9 @@ const required = [
   'mcp/lsp/dist/cli.js',
   'hooks/hooks.json',
   '.mcp.json',
-  'vendor/picomatch/package.json',
-  'vendor/posthog-node/package.json',
-  'vendor/lsp-daemon/package.json',
-  'vendor/lsp-tools-mcp/package.json',
+  'release/build-sources.lock.json',
+  'release/build-sources/picomatch/LICENSE',
+  'release/runtime-audit.json',
 ];
 const missing = required.filter((path) => !existsSync(join(root, path)));
 const skills = readdirSync(join(root, 'skills')).filter((name) => existsSync(join(root, 'skills', name, 'SKILL.md'))).sort();
@@ -58,7 +56,6 @@ const publicFiles = [
   ...walk('components/git-bash/dist'),
   ...walk('components/lsp/dist'),
   ...walk('components/rules/dist'),
-  ...walk('components/telemetry/dist'),
   ...walk('components/start-work-continuation/dist'),
   ...walk('components/ultrawork/dist'),
   ...walk('components/work-loop/dist'),

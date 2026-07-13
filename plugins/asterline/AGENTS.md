@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Installable Auggie plugin assembled from public prompts, aggregate adapters, committed component builds, MCP bundles, and vendored packages. This directory is a shipped distribution, not an npm workspace.
+Installable Auggie plugin assembled from public prompts, aggregate adapters, committed self-contained component builds, MCP bundles, and build-only locked sources. This directory is a shipped distribution, not an npm workspace.
 
 ## STRUCTURE
 
@@ -16,7 +16,7 @@ asterline/
 ├── rules/                       # Three loaded native policies; no extra Markdown
 ├── skills/                      # Exact twenty-skill public API
 ├── test/                        # Aggregate contract suite
-└── vendor/                      # Immutable dependency snapshots
+└── release/build-sources/       # Immutable build-only source closure
 ```
 
 ## WHERE TO LOOK
@@ -34,7 +34,7 @@ asterline/
 ## DISTRIBUTION CONTRACT
 
 - `npm run build` runs `scripts/validate-runtime.mjs`; it validates existing artifacts and does not compile component source.
-- `dist/` and `vendor/` are runtime inputs. Preserve them in packaging reviews.
+- `dist/` is a runtime input. `release/build-sources/` is rebuild input only and must never be loaded at runtime.
 - Exactly twenty skill directories are public; aliases and extra skill directories fail the contract.
 - The static `.mcp.json` omits `git_bash` on every platform, although its Windows-only bundle remains shipped and load-checked. Bootstrap still expects a Windows registration path; treat this as unresolved adapter drift.
 - Local MCP commands and hook wrappers retain the installed marketplace path. Do not replace it with component-local `${PLUGIN_ROOT}` syntax in aggregate manifests.
@@ -59,5 +59,5 @@ Run component-local build/tests separately after source edits; the plugin check 
 ## ANTI-PATTERNS
 
 - Do not add unscanned public files without extending identity/contract validation.
-- Do not hand-edit a vendored dependency or a dist-only MCP bundle as primary source.
+- Do not hand-edit a locked build source or a dist-only MCP bundle as primary source.
 - Do not assume nested component `npm ci` workflows are runnable; this checkout has no lockfiles.

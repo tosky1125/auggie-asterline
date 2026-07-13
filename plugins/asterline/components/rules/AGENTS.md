@@ -22,7 +22,7 @@ Standalone rule discovery/matching/injection engine for Auggie SessionStart and 
 
 ## SOURCE / DIST HAZARD
 
-`src/rules/matcher.ts` imports bare `picomatch`; `scripts/build.mjs` must declare the exact source alias and the F3 bundler must inline it. Runtime bare imports or vendor paths are release blockers.
+`src/rules/matcher.ts` imports bare `picomatch`; `scripts/build.mjs` aliases the locked build-only source under `release/build-sources/`, and the F3 bundler must inline it. Runtime bare imports or build-source paths are release blockers.
 
 Component-local hooks use standalone `${PLUGIN_ROOT}` commands. Auggie 0.32 ignores `matcher`, so tool filtering belongs at the hook-bridge boundary.
 

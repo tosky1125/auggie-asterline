@@ -42,7 +42,7 @@ const inside = (root, path) => {
   return rel === '' || (!rel.startsWith('..') && !isAbsolute(rel));
 };
 
-const scannable = (path) => /(?:^|\/)(?:[^/]+\.(?:js|mjs|cjs|json|sh|yaml|yml)|[^/.]+)$/.test(path);
+const scannable = (path) => /(?:^|\/)(?:[^/]+\.(?:js|mjs|cjs|ts|mts|cts|json|sh|yaml|yml)|[^/.]+)$/.test(path);
 
 const walk = (root, rel, output, violations) => {
   const path = resolve(root, rel);
@@ -78,13 +78,13 @@ const defaults = (root) => {
   return paths.filter((path) => existsSync(join(root, path)));
 };
 
-const exactDisable = /^\s*(?:(?:export\s+)?const\s+)?CODEGRAPH_TELEMETRY\s*=\s*['"]?0['"]?\s*;?\s*$/;
+const codegraphDisable = /\bCODEGRAPH_TELEMETRY\s*[:=]\s*(['"])0\1/gi;
 const checks = [
   ['PostHog import', /(?:\bfrom\s*|\bimport\s*(?:\(\s*)?|\brequire\s*\(\s*)['"](?:posthog-node|@posthog\/[^'"]+)['"]/i],
   ['PostHog host', /https?:\/\/[^\s'"`]*posthog(?:\.com|\.net)\b/i],
   ['PostHog key', /\bphc_[A-Za-z0-9_-]+\b/],
   ['PostHog event', /\b(?:asterline|codegraph)_(?:daily_active|session|command|tool|event)[A-Za-z0-9_-]*\b/i],
-  ['telemetry code', /\b(?:posthog|telemetry|analytics)(?:[-_.A-Z][A-Za-z0-9_.-]*)?\b/i],
+  ['telemetry code', /(?:^|[^A-Za-z0-9])(?:[A-Za-z0-9]+[-_.])*(?:posthog|telemetry|analytics)(?:[-_.A-Z][A-Za-z0-9_.-]*)?(?:[^A-Za-z0-9]|$)/i],
 ];
 
 const audit = (root, paths) => {
@@ -98,11 +98,10 @@ const audit = (root, paths) => {
     if (/(?:^|[/_.-])telemetry(?:$|[/_.-])/i.test(rel) && !violations.some((item) => item.startsWith(`${rel}:`))) {
       violations.push(`${rel}:1: telemetry path is shipped`);
     }
-    const source = readFileSync(join(root, rel), 'utf8');
+    const source = readFileSync(join(root, rel), 'utf8').replace(codegraphDisable, 'CODEGRAPH_PRIVACY_DISABLED');
     const lines = source.split('\n');
     for (let index = 0; index < lines.length; index += 1) {
       const line = lines[index];
-      if (exactDisable.test(line)) continue;
       const match = checks.find(([, pattern]) => pattern.test(line));
       if (match) violations.push(`${rel}:${index + 1}: ${match[0]} is forbidden`);
     }

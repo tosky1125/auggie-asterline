@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Nine independently shaped runtime packages embedded into one shipped plugin. Source edits are incomplete until the corresponding committed runtime artifact and aggregate adapter are verified.
+Independently shaped runtime packages embedded into one shipped plugin. Source edits are incomplete until the corresponding committed runtime artifact and aggregate adapter are verified.
 
 ## WHERE TO LOOK
 
@@ -14,7 +14,6 @@ Nine independently shaped runtime packages embedded into one shipped plugin. Sou
 | `lsp` | Post-edit diagnostics adapter | tsc + vendored daemon | Vitest/Node |
 | `rules` | Rule discovery/injection/cache | tsc JS + declarations | Vitest |
 | `start-work-continuation` | Stop/SubagentStop continuation | tsc JS + declarations | Vitest |
-| `telemetry` | Silent daily activity event | tsc JS + declarations | Vitest |
 | `ultrawork` | Deep-research trigger/directive | tsc JS + declarations | Vitest |
 | `work-loop` | Durable goal CLI and steering | tsc JS + declarations | Vitest |
 

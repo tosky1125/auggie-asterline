@@ -1,0 +1,29 @@
+{
+  "schemaVersion": 1,
+  "sources": [
+    {
+      "id": "picomatch",
+      "version": "4.0.4",
+      "repository": "https://github.com/micromatch/picomatch.git",
+      "tag": "4.0.4",
+      "commit": "e5474fc1a4d7991870058170407dda8a42be5334",
+      "tree": "28cb0172f351fab0f426075ac7136e23982f3d87",
+      "npmTarball": "https://registry.npmjs.org/picomatch/-/picomatch-4.0.4.tgz",
+      "npmIntegrity": "sha512-QP88BAKvMam/3NxH6vj2o21R6MjxZUAd6nlwAS/pnGvN9IVLocLHxGYIzFhg6fUQ+5th6P4dv4eW9jX3DSIj7A==",
+      "npmShasum": "fd6f5e00a143086e074dffe4c924b8fb293b0589",
+      "license": "MIT",
+      "files": {
+        "LICENSE": "d0cd141b0c322fded5dfad1d4645bb2fedfc05b7321fe1009469638190d59ef9",
+        "README.md": "abaa6b58484e1f252b8d40b949b53602f5f2d7e6990f20d85fe6174ca5cb802f",
+        "index.js": "02ae26406508e28f9ba0865be16cf77f0b33de6c4d4d49c212c4176df1d5625a",
+        "lib/constants.js": "c28f952d2758261fe5428a121add485cc25b03e0193633f649de903dc0e5e222",
+        "lib/parse.js": "ce57c04e04994b83e2ca566170fa192e6fe19d710bea6da00ce2f76d01c0dea4",
+        "lib/picomatch.js": "bbe9824eae8210954eac016e1fa1ac6174093557f30a72e91621d74a6c25e170",
+        "lib/scan.js": "227fcc994a477ea95c5a0435d32783566334c6bd0dcc4a103029735ad8c9c535",
+        "lib/utils.js": "f04604f70cd1a3f6ace80b84766468674ff38b4bb83818d2ef1d81fc6355f935",
+        "package.json": "b8deb10b4e1f7cc2fe8236a70995f4c6b5ec3ecf93f02f2b6427a8600d2c1d20",
+        "posix.js": "5695ff5dfcd5a338a40630bd506056f2950bcb08fe1cc068519cbbfe60add480"
+      }
+    }
+  ]
+}

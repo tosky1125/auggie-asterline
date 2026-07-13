@@ -1,0 +1,13 @@
+{
+  "schemaVersion": 1,
+  "entries": [
+    "components/lsp/dist/cli.js",
+    "components/rules/dist/cli.js",
+    "mcp/lsp/dist/cli.js"
+  ],
+  "files": [
+    "components/lsp/dist/cli.js",
+    "components/rules/dist/cli.js",
+    "mcp/lsp/dist/cli.js"
+  ]
+}

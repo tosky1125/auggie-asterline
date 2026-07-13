@@ -1,5 +1,5 @@
 import { spawnSync } from 'node:child_process';
-import { readFileSync, readdirSync, statSync } from 'node:fs';
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -98,16 +98,13 @@ test('Auggie hook manifest contains only supported events and properties', () =>
   }
 });
 
-test('Runtime package identity is Asterline branded without published telemetry', () => {
+test('Runtime package identity is Asterline branded without a telemetry executable', () => {
   const pkg = readJson('package.json');
   assert.equal(pkg.name, '@asterline/auggie-plugin');
   assert.equal(pkg.version, '4.17.1');
   assert(Object.keys(pkg.bin).every((name) => name.startsWith('asterline-')));
   assert.equal(pkg.bin['asterline-telemetry'], undefined);
-  assert.equal(pkg.dependencies['posthog-node'], undefined);
-  const identity = readFileSync(join(root, 'components/telemetry/dist/product-identity.js'), 'utf8');
-  assert.match(identity, /asterline_daily_active/);
-  assert.match(identity, /CACHE_DIR_NAME = "asterline"/);
+  assert.equal(pkg.dependencies?.['posthog-node'], undefined);
 });
 
 test('MCP and runtime component dist files are present', () => {
@@ -133,13 +130,13 @@ test('Runtime package bin and MCP entrypoints load successfully', () => {
   }
 });
 
-test('Vendored runtime dependencies are present', () => {
+test('Build-only dependency provenance is present', () => {
+  assert.equal(existsSync(join(root, 'vendor')), false);
   for (const path of [
-    'vendor/picomatch/package.json',
-    'vendor/posthog-node/package.json',
-    'vendor/@posthog/core/package.json',
-    'vendor/lsp-daemon/package.json',
-    'vendor/lsp-tools-mcp/package.json'
+    'release/build-sources.lock.json',
+    'release/build-sources/picomatch/LICENSE',
+    'release/build-sources/picomatch/package.json',
+    'release/runtime-audit.json'
   ]) {
     assert.equal(statSync(join(root, path)).isFile(), true);
   }
@@ -159,7 +156,6 @@ test('Public shipped surfaces contain no Codex-era identity tokens', () => {
     ...walk('components/git-bash/dist'),
     ...walk('components/lsp/dist'),
     ...walk('components/rules/dist'),
-    ...walk('components/telemetry/dist'),
     ...walk('components/start-work-continuation/dist'),
     ...walk('components/ultrawork/dist'),
     ...walk('components/work-loop/dist'),

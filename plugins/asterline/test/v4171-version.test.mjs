@@ -51,6 +51,6 @@ test('Given the packaged plugin metadata, when inspected, then telemetry is not 
 
   // Then
   assert.equal(pkg.bin['asterline-telemetry'], undefined);
-  assert.equal(pkg.dependencies['posthog-node'], undefined);
+  assert.equal(pkg.dependencies?.['posthog-node'], undefined);
   assert.doesNotMatch(marketingCopy, /telemetry/i);
 });
