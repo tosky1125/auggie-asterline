@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asterline Deep Work"
+  short_description: "Run an evidence-bound Auggie implementation loop"
+  default_prompt: "Use $deep-work to execute this goal through RED, GREEN, real-surface QA, and cleanup."
