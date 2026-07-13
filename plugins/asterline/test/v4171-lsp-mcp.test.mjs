@@ -55,14 +55,30 @@ const filesBelow = (root) => {
   return files;
 };
 
+const processExists = (pid) => {
+  try {
+    process.kill(pid, 0);
+    return true;
+  } catch (error) {
+    if (error?.code === 'ESRCH') return false;
+    throw error;
+  }
+};
+
 const stopDaemon = async (daemonRoot) => {
   const pidFile = filesBelow(daemonRoot).find((path) => path.endsWith('daemon.pid'));
   if (pidFile === undefined) return;
   const pid = Number.parseInt(readFileSync(pidFile, 'utf8'), 10);
-  if (Number.isSafeInteger(pid)) process.kill(pid, 'SIGTERM');
-  for (let attempt = 0; attempt < 100 && existsSync(pidFile); attempt += 1) {
+  if (!Number.isSafeInteger(pid)) return;
+  if (processExists(pid)) process.kill(pid, 'SIGTERM');
+  for (let attempt = 0; attempt < 100 && processExists(pid); attempt += 1) {
     await new Promise((resolve) => setTimeout(resolve, 20));
   }
+  if (processExists(pid)) process.kill(pid, 'SIGKILL');
+  for (let attempt = 0; attempt < 100 && processExists(pid); attempt += 1) {
+    await new Promise((resolve) => setTimeout(resolve, 20));
+  }
+  assert.equal(processExists(pid), false, `LSP daemon ${pid} survived cleanup`);
 };
 
 test('Given the pinned v4.17.1 sources, when inspecting the release recipe, then every LSP package and Asterline substitution is explicit', () => {

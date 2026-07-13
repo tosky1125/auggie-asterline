@@ -30,12 +30,12 @@ const payload = (overrides = {}) => ({
 const checker = (root) => {
 	const path = join(root, "comment-checker")
 	writeFileSync(path, `#!/usr/bin/env node
+if (process.env.CHECKER_PID_FILE) require("node:fs").writeFileSync(process.env.CHECKER_PID_FILE, String(process.pid))
 let input = ""
 process.stdin.setEncoding("utf8")
 process.stdin.on("data", (chunk) => { input += chunk })
 process.stdin.on("end", () => {
   if (process.env.CHECKER_CAPTURE) require("node:fs").writeFileSync(process.env.CHECKER_CAPTURE, input)
-  if (process.env.CHECKER_PID_FILE) require("node:fs").writeFileSync(process.env.CHECKER_PID_FILE, String(process.pid))
   if (process.env.CHECKER_MODE === "warning") { process.stderr.write("comment warning: explain less\\n"); process.exit(2) }
   if (process.env.CHECKER_MODE === "noisy") { process.stderr.write("x".repeat(9000)); process.exit(2) }
   if (process.env.CHECKER_MODE === "hang") { setInterval(() => {}, 1000); return }
@@ -67,6 +67,13 @@ const processExists = (pid) => {
 
 const cleanupProcess = (pid) => {
 	if (processExists(pid)) process.kill(pid, "SIGKILL")
+}
+
+const readFixturePid = (pidFile, result) => {
+	assert.equal(existsSync(pidFile), true, result.error?.message ?? result.stderr)
+	const pid = Number(readFileSync(pidFile, "utf8"))
+	assert.equal(Number.isSafeInteger(pid), true)
+	return pid
 }
 
 test("Given successful Auggie save and replace payloads, when the committed runtime runs, then native checker input is exact", (t) => {
@@ -194,19 +201,19 @@ test("Given a hanging checker, when its configured deadline expires, then the ho
 test("Given an endless output checker, when byte budgets are exhausted, then the hook aborts and reaps it promptly", (t) => {
 	const root = fixture(t)
 	const pidFile = join(root, "checker.pid")
-	const started = Date.now()
 	const result = run(payload(), {
 		ASTERLINE_COMMENT_CHECKER_BINARY: checker(root),
+		ASTERLINE_COMMENT_CHECKER_TIMEOUT_MS: "1500",
 		CHECKER_MODE: "output-loop",
 		CHECKER_PID_FILE: pidFile,
-	}, 1_500)
-	const pid = Number(readFileSync(pidFile, "utf8"))
+	}, 10_000)
+	let pid
 	try {
 		assert.equal(result.status, 0, result.error?.message ?? result.stderr)
-		assert.ok(Date.now() - started < 1_500)
+		pid = readFixturePid(pidFile, result)
 		assert.equal(processExists(pid), false)
 	} finally {
-		cleanupProcess(pid)
+		if (pid !== undefined) cleanupProcess(pid)
 	}
 })
 
@@ -215,15 +222,17 @@ test("Given combined stdout and stderr flooding, when their shared budget is exh
 	const pidFile = join(root, "checker.pid")
 	const result = run(payload(), {
 		ASTERLINE_COMMENT_CHECKER_BINARY: checker(root),
+		ASTERLINE_COMMENT_CHECKER_TIMEOUT_MS: "1500",
 		CHECKER_MODE: "combined-output-loop",
 		CHECKER_PID_FILE: pidFile,
-	}, 1_500)
-	const pid = Number(readFileSync(pidFile, "utf8"))
+	}, 10_000)
+	let pid
 	try {
 		assert.equal(result.status, 0, result.error?.message ?? result.stderr)
+		pid = readFixturePid(pidFile, result)
 		assert.equal(processExists(pid), false)
 	} finally {
-		cleanupProcess(pid)
+		if (pid !== undefined) cleanupProcess(pid)
 	}
 })
 

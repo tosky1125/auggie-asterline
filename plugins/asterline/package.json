@@ -18,7 +18,7 @@
   },
   "scripts": {
     "build": "node scripts/validate-runtime.mjs",
-    "test": "node --test test/*.test.mjs",
+    "test": "node --test --test-concurrency=1 test/*.test.mjs",
     "check": "npm run build && npm test"
   }
 }
