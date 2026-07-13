@@ -34,11 +34,13 @@ test('Given the upstream provenance, when inspected, then it pins the 4.17.1 sou
 
   // When
   const expectedCommit = '3d7416bff3e6c80ebf5542b4dd12f5c76298d46d';
+  const expectedCanonicalCommit = 'ed0241d1af225d38de55fdbcf0baa0abc9a1465a';
 
   // Then
-  assert.match(provenance, /bundle at version 4\.17\.1\b/);
-  assert.match(provenance, new RegExp(`Pinned commit: ${expectedCommit}\\b`));
-  assert.doesNotMatch(provenance, /4\.10\.0|245fd8f45e37fe9b412ae57c1fb7cfbd672328b7/);
+  assert.match(provenance, /source repository at version 4\.17\.1\b/);
+  assert.match(provenance, new RegExp(`Generated distribution:[\\s\\S]*${expectedCommit}\\b`));
+  assert.match(provenance, new RegExp(`Canonical source:[\\s\\S]*${expectedCanonicalCommit}\\b`));
+  assert.match(provenance, /ast_grep[\s\S]*v4\.10\.0[\s\S]*245fd8f45e37fe9b412ae57c1fb7cfbd672328b7/);
 });
 
 test('Given the packaged plugin metadata, when inspected, then telemetry is not advertised or executable', () => {
