@@ -1,10 +1,15 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { closeSync, mkdirSync, openSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
-const BASH_TOOL_NAME = "Bash";
-const REMINDER = "On Windows, prefer the ASTERLINE git_bash MCP for shell commands before using built-in exec_command. Use exec_command only when git_bash is unavailable or for non-shell operations.";
+import { dirname, isAbsolute, join, resolve } from "node:path";
+const MAX_INPUT_BYTES = 1024 * 1024;
+const REMINDER = "On Windows, prefer the ASTERLINE git_bash MCP for shell commands before using built-in launch-process. Use launch-process when git_bash is unavailable or for non-shell operations.";
+class HookInputLimitError extends Error {
+}
+class GitBashPathError extends Error {
+}
 export function parsePreToolUsePayload(raw) {
-    if (raw.trim().length === 0)
+    if (raw.trim().length === 0 || Buffer.byteLength(raw) > MAX_INPUT_BYTES)
         return null;
     try {
         const parsed = JSON.parse(raw);
@@ -13,113 +18,78 @@ export function parsePreToolUsePayload(raw) {
     catch (error) {
         if (error instanceof SyntaxError)
             return null;
-        return null;
-    }
-}
-export function parsePostCompactPayload(raw) {
-    if (raw.trim().length === 0)
-        return null;
-    try {
-        const parsed = JSON.parse(raw);
-        return isPostCompactPayload(parsed) ? parsed : null;
-    }
-    catch (error) {
-        if (error instanceof SyntaxError)
-            return null;
-        return null;
+        throw error;
     }
 }
 export function applyGitBashPreToolUseReminder(payload, options = {}) {
-    if (payload.hook_event_name !== "PreToolUse")
-        return "";
-    if (payload.tool_name !== BASH_TOOL_NAME)
-        return "";
     if (!isWindowsHost(options))
         return "";
-    const markerPath = reminderMarkerPath(payload.session_id, options.pluginDataRoot);
-    if (hasReminderMarker(markerPath))
-        return "";
+    const markerPath = reminderMarkerPath(payload.session_id, options);
     mkdirSync(dirname(markerPath), { recursive: true });
-    writeFileSync(markerPath, `${new Date().toISOString()}\n`);
+    if (!claimReminder(markerPath))
+        return "";
     const output = {
-        hookSpecificOutput: {
-            hookEventName: "PreToolUse",
-            additionalContext: REMINDER,
-        },
+        hookSpecificOutput: { hookEventName: "PreToolUse", additionalContext: REMINDER },
     };
     return `${JSON.stringify(output)}\n`;
 }
-export function applyGitBashPostCompactReset(payload, options = {}) {
-    if (payload.hook_event_name !== "PostCompact")
-        return "";
-    rmSync(reminderMarkerPath(payload.session_id, options.pluginDataRoot), { force: true });
-    return "";
-}
-export async function runGitBashHookCli(stdin, stdout, eventName = "pre-tool-use", options = {}) {
+export async function runGitBashHookCli(stdin, stdout, options = {}) {
     try {
-        const raw = await readAll(stdin);
-        const output = eventName === "post-compact" ? postCompactOutput(raw, options) : preToolUseOutput(raw, options);
+        const payload = parsePreToolUsePayload(await readAll(stdin));
+        if (payload === null)
+            return;
+        const output = applyGitBashPreToolUseReminder(payload, options);
         if (output.length > 0)
             stdout.write(output);
     }
     catch (error) {
+        // no-excuse-ok: catch -- hook boundary must fail open for host and filesystem errors.
         if (error instanceof Error)
             return;
-        return;
     }
 }
-function preToolUseOutput(raw, options) {
-    const payload = parsePreToolUsePayload(raw);
-    if (payload === null)
-        return "";
-    return applyGitBashPreToolUseReminder(payload, options);
-}
-function postCompactOutput(raw, options) {
-    const payload = parsePostCompactPayload(raw);
-    if (payload === null)
-        return "";
-    return applyGitBashPostCompactReset(payload, options);
+function claimReminder(path) {
+    try {
+        closeSync(openSync(path, "wx", 0o600));
+        return true;
+    }
+    catch (error) {
+        if (isRecord(error) && error["code"] === "EEXIST")
+            return false;
+        throw error;
+    }
 }
 function isWindowsHost(options) {
-    const platform = options.platform ?? process.platform;
-    if (platform === "win32")
+    if ((options.platform ?? process.platform) === "win32")
         return true;
     const env = options.env ?? process.env;
     return env["OS"] === "Windows_NT" || env["ComSpec"] !== undefined || env["SystemRoot"] !== undefined;
 }
-function hasReminderMarker(path) {
-    return existsSync(path);
+function reminderMarkerPath(sessionId, options) {
+    const root = pluginDataRoot(options);
+    const digest = createHash("sha256").update(sessionId).digest("hex");
+    return join(root, "git-bash-reminder", `${digest}.seen`);
 }
-function reminderMarkerPath(sessionId, pluginDataRoot) {
-    const root = pluginDataRoot ?? process.env["PLUGIN_DATA"] ?? join(homedir(), ".asterline", "asterline-git-bash");
-    return join(root, "git-bash-reminder", `${safePathSegment(sessionId)}.seen`);
-}
-function safePathSegment(value) {
-    return value.replace(/[^A-Za-z0-9._-]/g, "_");
+function pluginDataRoot(options) {
+    const env = options.env ?? process.env;
+    const configured = options.pluginDataRoot?.trim() || env["ASTERLINE_PLUGIN_DATA"]?.trim() || env["PLUGIN_DATA"]?.trim();
+    if (configured !== undefined && configured.length > 0) {
+        if (!isAbsolute(configured))
+            throw new GitBashPathError("plugin data root must be absolute");
+        return resolve(configured);
+    }
+    return join(resolve(env["HOME"]?.trim() || homedir()), ".augment", "asterline", "plugin-data");
 }
 function isPreToolUsePayload(value) {
     if (!isRecord(value))
         return false;
     return (value["hook_event_name"] === "PreToolUse" &&
-        typeof value["cwd"] === "string" &&
-        typeof value["model"] === "string" &&
-        typeof value["permission_mode"] === "string" &&
         typeof value["session_id"] === "string" &&
-        typeof value["tool_name"] === "string" &&
-        typeof value["tool_use_id"] === "string" &&
-        (value["transcript_path"] === null || typeof value["transcript_path"] === "string") &&
-        typeof value["turn_id"] === "string" &&
-        Object.hasOwn(value, "tool_input"));
-}
-function isPostCompactPayload(value) {
-    if (!isRecord(value))
-        return false;
-    return (value["hook_event_name"] === "PostCompact" &&
-        typeof value["session_id"] === "string" &&
-        (value["transcript_path"] === undefined ||
-            value["transcript_path"] === null ||
-            typeof value["transcript_path"] === "string") &&
-        (value["trigger"] === undefined || typeof value["trigger"] === "string"));
+        value["session_id"].length > 0 &&
+        value["tool_name"] === "launch-process" &&
+        isRecord(value["tool_input"]) &&
+        typeof value["tool_input"]["command"] === "string" &&
+        value["tool_input"]["command"].trim().length > 0);
 }
 function isRecord(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
@@ -127,9 +97,16 @@ function isRecord(value) {
 function readAll(stdin) {
     return new Promise((resolve, reject) => {
         let data = "";
+        let accepting = true;
         stdin.setEncoding("utf8");
         stdin.on("data", (chunk) => {
+            if (!accepting)
+                return;
             data += chunk instanceof Buffer ? chunk.toString() : String(chunk);
+            if (Buffer.byteLength(data) > MAX_INPUT_BYTES) {
+                accepting = false;
+                reject(new HookInputLimitError("hook input exceeds byte limit"));
+            }
         });
         stdin.once("error", reject);
         stdin.once("end", () => resolve(data));

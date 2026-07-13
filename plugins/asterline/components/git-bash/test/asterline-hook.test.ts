@@ -1,57 +1,45 @@
 import { afterEach, describe, expect, it } from "bun:test";
-import { mkdtempSync, rmSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { existsSync, mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { isAbsolute, join } from "node:path";
 import { Readable, Writable } from "node:stream";
 
 import {
-	applyGitBashPostCompactReset,
 	applyGitBashPreToolUseReminder,
+	parsePreToolUsePayload,
 	runGitBashHookCli,
-	type PostCompactPayload,
 	type PreToolUsePayload,
 } from "../src/asterline-hook.js";
 
 const temporaryDirectories: string[] = [];
 
-function createTemporaryDirectory(prefix: string): string {
-	const directory = mkdtempSync(join(tmpdir(), prefix));
+function createTemporaryDirectory(): string {
+	const directory = mkdtempSync(join(tmpdir(), "asterline-git-bash-hook-"));
 	temporaryDirectories.push(directory);
 	return directory;
 }
 
 afterEach(() => {
-	for (const directory of temporaryDirectories.splice(0)) {
-		rmSync(directory, { recursive: true, force: true });
-	}
+	for (const directory of temporaryDirectories.splice(0)) rmSync(directory, { recursive: true, force: true });
 });
 
-function preToolPayload(toolName: string, sessionId = "session-1"): PreToolUsePayload {
+function launchPayload(sessionId = "session-1"): PreToolUsePayload {
 	return {
-		cwd: "/repo",
 		hook_event_name: "PreToolUse",
-		model: "gpt-5.5",
-		permission_mode: "default",
 		session_id: sessionId,
-		tool_input: { command: "pwd" },
-		tool_name: toolName,
-		tool_use_id: "call-1",
-		transcript_path: null,
-		turn_id: "turn-1",
-	};
-}
-
-function postCompactPayload(sessionId = "session-1"): PostCompactPayload {
-	return {
-		hook_event_name: "PostCompact",
-		session_id: sessionId,
-		transcript_path: null,
-		trigger: "manual",
+		tool_input: { command: "pwd", cwd: "C:\\repo" },
+		tool_name: "launch-process",
 	};
 }
 
 function windowsEnv(): NodeJS.ProcessEnv {
 	return { OS: "Windows_NT", ComSpec: "C:\\Windows\\System32\\cmd.exe" };
+}
+
+function marker(root: string, sessionId: string): string {
+	const digest = createHash("sha256").update(sessionId).digest("hex");
+	return join(root, "git-bash-reminder", `${digest}.seen`);
 }
 
 function captureStdout(): { readonly stdout: Writable; readonly read: () => string } {
@@ -66,130 +54,75 @@ function captureStdout(): { readonly stdout: Writable; readonly read: () => stri
 }
 
 describe("applyGitBashPreToolUseReminder", () => {
-	it("#given first Windows Bash call #when hook runs #then emits non-blocking git_bash guidance", () => {
-		// given
-		const pluginDataRoot = createTemporaryDirectory("asterline-git-bash-hook-");
-
-		// when
-		const output = applyGitBashPreToolUseReminder(preToolPayload("Bash"), {
+	it("#given first Windows launch-process #when hook runs #then emits Asterline guidance", () => {
+		const output = applyGitBashPreToolUseReminder(launchPayload(), {
 			env: windowsEnv(),
 			platform: "linux",
-			pluginDataRoot,
+			pluginDataRoot: createTemporaryDirectory(),
 		});
-
-		// then
 		const parsed = JSON.parse(output);
-		expect(parsed.hookSpecificOutput).toEqual({
-			hookEventName: "PreToolUse",
-			additionalContext:
-				"On Windows, prefer the ASTERLINE git_bash MCP for shell commands before using built-in exec_command. Use exec_command only when git_bash is unavailable or for non-shell operations.",
-		});
+		expect(parsed.hookSpecificOutput.hookEventName).toBe("PreToolUse");
+		expect(parsed.hookSpecificOutput.additionalContext).toContain("ASTERLINE git_bash MCP");
 	});
 
-	it("#given second Windows Bash call in same session #when hook runs #then it stays silent", () => {
-		// given
-		const pluginDataRoot = createTemporaryDirectory("asterline-git-bash-hook-");
-		const payload = preToolPayload("Bash");
-
-		// when
-		const first = applyGitBashPreToolUseReminder(payload, { env: windowsEnv(), platform: "linux", pluginDataRoot });
-		const second = applyGitBashPreToolUseReminder(payload, { env: windowsEnv(), platform: "linux", pluginDataRoot });
-
-		// then
-		expect(first).toContain("git_bash");
-		expect(second).toBe("");
+	it("#given repeated calls in one session #when hook runs #then exactly one claims the marker", () => {
+		const pluginDataRoot = createTemporaryDirectory();
+		const outputs = Array.from({ length: 8 }, () =>
+			applyGitBashPreToolUseReminder(launchPayload(), { env: windowsEnv(), platform: "linux", pluginDataRoot }),
+		);
+		expect(outputs.filter((output) => output.length > 0)).toHaveLength(1);
 	});
 
-	it("#given non-Windows Bash call #when hook runs #then it stays silent", () => {
-		// given
-		const pluginDataRoot = createTemporaryDirectory("asterline-git-bash-hook-");
-
-		// when
-		const output = applyGitBashPreToolUseReminder(preToolPayload("Bash"), {
+	it("#given non-Windows host #when hook runs #then it stays silent", () => {
+		const output = applyGitBashPreToolUseReminder(launchPayload(), {
 			env: {},
 			platform: "darwin",
-			pluginDataRoot,
+			pluginDataRoot: createTemporaryDirectory(),
 		});
-
-		// then
 		expect(output).toBe("");
 	});
 
-	it("#given non-Bash tool call #when hook runs #then it stays silent", () => {
-		// given
-		const pluginDataRoot = createTemporaryDirectory("asterline-git-bash-hook-");
-
-		// when
-		const output = applyGitBashPreToolUseReminder(preToolPayload("exec_command"), {
-			env: windowsEnv(),
+	it("#given both plugin data variables #when hook runs #then ASTERLINE_PLUGIN_DATA wins", () => {
+		const root = createTemporaryDirectory();
+		const preferred = join(root, "preferred");
+		const legacy = join(root, "legacy");
+		applyGitBashPreToolUseReminder(launchPayload("precedence"), {
+			env: { ...windowsEnv(), ASTERLINE_PLUGIN_DATA: preferred, PLUGIN_DATA: legacy },
 			platform: "linux",
-			pluginDataRoot,
 		});
+		expect(existsSync(marker(preferred, "precedence"))).toBeTrue();
+		expect(existsSync(marker(legacy, "precedence"))).toBeFalse();
+	});
 
-		// then
-		expect(output).toBe("");
+	it("#given no plugin data override #when hook runs #then fallback is absolute under Augment plugin data", () => {
+		const root = createTemporaryDirectory();
+		const home = join(root, "home");
+		const fallback = join(home, ".augment", "asterline", "plugin-data");
+		applyGitBashPreToolUseReminder(launchPayload("fallback"), {
+			env: { ...windowsEnv(), HOME: home },
+			platform: "linux",
+		});
+		expect(isAbsolute(fallback)).toBeTrue();
+		expect(existsSync(marker(fallback, "fallback"))).toBeTrue();
 	});
 });
 
-describe("applyGitBashPostCompactReset", () => {
-	it("#given reminder already emitted #when PostCompact runs #then next Windows Bash call emits reminder again", () => {
-		// given
-		const pluginDataRoot = createTemporaryDirectory("asterline-git-bash-hook-");
-		const payload = preToolPayload("Bash");
-		const first = applyGitBashPreToolUseReminder(payload, { env: windowsEnv(), platform: "linux", pluginDataRoot });
-		const second = applyGitBashPreToolUseReminder(payload, { env: windowsEnv(), platform: "linux", pluginDataRoot });
-
-		// when
-		applyGitBashPostCompactReset(postCompactPayload(), { pluginDataRoot });
-		const afterCompact = applyGitBashPreToolUseReminder(payload, {
-			env: windowsEnv(),
-			platform: "linux",
-			pluginDataRoot,
-		});
-
-		// then
-		expect(first).toContain("git_bash");
-		expect(second).toBe("");
-		expect(afterCompact).toContain("git_bash");
+describe("parsePreToolUsePayload", () => {
+	it("#given Bash alias or malformed input #when parsed #then both fail open", () => {
+		expect(parsePreToolUsePayload("{broken")).toBeNull();
+		expect(parsePreToolUsePayload(JSON.stringify({ ...launchPayload(), tool_name: "Bash" }))).toBeNull();
+		expect(parsePreToolUsePayload(JSON.stringify({ ...launchPayload(), tool_input: {} }))).toBeNull();
 	});
 });
 
 describe("runGitBashHookCli", () => {
-	it("#given Asterline PreToolUse stdin on Windows #when CLI hook runs #then it writes reminder JSON", async () => {
-		// given
-		const pluginDataRoot = createTemporaryDirectory("asterline-git-bash-hook-");
-		const stdin = Readable.from([JSON.stringify(preToolPayload("Bash"))]);
+	it("#given Auggie stdin on Windows #when CLI hook runs #then it writes reminder JSON", async () => {
 		const capture = captureStdout();
-
-		// when
-		await runGitBashHookCli(stdin, capture.stdout, "pre-tool-use", {
+		await runGitBashHookCli(Readable.from([JSON.stringify(launchPayload())]), capture.stdout, {
 			env: windowsEnv(),
 			platform: "linux",
-			pluginDataRoot,
+			pluginDataRoot: createTemporaryDirectory(),
 		});
-
-		// then
 		expect(capture.read()).toContain("git_bash MCP");
-	});
-
-	it("#given PostCompact stdin #when CLI hook runs #then it resets the one-shot reminder", async () => {
-		// given
-		const pluginDataRoot = createTemporaryDirectory("asterline-git-bash-hook-");
-		const payload = preToolPayload("Bash");
-		applyGitBashPreToolUseReminder(payload, { env: windowsEnv(), platform: "linux", pluginDataRoot });
-		const resetStdin = Readable.from([JSON.stringify(postCompactPayload())]);
-		const capture = captureStdout();
-
-		// when
-		await runGitBashHookCli(resetStdin, capture.stdout, "post-compact", { pluginDataRoot });
-		const afterCompact = applyGitBashPreToolUseReminder(payload, {
-			env: windowsEnv(),
-			platform: "linux",
-			pluginDataRoot,
-		});
-
-		// then
-		expect(capture.read()).toBe("");
-		expect(afterCompact).toContain("git_bash");
 	});
 });

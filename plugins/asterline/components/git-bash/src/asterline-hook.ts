@@ -1,31 +1,19 @@
-import { existsSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { closeSync, mkdirSync, openSync } from "node:fs";
 import { homedir } from "node:os";
-import { dirname, join } from "node:path";
+import { dirname, isAbsolute, join, resolve } from "node:path";
 
 export interface PreToolUsePayload {
-	readonly cwd: string;
 	readonly hook_event_name: "PreToolUse";
-	readonly model: string;
-	readonly permission_mode: string;
 	readonly session_id: string;
-	readonly tool_input: unknown;
-	readonly tool_name: string;
-	readonly tool_use_id: string;
-	readonly transcript_path: string | null;
-	readonly turn_id: string;
+	readonly tool_input: Readonly<Record<string, unknown>>;
+	readonly tool_name: "launch-process";
 }
 
 export interface GitBashHookOptions {
 	readonly env?: NodeJS.ProcessEnv;
 	readonly platform?: NodeJS.Platform | string;
 	readonly pluginDataRoot?: string;
-}
-
-export interface PostCompactPayload {
-	readonly hook_event_name: "PostCompact";
-	readonly session_id: string;
-	readonly transcript_path?: string | null;
-	readonly trigger?: string;
 }
 
 interface PreToolUseHookOutput {
@@ -35,131 +23,97 @@ interface PreToolUseHookOutput {
 	};
 }
 
-const BASH_TOOL_NAME = "Bash";
+const MAX_INPUT_BYTES = 1024 * 1024;
 const REMINDER =
-	"On Windows, prefer the ASTERLINE git_bash MCP for shell commands before using built-in exec_command. Use exec_command only when git_bash is unavailable or for non-shell operations.";
+	"On Windows, prefer the ASTERLINE git_bash MCP for shell commands before using built-in launch-process. Use launch-process when git_bash is unavailable or for non-shell operations.";
+
+class HookInputLimitError extends Error {}
+class GitBashPathError extends Error {}
 
 export function parsePreToolUsePayload(raw: string): PreToolUsePayload | null {
-	if (raw.trim().length === 0) return null;
+	if (raw.trim().length === 0 || Buffer.byteLength(raw) > MAX_INPUT_BYTES) return null;
 	try {
 		const parsed: unknown = JSON.parse(raw);
 		return isPreToolUsePayload(parsed) ? parsed : null;
 	} catch (error) {
 		if (error instanceof SyntaxError) return null;
-		return null;
+		throw error;
 	}
 }
 
-export function parsePostCompactPayload(raw: string): PostCompactPayload | null {
-	if (raw.trim().length === 0) return null;
-	try {
-		const parsed: unknown = JSON.parse(raw);
-		return isPostCompactPayload(parsed) ? parsed : null;
-	} catch (error) {
-		if (error instanceof SyntaxError) return null;
-		return null;
-	}
-}
-
-export function applyGitBashPreToolUseReminder(payload: PreToolUsePayload, options: GitBashHookOptions = {}): string {
-	if (payload.hook_event_name !== "PreToolUse") return "";
-	if (payload.tool_name !== BASH_TOOL_NAME) return "";
+export function applyGitBashPreToolUseReminder(
+	payload: PreToolUsePayload,
+	options: GitBashHookOptions = {},
+): string {
 	if (!isWindowsHost(options)) return "";
-
-	const markerPath = reminderMarkerPath(payload.session_id, options.pluginDataRoot);
-	if (hasReminderMarker(markerPath)) return "";
+	const markerPath = reminderMarkerPath(payload.session_id, options);
 	mkdirSync(dirname(markerPath), { recursive: true });
-	writeFileSync(markerPath, `${new Date().toISOString()}\n`);
-
+	if (!claimReminder(markerPath)) return "";
 	const output: PreToolUseHookOutput = {
-		hookSpecificOutput: {
-			hookEventName: "PreToolUse",
-			additionalContext: REMINDER,
-		},
+		hookSpecificOutput: { hookEventName: "PreToolUse", additionalContext: REMINDER },
 	};
 	return `${JSON.stringify(output)}\n`;
-}
-
-export function applyGitBashPostCompactReset(payload: PostCompactPayload, options: GitBashHookOptions = {}): string {
-	if (payload.hook_event_name !== "PostCompact") return "";
-	rmSync(reminderMarkerPath(payload.session_id, options.pluginDataRoot), { force: true });
-	return "";
 }
 
 export async function runGitBashHookCli(
 	stdin: NodeJS.ReadableStream,
 	stdout: NodeJS.WritableStream,
-	eventName: "pre-tool-use" | "post-compact" = "pre-tool-use",
 	options: GitBashHookOptions = {},
 ): Promise<void> {
 	try {
-		const raw = await readAll(stdin);
-		const output =
-			eventName === "post-compact" ? postCompactOutput(raw, options) : preToolUseOutput(raw, options);
+		const payload = parsePreToolUsePayload(await readAll(stdin));
+		if (payload === null) return;
+		const output = applyGitBashPreToolUseReminder(payload, options);
 		if (output.length > 0) stdout.write(output);
 	} catch (error) {
+		// no-excuse-ok: catch -- hook boundary must fail open for host and filesystem errors.
 		if (error instanceof Error) return;
-		return;
 	}
 }
 
-function preToolUseOutput(raw: string, options: GitBashHookOptions): string {
-	const payload = parsePreToolUsePayload(raw);
-	if (payload === null) return "";
-	return applyGitBashPreToolUseReminder(payload, options);
-}
-
-function postCompactOutput(raw: string, options: GitBashHookOptions): string {
-	const payload = parsePostCompactPayload(raw);
-	if (payload === null) return "";
-	return applyGitBashPostCompactReset(payload, options);
+function claimReminder(path: string): boolean {
+	try {
+		closeSync(openSync(path, "wx", 0o600));
+		return true;
+	} catch (error) {
+		if (isRecord(error) && error["code"] === "EEXIST") return false;
+		throw error;
+	}
 }
 
 function isWindowsHost(options: GitBashHookOptions): boolean {
-	const platform = options.platform ?? process.platform;
-	if (platform === "win32") return true;
+	if ((options.platform ?? process.platform) === "win32") return true;
 	const env = options.env ?? process.env;
 	return env["OS"] === "Windows_NT" || env["ComSpec"] !== undefined || env["SystemRoot"] !== undefined;
 }
 
-function hasReminderMarker(path: string): boolean {
-	return existsSync(path);
+function reminderMarkerPath(sessionId: string, options: GitBashHookOptions): string {
+	const root = pluginDataRoot(options);
+	const digest = createHash("sha256").update(sessionId).digest("hex");
+	return join(root, "git-bash-reminder", `${digest}.seen`);
 }
 
-function reminderMarkerPath(sessionId: string, pluginDataRoot?: string): string {
-	const root = pluginDataRoot ?? process.env["PLUGIN_DATA"] ?? join(homedir(), ".asterline", "asterline-git-bash");
-	return join(root, "git-bash-reminder", `${safePathSegment(sessionId)}.seen`);
-}
-
-function safePathSegment(value: string): string {
-	return value.replace(/[^A-Za-z0-9._-]/g, "_");
+function pluginDataRoot(options: GitBashHookOptions): string {
+	const env = options.env ?? process.env;
+	const configured =
+		options.pluginDataRoot?.trim() || env["ASTERLINE_PLUGIN_DATA"]?.trim() || env["PLUGIN_DATA"]?.trim();
+	if (configured !== undefined && configured.length > 0) {
+		if (!isAbsolute(configured)) throw new GitBashPathError("plugin data root must be absolute");
+		return resolve(configured);
+	}
+	return join(resolve(env["HOME"]?.trim() || homedir()), ".augment", "asterline", "plugin-data");
 }
 
 function isPreToolUsePayload(value: unknown): value is PreToolUsePayload {
 	if (!isRecord(value)) return false;
 	return (
 		value["hook_event_name"] === "PreToolUse" &&
-		typeof value["cwd"] === "string" &&
-		typeof value["model"] === "string" &&
-		typeof value["permission_mode"] === "string" &&
 		typeof value["session_id"] === "string" &&
-		typeof value["tool_name"] === "string" &&
-		typeof value["tool_use_id"] === "string" &&
-		(value["transcript_path"] === null || typeof value["transcript_path"] === "string") &&
-		typeof value["turn_id"] === "string" &&
-		Object.hasOwn(value, "tool_input")
-	);
-}
-
-function isPostCompactPayload(value: unknown): value is PostCompactPayload {
-	if (!isRecord(value)) return false;
-	return (
-		value["hook_event_name"] === "PostCompact" &&
-		typeof value["session_id"] === "string" &&
-		(value["transcript_path"] === undefined ||
-			value["transcript_path"] === null ||
-			typeof value["transcript_path"] === "string") &&
-		(value["trigger"] === undefined || typeof value["trigger"] === "string")
+		value["session_id"].length > 0 &&
+		value["tool_name"] === "launch-process" &&
+		isRecord(value["tool_input"]) &&
+		typeof value["tool_input"]["command"] === "string" &&
+		value["tool_input"]["command"].trim().length > 0
 	);
 }
 
@@ -170,9 +124,15 @@ function isRecord(value: unknown): value is Record<string, unknown> {
 function readAll(stdin: NodeJS.ReadableStream): Promise<string> {
 	return new Promise((resolve, reject) => {
 		let data = "";
+		let accepting = true;
 		stdin.setEncoding("utf8");
 		stdin.on("data", (chunk: unknown) => {
+			if (!accepting) return;
 			data += chunk instanceof Buffer ? chunk.toString() : String(chunk);
+			if (Buffer.byteLength(data) > MAX_INPUT_BYTES) {
+				accepting = false;
+				reject(new HookInputLimitError("hook input exceeds byte limit"));
+			}
 		});
 		stdin.once("error", reject);
 		stdin.once("end", () => resolve(data));

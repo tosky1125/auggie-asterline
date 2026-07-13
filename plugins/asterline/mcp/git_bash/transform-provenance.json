@@ -1,0 +1,45 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "repository": "https://github.com/code-yeongyu/oh-my-openagent",
+    "tag": "v4.17.1",
+    "commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a"
+  },
+  "recipeSha256": "5c7b6d6e0359b5f2e4671321446d5ad9edd24d7da9a45c9eb1572944d4fc464e",
+  "transformedFiles": [
+    {
+      "file": "packages/git-bash-mcp/src/cli.ts",
+      "canonicalSha256": "067e790dcee08714a7731b1fc724a59703de1fa4e5ffeafcca5f02692b57b126",
+      "transformedSha256": "2b202104b4a95d8646a5170b61a8deb0f46b79e8f435c94da744dbb7384f4e72"
+    },
+    {
+      "file": "packages/git-bash-mcp/src/mcp.ts",
+      "canonicalSha256": "e9aa2f9413afc8cb2c9313e85e187745ebca616e212e885f04f1e22c52678d5a",
+      "transformedSha256": "7225642615d090c9518eed0d4e68e74711365d889e7b414beaa1da5cc0440edb"
+    },
+    {
+      "file": "packages/git-bash-mcp/src/runner.ts",
+      "canonicalSha256": "ea89d9a4ddf7bd966725d4dbb37cfc7e3e59c98643b3dac31d1a8b503ea43f59",
+      "transformedSha256": "2f462d1e93cdcea3f3425fef2c15c330cc81cff2b75a4606d997f0009293bad3"
+    },
+    {
+      "file": "packages/utils/src/runtime/git-bash.ts",
+      "canonicalSha256": "bf17d3c33df042802ddb5a1c7c3bd24733fef190abb6b870d2319363f7c2f170",
+      "transformedSha256": "be7a5c4bc87d2c05ec07a014d8de261b28176a4980acf34b2c4abe46a29e49f6"
+    }
+  ],
+  "outputFiles": [
+    {
+      "file": "dist/cli.js",
+      "sha256": "817616789f4eb886e9a8c19b50d74cdb9c9c46bdb548658a50d2a0663685048d"
+    },
+    {
+      "file": "dist/index.js",
+      "sha256": "834c8a0977b6dab6dec4bd6c0d733d5004ea9679e8fcf6bbf1e5923134dfec25"
+    },
+    {
+      "file": "dist/package.json",
+      "sha256": "e21a02f50d8b829648993b54abfef70f3e907812cff40cf77c0708329e590c35"
+    }
+  ]
+}

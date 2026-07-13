@@ -1,1 +1,1 @@
-export { applyGitBashPostCompactReset, applyGitBashPreToolUseReminder, parsePostCompactPayload, parsePreToolUsePayload, runGitBashHookCli, type GitBashHookOptions, type PostCompactPayload, type PreToolUsePayload, } from "./asterline-hook.js";
+export { applyGitBashPreToolUseReminder, parsePreToolUsePayload, runGitBashHookCli, type GitBashHookOptions, type PreToolUsePayload, } from "./asterline-hook.js";

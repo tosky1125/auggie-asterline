@@ -1,0 +1,6 @@
+{
+  "name": "@asterline/git-bash-mcp",
+  "version": "4.17.1",
+  "private": true,
+  "type": "module"
+}
