@@ -1,0 +1,15 @@
+{
+	"schemaVersion": 1,
+	"upstream": {
+		"repository": "https://github.com/code-yeongyu/oh-my-openagent",
+		"tag": "v4.17.1",
+		"commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a",
+		"path": "packages/omo-codex/plugin/components/codegraph",
+		"treeOid": "fab3443348af56fd7e0168ceaca00530c777c64d"
+	},
+	"adaptation": {
+		"host": "Auggie CLI 0.32",
+		"preserved": ["stdio MCP bridge", "unavailable MCP facade", "CodeGraph 1.0.1 native runtime"],
+		"removed": ["Codex hooks and config", "runtime package-manager provisioning", "PATH and bundled npm resolution", "daemon mode", "telemetry"]
+	}
+}

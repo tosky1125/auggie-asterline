@@ -1,0 +1,12 @@
+{
+  "entries": [
+    "dist/serve.js"
+  ],
+  "files": [
+    "dist/serve.js",
+    "dist/package.json"
+  ],
+  "paths": [
+    "dist"
+  ]
+}

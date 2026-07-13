@@ -1,0 +1,46 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "repository": "https://github.com/code-yeongyu/oh-my-openagent",
+    "tag": "v4.17.1",
+    "commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a",
+    "sources": [
+      {
+        "path": "packages/omo-codex/plugin/components/codegraph",
+        "treeOid": "fab3443348af56fd7e0168ceaca00530c777c64d"
+      },
+      {
+        "path": "packages/mcp-stdio-core",
+        "treeOid": "a45d3a3459dc68efeaf06413dd9a4c09fc3f1f8d"
+      }
+    ]
+  },
+  "recipeSha256": "a05d0d04c8165cf43dfadccd62740e3190b2c8ad49d328fea3701e61c7ee16c8",
+  "transformedFiles": [
+    {
+      "file": "packages/omo-codex/plugin/components/codegraph/src/mcp-bridge.ts",
+      "canonicalSha256": "4327142f80a2c615379ed3cfd5467174d66f15a88b9a7a1454eca03dc39ff0ff",
+      "transformedSha256": "176d3c37d2525d8fa5d025cbbea690907c399db6255cbd5fd580de3ee8ef0947"
+    },
+    {
+      "file": "packages/omo-codex/plugin/components/codegraph/src/mcp-unavailable.ts",
+      "canonicalSha256": "72f35920d7fe3f93eed44e14303f20e4d7aa82fd8045c81b220e3f7135cbdca1",
+      "transformedSha256": "7255df781de125e36dfada8715c6d0b280be5447a046dba047b71fe5698ff84a"
+    },
+    {
+      "file": "packages/omo-codex/plugin/components/codegraph/src/serve-invocation.ts",
+      "canonicalSha256": "e91b35f51c84e80c629dfd503831af6fc25e4b9781516ee9a155ac0b75722e04",
+      "transformedSha256": "e91b35f51c84e80c629dfd503831af6fc25e4b9781516ee9a155ac0b75722e04"
+    }
+  ],
+  "outputFiles": [
+    {
+      "file": "dist/serve.js",
+      "sha256": "3e9cca5557d7ab78a09d4a6ca42f5df917afdc9eca05a6ae72030969fd97bdc6"
+    },
+    {
+      "file": "dist/package.json",
+      "sha256": "741ed96ee2ddbd91e54f537710b388a5f7ffcaf7119e30f5d344cc323e46da3a"
+    }
+  ]
+}

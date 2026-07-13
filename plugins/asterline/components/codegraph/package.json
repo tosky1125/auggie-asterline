@@ -1,0 +1,10 @@
+{
+	"name": "@asterline/codegraph-mcp",
+	"version": "4.17.1",
+	"private": true,
+	"type": "module",
+	"engines": { "node": ">=20" },
+	"scripts": {
+		"build": "node runtime/build-codegraph.mjs"
+	}
+}

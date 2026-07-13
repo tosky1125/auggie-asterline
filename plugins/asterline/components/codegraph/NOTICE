@@ -1,0 +1,5 @@
+@asterline/codegraph-mcp
+
+Adapted from @sisyphuslabs/codex-codegraph 4.12.1 in LazyCodex 4.17.1.
+The stdio bridge and unavailable-server behavior retain upstream MIT-licensed source.
+CodeGraph 1.0.1 remains a separately provisioned MIT-licensed native component pinned in native/SBOM.json.

@@ -1,0 +1,14 @@
+{
+	"compilerOptions": {
+		"exactOptionalPropertyTypes": true,
+		"module": "NodeNext",
+		"moduleResolution": "NodeNext",
+		"noFallthroughCasesInSwitch": true,
+		"noPropertyAccessFromIndexSignature": true,
+		"noUncheckedIndexedAccess": true,
+		"strict": true,
+		"target": "ES2022",
+		"verbatimModuleSyntax": true
+	},
+	"include": ["src/**/*.ts"]
+}
