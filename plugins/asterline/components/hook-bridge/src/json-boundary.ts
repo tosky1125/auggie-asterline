@@ -6,7 +6,7 @@ export type JsonValue = null | boolean | number | string | JsonObject | readonly
 export type JsonObject = { readonly [key: string]: JsonValue }
 
 export class AuggiePayloadError extends Error {
-	readonly name = "AuggiePayloadError"
+	override readonly name = "AuggiePayloadError"
 
 	constructor(message: string, readonly path = "$") {
 		super(`${path}: ${message}`)

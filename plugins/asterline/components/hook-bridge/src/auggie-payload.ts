@@ -32,6 +32,7 @@ type CommonEvent = {
 	readonly state: ToolExecutionState
 	readonly raw: JsonObject
 }
+type CommonEventBase = Omit<CommonEvent, "affectedPaths">
 
 export type NormalizedToolEvent =
 	| (CommonEvent & {
@@ -186,7 +187,7 @@ export function normalizeAuggieToolEvent(raw: unknown): NormalizedToolEvent {
 	if (typeof isMcpTool !== "boolean") {
 		throw new AuggiePayloadError("expected a boolean", "$.is_mcp_tool")
 	}
-	const common = {
+	const common: CommonEventBase = {
 		phase,
 		conversationId: requiredString(envelope, "conversation_id"),
 		workspaceRoots: stringArray(envelope, "workspace_roots"),
