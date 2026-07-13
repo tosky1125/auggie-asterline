@@ -3,23 +3,12 @@ name: run-plan
 description: "Execute a Prometheus work plan in Auggie with Boulder state, evidence ledger updates, worktree discipline, parallel subagents, and Stop-hook continuation. Use after planning when the user says start work, execute plan, continue plan, resume plan, or asks to run a .asterline/plans plan."
 ---
 
-## Auggie Tool Compatibility
+## Auggie delegation compatibility
 
-This skill may include orchestration examples copied from another harness. In Auggie, do not call unavailable helper tools such as legacy agent calls, `task(...)`, `background_output(...)`, or team helpers literally. Translate those examples to the available Asterline orchestration tools:
+Auggie supports only bounded one-shot parallel decomposition. Inspect the currently visible delegation surface before using it; do not invent tool names. Give each worker a self-contained assignment with disjoint ownership, collect its terminal result through the host surface, and let the parent verify and integrate it.
 
-| Harness example | Asterline-compatible tool to use |
-| --- | --- |
-| `legacy_agent_call(subagent_type="explore", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as an explorer. ...","agent_type":"explorer","fork_context":false})` |
-| `legacy_agent_call(subagent_type="librarian", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as a librarian. ...","agent_type":"librarian","fork_context":false})` |
-| `task(subagent_type="plan", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as a planning agent. ...","agent_type":"plan","fork_context":false})` |
-| `task(subagent_type="oracle", ...)` for final verification | `multi_agent_v1.spawn_agent({"message":"TASK: act as a rigorous reviewer. ...","agent_type":"asterline-work-reviewer","fork_context":false})` |
-| `task(category="...", ...)` for implementation or QA | `multi_agent_v1.spawn_agent({"message":"TASK: act as an implementation or QA worker. ...","fork_context":false})` |
-| `background_output(task_id="...")` | `multi_agent_v1.wait_agent(...)` for mailbox signals |
-| `team_*(...)` | Use available subagents via `multi_agent_v1.spawn_agent`, `multi_agent_v1.send_input`, `multi_agent_v1.wait_agent`, and `multi_agent_v1.close_agent` |
+Persistent teams, rosters, worker messaging, thread creation, resume, and cross-turn worker identity are unavailable. Any foreign-harness orchestration example below is conceptual only: translate it to fresh independent one-shot assignments, or run serially when the work cannot be split safely. This capability boundary overrides every example in this skill.
 
-Role-specific behavior must be described in a self-contained `message`. Use `fork_context: false` to start the child with only the initial prompt (no parent history); use `fork_context: true` only when full parent history is truly required. Include any required conversation context, files, diffs, constraints, and requested skill names directly in the spawned agent's `message`. Asterline exposes these selectable agent roles when the host supports typed subagents: `explorer`, `librarian`, `plan`, `momus`, `metis`, and `asterline-work-reviewer` — pass the matching name as `agent_type` so the child gets that role's model and instructions. On `multi_agent_v2` sessions the same `agent_type` applies (the Asterline installer exposes it) with `fork_turns` instead of `fork_context`. If the spawn tool exposes no `agent_type` parameter, omit it and describe the role inside `message`. If a code block below conflicts with this section, this section wins.
-
-For work likely to exceed one wait cycle, require the child to send `WORKING: <task> - <current phase>` before long passes and `BLOCKED: <reason>` only when progress stops. A `multi_agent_v1.wait_agent` timeout only means no new mailbox update arrived. Treat a running child as alive. Fallback only when the child is completed without the deliverable, ack-only after followup, explicitly `BLOCKED:`, or no longer running.
 
 ## ABSOLUTE RULE: YOU ARE AN ORCHESTRATOR — NEVER THE IMPLEMENTER
 
@@ -27,9 +16,9 @@ For work likely to exceed one wait cycle, require the child to send `WORKING: <t
 
 ## Auggie Subagent Reliability
 
-Every `multi_agent_v1.spawn_agent` message is a self-contained executable assignment: `TASK: <imperative assignment>`, then `DELIVERABLE`, `SCOPE`, and `VERIFY`, with role instructions inside `message`. Use `fork_context: false` unless full history is truly required; paste only the context the child needs.
+Every delegated unit is a self-contained executable assignment: `TASK: <imperative assignment>`, then `DELIVERABLE`, `SCOPE`, and `VERIFY`, with specialty instructions in the assignment. Include only the context the child needs.
 
-Plan and reviewer agents may run for a long time: spawn them in the background, keep doing independent root work, and poll with short `multi_agent_v1.wait_agent` cycles — never a single long blocking wait. A timeout only means no new mailbox update arrived; treat a running child as alive. Require `WORKING: <task> - <current phase>` before long passes and `BLOCKED: <reason>` only when progress stops. Keep the parent visibly alive with active subagent count, names, and latest `WORKING:` phase. Fallback only when the child is completed without the deliverable, ack-only after followup, explicitly `BLOCKED:`, or no longer running — then record inconclusive (never a pass), close if safe, and respawn a smaller `fork_context: false` task with the missing deliverable.
+Launch independent plan and review lanes in parallel and keep doing independent root work. Auggie does not promise child messaging, progress polling, resume, or re-tasking. Integrate only terminal results. An empty, inconclusive, or blocked result is never a pass; retry it once as a smaller fresh assignment.
 
 # run-plan
 
@@ -85,7 +74,7 @@ Write `.asterline/boulder.json` before implementation starts. Prefix session ids
 }
 ```
 
-If `--worktree` is set, verify the path with `git worktree list --porcelain` or create it with `git worktree add <path> <branch-or-HEAD>`, then store the absolute path as `worktree_path`. All edits, commands, tests, and evidence capture must run inside that worktree.
+For PR/branch work, `--worktree` is mandatory before implementation starts. Verify the path with `git worktree list --porcelain` or create it with `git worktree add <path> <branch-or-HEAD>`, then store the absolute path as `worktree_path`. All edits, commands, tests, and evidence capture must run inside that worktree.
 
 ## Phase 3: Execute the next checkbox
 
@@ -94,7 +83,7 @@ If `--worktree` is set, verify the path with `git worktree list --porcelain` or 
 3. Ignore nested checkboxes under acceptance criteria, evidence, and definition-of-done sections.
 4. Classify the checkbox tier and record it in its ledger entry. Default is LIGHT — a narrow change inside existing layers. Take HEAVY only on a fact you can point to: a new module / abstraction / domain model; auth, security, or session; an external integration; a DB schema or migration; concurrency or transaction boundaries; a cross-domain reshape-code; or the plan or user signals care. When unsure, take HEAVY; upgrade and redo skipped gates the moment a HEAVY fact surfaces; never downgrade.
 5. Decompose that checkbox into atomic sub-tasks. Collect every other unchecked checkbox in the same plan wave whose dependencies are met — their lanes execute concurrently.
-6. **DELEGATE EVERYTHING. YOU NEVER IMPLEMENT.** Dispatch ALL independent sub-tasks across those checkboxes in one parallel `multi_agent_v1.spawn_agent` burst; serialize only named dependencies. Verification and checkbox marking stay per-checkbox.
+6. **DELEGATE EVERYTHING. YOU NEVER IMPLEMENT.** Dispatch ALL independent sub-tasks across those checkboxes in one parallel `delegation assignment` burst; serialize only named dependencies. Verification and checkbox marking stay per-checkbox.
 
 Each sub-task message must include:
 
@@ -102,11 +91,12 @@ Each sub-task message must include:
 2. When the task touches existing behavior: a baseline characterization test, written first, that pins current observable behavior and passes on the unchanged code (exact inputs, exact observable, exact assertion). Then the failing-first proof for the new behavior before production changes — a unit test where a seam exists, otherwise the sub-task's Manual-QA scenario captured failing. A test that mirrors its implementation (mock-call assertions, pinned constants) is not evidence.
 3. Implementation constraints from the plan and project rule-sync.
 4. Automated verification commands to run.
-5. One Manual-QA channel, named with the exact tool and exact invocation (the literal `curl`, `send-keys`, `page.click`, payload, selectors, and the binary observable that decides PASS/FAIL), not "verify it works". A LIGHT checkbox needs one real-surface proof of its deliverable, and auxiliary surfaces (CLI stdout, DB state diff, parsed config dump) are first-class when the surface is CLI- or data-shaped:
+5. One Manual-QA channel, named with the exact tool and exact invocation (the literal `curl`, `send-keys`, `browser:control-in-app-browser` action, `page.click`, payload, selectors, and the binary observable that decides PASS/FAIL), not "verify it works". A LIGHT checkbox needs one real-surface proof of its deliverable, and auxiliary surfaces (CLI stdout, DB state diff, parsed config dump) are first-class when the surface is CLI- or data-shaped:
    - HTTP call: `curl -i` against the live endpoint.
-   - tmux: a `tmux` session driven with `send-keys`, dumped via `capture-pane`.
-   - Browser use: drive the real page with Chrome, or agent-browser (https://github.com/vercel-labs/agent-browser) when Chrome is unavailable.
+   - Terminal / TUI: drive a real pty; `tmux send-keys` is fine for a boot/behavior smoke, but color/layout/CJK evidence goes through the xterm.js web terminal below, NEVER `tmux capture-pane`.
+   - Browser use: in Auggie, use `browser:control-in-app-browser` first when available and the scenario does not need an authenticated or persistent user browser profile; otherwise drive the real page with Chrome, or agent-browser (https://github.com/vercel-labs/agent-browser) when Chrome is unavailable.
    - Computer use: OS-level GUI automation against the running desktop app when the surface is not a page.
+   - TUI visual evidence: when a TUI claim needs visual QA or PR proof, run `node script/qa/web-terminal-visual-qa.mjs --command "<cmd>" --input "{Enter}" --evidence-dir <dir>` (real pty rendered through xterm.js in Chrome) and attach `terminal.png` plus `metadata.json`.
 6. The adversarial classes that apply to this sub-task (from the 9 ultraqa classes) and how each is probed.
 7. Required artifact path and cleanup receipt.
 

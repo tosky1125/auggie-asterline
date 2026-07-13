@@ -1,6 +1,6 @@
 # Haskell — LSP setup
 
-- **Builtin server:** `haskell-language-server` — `haskell-language-server-wrapper --code-intel`
+- **Builtin server:** `haskell-language-server` — `haskell-language-server-wrapper --lsp`
 - **Extensions:** `.hs .lhs`
 - **Install hint:** `ghcup install hls`
 
@@ -27,13 +27,13 @@ command -v haskell-language-server-wrapper
 
 ## Configure
 
-Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/code-intel-client.json` (Auggie) AND `.opencode/code-intel.json` (OpenCode/Asterline):
+Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/lsp-client.json` (Auggie/Asterline):
 
 ```json
-{ "code-intel": { "haskell-language-server": { "priority": 100 } } }
+{ "lsp": { "haskell-language-server": { "priority": 100 } } }
 ```
 
-For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/code-intel-client.json`).
+For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/lsp-client.json`).
 
 ### Initialization options (only if commonly needed)
 
@@ -53,5 +53,5 @@ None commonly required. Per-project plugin/formatter settings normally live in a
 ## Verify
 
 ```bash
-bun ../../scripts/verify-code-intel.ts path/to/file.hs
+bun ../../scripts/verify-lsp.ts path/to/file.hs
 ```

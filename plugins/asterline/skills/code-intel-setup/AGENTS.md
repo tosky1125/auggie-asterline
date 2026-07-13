@@ -10,19 +10,19 @@ Language-server setup router with per-language installation/configuration refere
 - `references/<language>/README.md` owns server IDs, install commands, extensions, config snippets, and troubleshooting.
 - `scripts/lsp-server-table.ts` is the hand-maintained server inventory.
 - `scripts/detect-lsp.ts` inspects project/install/config status.
-- `scripts/verify-lsp.ts` performs the diagnostics round trip when its runtime dependency is available.
+- `scripts/verify-lsp.ts` performs a diagnostics round trip through the committed `mcp/lsp` bundle.
 
 ## NAMING CONTRACT
 
-- Shipped helper filenames retain `lsp`; do not document renamed `code-intel` filenames unless the files/imports are renamed too.
-- The runtime currently reads `.asterline/lsp-client.json` with a top-level `lsp` map. Keep examples synchronized with the actual loader.
-- Public MCP registration is `lsp`; user-visible tool names follow that registration until the runtime and manifest change together.
+- Public skill names are `code-intel` and `code-intel-setup`; shipped helper filenames retain `lsp` because they follow the underlying runtime contract.
+- The runtime reads `.asterline/lsp-client.json` with a top-level `lsp` map. Keep examples synchronized with the actual loader.
+- Public MCP registration is `lsp`; user-visible tool names follow that registration. Do not invent a `code-intel` MCP or config map for branding symmetry.
 
 ## EDITING RULES
 
 - Update the server table and the matching language reference in the same change.
 - Preserve OS-specific install paths and exact server IDs; they are inputs to status/install-decision flows.
-- Verify helper imports against this packaged layout. `verify-lsp.ts` still searches for an absent upstream package source tree.
+- Verify helper/runtime paths against this packaged layout. `verify-lsp.ts` invokes the committed `mcp/lsp/dist/cli.js` bundle and must clean up its isolated daemon state.
 - Do not claim support from documentation alone; run a real diagnostics round trip when the server can be installed.
 
 ## VALIDATION

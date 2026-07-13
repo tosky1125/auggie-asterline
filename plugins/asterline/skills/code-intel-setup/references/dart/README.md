@@ -1,6 +1,6 @@
 # Dart — LSP setup
 
-- **Builtin server:** `dart` — `dart language-server --code-intel`
+- **Builtin server:** `dart` — `dart language-server --lsp`
 - **Extensions:** `.dart`
 - **Install hint:** `Included with the Dart/Flutter SDK`
 
@@ -20,13 +20,13 @@ command -v dart
 
 ## Configure
 
-Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/code-intel-client.json` (Auggie) AND `.opencode/code-intel.json` (OpenCode/Asterline):
+Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/lsp-client.json` (Auggie/Asterline):
 
 ```json
-{ "code-intel": { "dart": { "priority": 100 } } }
+{ "lsp": { "dart": { "priority": 100 } } }
 ```
 
-For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/code-intel-client.json`).
+For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/lsp-client.json`).
 
 ### Initialization options (only if commonly needed)
 
@@ -44,5 +44,5 @@ None.
 ## Verify
 
 ```bash
-bun ../../scripts/verify-code-intel.ts path/to/file.dart
+bun ../../scripts/verify-lsp.ts path/to/file.dart
 ```

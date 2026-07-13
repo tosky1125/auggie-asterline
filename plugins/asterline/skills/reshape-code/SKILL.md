@@ -3,25 +3,12 @@ name: reshape-code
 description: "Refactor and simplify code while preserving behavior. Use for cleanup, restructuring, extraction, simplification, modernization, and other focused code reshaping work."
 ---
 
-## Auggie Tool Compatibility
+## Auggie delegation compatibility
 
-This skill may include orchestration examples copied from another harness. In Auggie, do not call unavailable helper tools such as legacy agent calls, `task(...)`, `background_output(...)`, or team helpers literally. Translate those examples to the available Asterline orchestration tools:
+Auggie supports only bounded one-shot parallel decomposition. Inspect the currently visible delegation surface before using it; do not invent tool names. Give each worker a self-contained assignment with disjoint ownership, collect its terminal result through the host surface, and let the parent verify and integrate it.
 
-| Harness example | Asterline-compatible tool to use |
-| --- | --- |
-| `legacy_agent_call(subagent_type="explore", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as an explorer. ...","agent_type":"explorer","fork_context":false})` |
-| `legacy_agent_call(subagent_type="librarian", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as a librarian. ...","agent_type":"librarian","fork_context":false})` |
-| `task(subagent_type="plan", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as a planning agent. ...","agent_type":"plan","fork_context":false})` |
-| `task(subagent_type="oracle", ...)` for final verification | `multi_agent_v1.spawn_agent({"message":"TASK: act as a rigorous reviewer. ...","agent_type":"asterline-work-reviewer","fork_context":false})` |
-| `task(category="...", ...)` for implementation or QA | `multi_agent_v1.spawn_agent({"message":"TASK: act as an implementation or QA worker. ...","fork_context":false})` |
-| `background_output(task_id="...")` | `multi_agent_v1.wait_agent(...)` for mailbox signals |
-| `team_*(...)` | Use available subagents via `multi_agent_v1.spawn_agent`, `multi_agent_v1.send_input`, `multi_agent_v1.wait_agent`, and `multi_agent_v1.close_agent` |
+Persistent teams, rosters, worker messaging, thread creation, resume, and cross-turn worker identity are unavailable. Any foreign-harness orchestration example below is conceptual only: translate it to fresh independent one-shot assignments, or run serially when the work cannot be split safely. This capability boundary overrides every example in this skill.
 
-Role-specific behavior must be described in a self-contained `message`. Use `fork_context: false` to start the child with only the initial prompt (no parent history); use `fork_context: true` only when full parent history is truly required. Include any required conversation context, files, diffs, constraints, and requested skill names directly in the spawned agent's `message`. Asterline exposes these selectable agent roles when the host supports typed subagents: `explorer`, `librarian`, `plan`, `momus`, `metis`, and `asterline-work-reviewer` — pass the matching name as `agent_type` so the child gets that role's model and instructions. On `multi_agent_v2` sessions the same `agent_type` applies (the Asterline installer exposes it) with `fork_turns` instead of `fork_context`. If the spawn tool exposes no `agent_type` parameter, omit it and describe the role inside `message`. If a code block below conflicts with this section, this section wins.
-
-For work likely to exceed one wait cycle, require the child to send `WORKING: <task> - <current phase>` before long passes and `BLOCKED: <reason>` only when progress stops. A `multi_agent_v1.wait_agent` timeout only means no new mailbox update arrived. Treat a running child as alive. Fallback only when the child is completed without the deliverable, ack-only after followup, explicitly `BLOCKED:`, or no longer running.
-
-export const REFACTOR_TEMPLATE = `# Intelligent Refactor Command
 
 ## Usage
 \`\`\`
@@ -120,48 +107,14 @@ TodoWrite([
 
 ## 1.1: Launch Parallel Explore Agents (BACKGROUND)
 
-Fire ALL of these simultaneously using \`legacy_agent_call\`:
+Launch these five independent one-shot research assignments in parallel:
 
 \`\`\`
-// Agent 1: Find the reshape-codeing target
-legacy_agent_call(
-  subagent_type="explore",
-  run_in_background=true,
-  prompt="Find all occurrences and definitions of [TARGET].
-  Report: file paths, line numbers, usage patterns."
-)
-
-// Agent 2: Find related code
-legacy_agent_call(
-  subagent_type="explore",
-  run_in_background=true,
-  prompt="Find all code that imports, uses, or depends on [TARGET].
-  Report: dependency chains, import graphs."
-)
-
-// Agent 3: Find similar patterns
-legacy_agent_call(
-  subagent_type="explore",
-  run_in_background=true,
-  prompt="Find similar code patterns to [TARGET] in the codebase.
-  Report: analogous implementations, established conventions."
-)
-
-// Agent 4: Find tests
-legacy_agent_call(
-  subagent_type="explore",
-  run_in_background=true,
-  prompt="Find all test files related to [TARGET].
-  Report: test file paths, test case names, coverage indicators."
-)
-
-// Agent 5: Architecture context
-legacy_agent_call(
-  subagent_type="explore",
-  run_in_background=true,
-  prompt="Find architectural patterns and module organization around [TARGET].
-  Report: module boundaries, layer structure, design patterns in use."
-)
+- Target discovery: find all definitions and occurrences of `[TARGET]`; report paths, lines, and usage patterns.
+- Dependency discovery: find imports, users, and dependents; report dependency chains and import graphs.
+- Pattern discovery: find analogous implementations and established conventions.
+- Test discovery: find related test files, test cases, and available coverage evidence.
+- Architecture discovery: report nearby module boundaries, layers, and design patterns.
 \`\`\`
 
 ## 1.2: Direct Tool Exploration (WHILE AGENTS RUN)
@@ -185,15 +138,11 @@ LspWorkspaceSymbols(filePath, query="[target_symbol]")  // Search by name
 code-intel_diagnostics(filePath)  // Errors, warnings before we start
 \`\`\`
 
-### AST-Grep for Pattern Analysis:
+### AST-Grep Skill for Pattern Analysis:
 
-\`\`\`typescript
+\`\`\`bash
 // Find structural patterns
-ast_grep_search(
-  pattern="function $NAME($$$) { $$$ }",  // or relevant pattern
-  lang="typescript",  // or relevant language
-  paths=["src/"]
-)
+sg --pattern 'function $NAME($$$) { $$$ }' --lang ts src/
 
 // Preview reshape-codeing (DRY RUN)
 ast_grep_replace(
@@ -213,8 +162,8 @@ grep(pattern="[search_term]", path="src/", include="*.ts")
 ## 1.3: Collect Background Results
 
 \`\`\`
-background_output(task_id="[agent_1_id]")
-background_output(task_id="[agent_2_id]")
+Collect each terminal one-shot result returned by Auggie.
+Verify every cited path directly before using it in the codemap.
 ...
 \`\`\`
 
@@ -296,17 +245,13 @@ ls -la *_test.go
 ## 3.2: Analyze Test Coverage
 
 \`\`\`
-// Find all tests related to target
-legacy_agent_call(
-  subagent_type="explore",
-  run_in_background=false,  // Need this synchronously
-  prompt="Analyze test coverage for [TARGET]:
+TASK: Analyze test coverage for [TARGET].
+DELIVERABLE: Answer all five questions with cited paths and commands.
   1. Which test files cover this code?
   2. What test cases exist?
   3. Are there integration tests?
   4. What edge cases are tested?
-  5. Estimated coverage percentage?"
-)
+  5. What measured coverage evidence exists? Do not estimate a percentage without data.
 \`\`\`
 
 ## 3.3: Determine Verification Strategy
@@ -368,9 +313,10 @@ After each reshape-codeing step:
 ## 4.1: Invoke Plan Agent
 
 \`\`\`
-Task(
-  subagent_type="plan",
-  prompt="Create a detailed reshape-codeing plan:
+TASK: Create a detailed refactoring plan.
+DELIVERABLE: Atomic dependency-ordered steps with verification for every step.
+
+Create a detailed reshape-codeing plan:
 
   ## Refactoring Goal
   [User's original request]
@@ -392,8 +338,7 @@ Task(
   3. Order steps by dependency (what must happen first)
   4. Specify exact files and line ranges for each step
   5. Include rollback strategy for each step
-  6. Define commit checkpoints"
-)
+  6. Define commit checkpoints
 \`\`\`
 
 ## 4.2: Review and Validate Plan
@@ -447,12 +392,12 @@ code-intel_rename(filePath, line, character, newName)  // Execute rename
 \`\`\`
 
 **For Pattern Transformations:**
-\`\`\`typescript
+\`\`\`bash
 // Preview first
-ast_grep_replace(pattern, rewrite, lang, dryRun=true)
+sg --pattern '[pattern]' --rewrite '[rewrite]' --lang ts path/to/file.ts
 
 // If preview looks good, execute
-ast_grep_replace(pattern, rewrite, lang, dryRun=false)
+sg --pattern '[pattern]' --rewrite '[rewrite]' --lang ts path/to/file.ts
 \`\`\`
 
 **For Structural Changes:**
@@ -588,7 +533,7 @@ All existing tests pass. No new errors introduced.
 
 ## ALWAYS DO
 - Understand before changing
-- Preview before applying (ast_grep dryRun=true)
+- Preview before applying (`sg --pattern ... --rewrite ... --lang ...`)
 - Verify after every change
 - Follow existing codebase patterns
 - Keep todos updated in real-time
@@ -617,8 +562,8 @@ Leverage LSP tools for precision analysis. Key patterns:
 - **Continuous verification**: \`code-intel_diagnostics\` after every change
 
 ## AST-Grep
-Use \`ast_grep_search\` and \`ast_grep_replace\` for structural transformations.
-**Critical**: Always \`dryRun=true\` first, review, then execute.
+Use \`ast-grep\` skill helper or \`sg\` CLI for structural transformations.
+**Critical**: Always preview first, review, then execute.
 
 ## Agents
 - \`explore\`: Parallel codebase pattern discovery
@@ -644,138 +589,8 @@ $ARGUMENTS
 export const REFACTOR_TEAM_MODE_ADDENDUM = `
 ---
 
-# Team Mode Protocol (active when team_* tools are present)
+# Auggie one-shot parallel refactoring
 
-Team mode is enabled for this session. The rule-sync below **override Phase 4-6** above. Follow this protocol instead of the in-session step-by-step execution.
+When the plan contains independent steps with disjoint file ownership, use `$team-mode` to launch fresh one-shot workers in parallel. Give every worker the Intent Card, exact paths, regression test, verification command, and rollback boundary. Workers do not communicate or persist; the parent collects terminal results, runs an independent verification pass, and integrates only confirmed changes.
 
-## Phase 4 override: Plan agent staffing requirement
-
-When invoking the Plan agent in Phase 4.1, append this additional requirement to the prompt:
-
-\`\`\`
-7. (REQUIRED when team mode is active) Output a Team Staffing Recommendation section with these fields — missing fields fail Phase 5.0:
-   - total_atomic_steps: integer
-   - file_independent_steps: integer (parallelizable, no cross-file blocker)
-   - cross_file_dependent_steps: integer (has blockers)
-   - per_step_assignment: [{step_id, assigned_to: 'quick' | 'unspecified-low', blockedBy: [step_ids], rationale}]
-   - dispatch_path_recommendation: 'team' | 'legacy' with reason
-   - rationale for the composition
-\`\`\`
-
-**Classification rule-sync** the plan agent must apply to each step:
-- \`quick\`: mechanical edits — LSP rename, extract variable, inline, simple move, signature change without call-site logic.
-- \`unspecified-low\`: logic-preserving reshape-codes that need reasoning — extract function, restructure conditional, pattern transformation, cross-file API change.
-- Recommend \`team\` path when \`file_independent_steps >= 3\`; recommend \`legacy\` otherwise.
-
-## Phase 5 override: Dispatch path selection
-
-Read the Team Staffing Recommendation from Phase 4. If any required field is missing, fail here and re-request the plan with the exact missing field names. Do not proceed with a partial plan.
-
-Then choose the path:
-
-- **Team path (5.1-T)**: when the plan recommends \`team\` AND \`file_independent_steps >= 3\`. Members execute in parallel, Lead orchestrates, a \`deep\` verifier lives outside the team.
-- **Legacy path (5.1-L)**: otherwise. Use the original 5.1 / 5.2 / 5.3 flow from above.
-
-Record the chosen path in the TodoWrite list.
-
-## Phase 5.1-T: \`reshape-code-squad\` team execution
-
-**Precondition checks** (fail hard if any step fails):
-
-1. Load the \`team-mode\` skill via the \`skill\` tool for lifecycle, message protocol, and limits.
-2. Call \`team_list\` and verify no active \`reshape-code-squad\` run exists; if one does, shutdown + delete the orphan before proceeding.
-3. If \`~/.asterline/teams/reshape-code-squad/config.json\` is missing, write it using the spec below.
-
-**Team spec** (\`~/.asterline/teams/reshape-code-squad/config.json\`):
-
-\`\`\`json
-{
-  "name": "reshape-code-squad",
-  "lead": { "kind": "subagent_type", "subagent_type": "sisyphus" },
-  "members": [
-    {
-      "kind": "category",
-      "category": "quick",
-      "prompt": "You handle mechanical reshape-codeing steps (LSP rename, extract variable, inline, simple move, signature change). Use LSP tools for correctness. Apply the task description's per-step instructions verbatim — no scope expansion. After edits, run code-intel_diagnostics on touched files. Report via team_send_message(teamRunId=<id>, to=\"lead\", summary=<files touched>, body=<code-intel status + diff summary>) + team_task_update(status=completed). Never run tests — the external verifier handles that. Never git add, never --continue."
-    },
-    { "kind": "category", "category": "quick", "prompt": "Same contract as peer quick worker." },
-    {
-      "kind": "category",
-      "category": "unspecified-low",
-      "prompt": "You handle logic-preserving reshape-codes that need reasoning (extract function, restructure conditional, pattern transformation, cross-file API change). Read the task description's plan step carefully. Use ast_grep_replace with dryRun=true first, review the preview, then execute. If the step is ambiguous or would require out-of-scope changes, STOP and send team_send_message(teamRunId=<id>, to=\"lead\", summary=\"UNCLEAR\", body=<reason>) + team_task_update(status=pending). Same reporting contract as peer quick workers. Never run tests."
-    },
-    { "kind": "category", "category": "unspecified-low", "prompt": "Same contract as peer unspecified-low worker." }
-  ]
-}
-\`\`\`
-
-Rationale for this composition:
-- **4 workers = team mode's parallel cap.** 5+ just queues.
-- **No verifier team member.** Verification needs \`deep\` reasoning (or \`unspecified-high\` fallback). In-team category routing downcasts to sisyphus-junior, which is weaker than required — the verifier runs OUTSIDE the team as a \`task(category="deep")\`.
-- **quick × 2** for mechanical edits, **unspecified-low × 2** for reasoning edits — mirrors the plan's split.
-
-**Team lifecycle** (one team, reused until Phase 6 cleanup):
-
-1. \`team_create(teamName="reshape-code-squad")\`. Record \`teamRunId\`.
-2. Broadcast the reshape-code Intent Card ONCE (keep task descriptions slim):
-   \`\`\`
-   team_send_message(
-     teamRunId=<id>, to="*", kind="announcement",
-     summary="reshape-code-intent",
-     body=<codemap summary + constraints + established patterns from Phase 2>
-   )
-   \`\`\`
-3. Broadcast the verification spec ONCE:
-   \`\`\`
-   team_send_message(
-     teamRunId=<id>, to="*", kind="announcement",
-     summary="verify-spec",
-     body=<exact test/typecheck/lint commands + expected pass counts + regression indicators from Phase 3.4>
-   )
-   \`\`\`
-4. For each plan step, \`team_task_create(teamRunId=<id>, subject="reshape-code step <N>: <short>", description=<per-step instructions from plan, including target files and line ranges, rollback strategy>, blockedBy=<from plan's per_step_assignment>)\`.
-
-**Lead monitoring loop**:
-
-While any team task is \`pending | claimed | in_progress\`:
-
-- Wait for \`<system-reminder>\` or member messages. Avoid tight polling; a single \`team_status\` check is acceptable if no notification arrives within roughly 10 seconds of expected completion.
-- On a worker completion report, immediately dispatch an **external verifier** — verification runs OUTSIDE the team because team-member category routing downcasts to sisyphus-junior:
-  \`\`\`
-  task(
-    category="deep",
-    load_skills=[],
-    run_in_background=true,
-    description="verify step <N>",
-    prompt=<files touched + verify-spec commands + instruction to return "PASS" or "FAIL:<failing test + specific error + suggested revert hunks>">
-  )
-  \`\`\`
-  If \`deep\` is unavailable, fall back to \`category="unspecified-high"\`. Do not create a commit checkpoint until the verifier returns PASS.
-- On a verifier PASS: make the commit checkpoint for that step (see original 5.3). Proceed.
-- On a verifier FAIL: Lead decides:
-  - **Retry with fix hint**: \`team_task_update(status=pending)\` on the original step + \`team_send_message(teamRunId=<id>, to=<original member>, summary="retry", body=<specific failure from verifier>)\`. Runtime reassigns.
-  - **Escalate**: after three FAIL cycles on the same step, STOP and consult the user with full evidence.
-- On a member UNCLEAR message: re-harvest context via a targeted \`task()\` outside the team, broadcast an updated Intent Card fragment, then reassign.
-
-Proceed to Phase 6 only when every team task is \`completed\` AND every paired verifier task returned PASS.
-
-## Phase 6 override: Team cleanup before summary
-
-If Phase 5 used the team path, dismantle \`reshape-code-squad\` BEFORE producing the 6.6 summary. Every exit path — success, escalation, abort — must cleanup; orphan teams poison the next session's precondition check.
-
-1. \`team_shutdown_request\` for each member, then \`team_approve_shutdown\` if members do not self-approve within a reasonable window.
-2. \`team_delete(teamRunId=<id>)\`.
-3. \`team_list\` to confirm no residual \`reshape-code-squad\` run.
-
-The \`~/.asterline/teams/reshape-code-squad/config.json\` declaration stays on disk; next session reuses it.
-
-Append to the 6.6 summary a "Dispatch path" line and, when team path was used, team metrics (teamRunId, tasks created, verifier runs, team lifetime).
-
-## MUST NOT (team mode)
-
-- Lead never edits files directly — orchestrate only.
-- Do not inline the Intent Card or verify-spec into task descriptions — rely on the broadcasts.
-- Do not recreate the team mid-session.
-- Do not run tests from Lead — the external verifier owns that lane.
-- Do not put \`oracle\` / \`librarian\` / \`deep\` into the team spec — oracle/librarian are team-ineligible, and \`deep\` under category routing downcasts to sisyphus-junior. Use them via \`task()\` outside the team when needed.
-`
+Serialize steps that share files, generated artifacts, or state. If a worker is inconclusive, start a new bounded assignment with the missing evidence rather than pretending to resume it.

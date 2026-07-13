@@ -1,6 +1,6 @@
 # Bootstrap — Project Layout, Toolchain, Taskfile, CI
 
-What every new Go project gets in the first 60 seconds. Drop the script in `scripts/go/new-project.go` does all of this — this document explains *what* it produces and *why*.
+What every new Go project gets in the first 60 seconds. The generator at `scripts/go/new-project.py` does all of this — this document explains *what* it produces and *why*.
 
 ## Toolchain pin
 

@@ -1,17 +1,17 @@
 ---
 name: code-intel-setup
-description: "Configure a Language Server (LSP) for a specific language so editor/agent tooling — diagnostics, go-to-definition, find-references, rename — works. Use when you need to: configure LSP, code-intel setup, set up or install a language server, fix 'no LSP server configured' / 'server not installed', choose between servers (basedpyright vs pyright vs ty vs ruff), or wire .asterline/code-intel.json / .opencode/code-intel.json. 언어서버 설정. Routes by file extension to references/<language>/README.md for the exact builtin server, per-OS install commands (macOS/Linux/Windows), config snippets for both config files, initialization options, alternatives, and troubleshooting. Ships scripts: detect-code-intel.ts (scan a project for languages + each server's install/config status) and verify-code-intel.ts (run a real diagnostics roundtrip). Covers typescript, python, go, rust, c/c++, java, kotlin, c#/razor, swift, ruby, php, dart, elixir, zig, lua, bash, yaml, terraform, haskell, julia."
+description: "Configure a Language Server (LSP) for a specific language so editor/agent tooling works. Use for LSP setup, missing-server diagnosis, server selection, or `.asterline/lsp-client.json` configuration. Never installs automatically: show the OS-specific command and obtain user authorization before running it. Ships detection and real-roundtrip verification helpers for twenty language families."
 ---
 
 # LSP Setup
 
-Configure the right Language Server for a project so the `code-intel` MCP tools
+Configure the right Language Server for a project so the `lsp` MCP tools
 (`diagnostics`, `goto_definition`, `find_references`, `symbols`, `rename`)
 actually work. This skill is an index: detect what a project needs, install the
 server, write the config, then verify with a real roundtrip.
 
 The list of servers we ship as **builtin** is the source of truth in
-`packages/code-intel-tools-mcp/src/code-intel/server-definitions.ts` (`BUILTIN_SERVERS` +
+`packages/lsp-tools-mcp/src/lsp/server-definitions.ts` (`BUILTIN_SERVERS` +
 `LSP_INSTALL_HINTS`). The per-language references below mirror it.
 
 ---
@@ -54,8 +54,8 @@ Scan the project to see which languages are present and whether each server is
 installed and configured:
 
 ```bash
-bun scripts/detect-code-intel.ts <projectDir>      # human report (default: cwd)
-bun scripts/detect-code-intel.ts <projectDir> --json
+bun scripts/detect-lsp.ts <projectDir>      # human report (default: cwd)
+bun scripts/detect-lsp.ts <projectDir> --json
 ```
 
 For each detected language it prints the builtin server id, the executable it
@@ -78,14 +78,11 @@ file extension. Write config only to: pick between competing servers, set a
 `priority`, pass `initialization` options, override `extensions`, set `env`, or
 `disable` a server.
 
-Two project-scoped config files, **identical JSON shape**:
-
-- Auggie/Asterline harness → `.asterline/code-intel.json` (user: `~/.asterline/code-intel.json`)
-- OpenCode-compatible harness → `.opencode/code-intel.json`
+Auggie/Asterline project config lives at `.asterline/lsp-client.json`; user config lives at `~/.asterline/lsp-client.json`.
 
 ```jsonc
 {
-  "code-intel": {
+  "lsp": {
     "<server-id>": {
       "command": ["<bin>", "<args>"],   // optional for builtin ids (supplied automatically)
       "extensions": [".ext"],            // optional override
@@ -100,12 +97,12 @@ Two project-scoped config files, **identical JSON shape**:
 
 Rules enforced by `config-loader.ts`:
 
-- In a **project** config (`.asterline/code-intel.json`, `.opencode/code-intel.json`) an
+- In a **project** config (`.asterline/lsp-client.json`) an
   entry whose id is a **builtin** server inherits `command` automatically — you
   only override `extensions` / `priority` / `initialization`. A non-builtin id
   in a project config is **ignored**.
 - To define a **fully custom** (non-builtin) server with its own `command`, put
-  it in the **user** config (`~/.asterline/code-intel.json`, or the path set by
+  it in the **user** config (`~/.asterline/lsp-client.json`, or the path set by
   `LSP_TOOLS_MCP_USER_CONFIG`), where `command` + `extensions` are honored.
 - Project entries win over user entries; both win over builtin defaults.
 
@@ -117,14 +114,14 @@ Run a real diagnostics roundtrip against a source file. This spawns the server,
 opens the file, requests diagnostics, and reports `OK`/`FAIL`:
 
 ```bash
-bun scripts/verify-code-intel.ts <path/to/file.ext>
-bun scripts/verify-code-intel.ts <file> --timeout=90000
+bun scripts/verify-lsp.ts <path/to/file.ext>
+bun scripts/verify-lsp.ts <file> --timeout=90000
 ```
 
 `OK` = the server started and answered. `FAIL: language server not installed`
 = go back to step 2. Other `FAIL` text carries the server/startup error.
-`SKIP` = the engine source could not be located; run from inside the Asterline
-repo/worktree, or call the `code-intel` MCP `diagnostics` tool directly.
+`SKIP` = the helper could not locate a compatible engine; call the installed
+`lsp` MCP `diagnostics` tool directly.
 
 ---
 
@@ -132,8 +129,8 @@ repo/worktree, or call the `code-intel` MCP `diagnostics` tool directly.
 
 | Script | Purpose |
 |---|---|
-| `scripts/detect-code-intel.ts` | Scan a directory; per detected language report server id, install status, install hint, config status. `--json` for machine output. |
-| `scripts/verify-code-intel.ts` | Real LSP diagnostics roundtrip for one file via the `code-intel-tools-mcp` engine; `OK`/`FAIL`/`SKIP` + exit code 0/1/3. |
-| `scripts/code-intel-server-table.ts` | Embedded snapshot of the primary builtin server per language (mirrors `server-definitions.ts`). |
+| `scripts/detect-lsp.ts` | Scan a directory; per detected language report server id, install status, install hint, config status. `--json` for machine output. |
+| `scripts/verify-lsp.ts` | Real LSP diagnostics roundtrip for one file via the `lsp-tools-mcp` engine; `OK`/`FAIL`/`SKIP` + exit code 0/1/3. |
+| `scripts/lsp-server-table.ts` | Embedded snapshot of the primary builtin server per language (mirrors `server-definitions.ts`). |
 
-Run with [Bun](https://bun.sh): `curl -fsSL https://bun.sh/install | bash`.
+The helper scripts require an already-installed Bun runtime. They never install Bun or a language server themselves.

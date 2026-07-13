@@ -20,13 +20,13 @@ command -v intelephense
 
 ## Configure
 
-Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/code-intel-client.json` (Auggie) AND `.opencode/code-intel.json` (OpenCode/Asterline):
+Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/lsp-client.json` (Auggie/Asterline):
 
 ```json
-{ "code-intel": { "php": { "priority": 100 } } }
+{ "lsp": { "php": { "priority": 100 } } }
 ```
 
-For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/code-intel-client.json`).
+For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/lsp-client.json`).
 
 ### Initialization options (only if commonly needed)
 
@@ -34,7 +34,7 @@ Intelephense's premium features (rename, find-all-implementations, declaration p
 
 ```json
 {
-  "code-intel": {
+  "lsp": {
     "php": {
       "initialization": {
         "licenceKey": "YOUR-LICENCE-KEY"
@@ -58,5 +58,5 @@ Without a key the server runs fine in free mode.
 ## Verify
 
 ```bash
-bun ../../scripts/verify-code-intel.ts path/to/file.php
+bun ../../scripts/verify-lsp.ts path/to/file.php
 ```

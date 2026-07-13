@@ -1,32 +1,32 @@
 # Swift — LSP setup
 
-- **Builtin server:** `sourcekit-code-intel` — `sourcekit-code-intel`
+- **Builtin server:** `sourcekit-lsp` — `sourcekit-lsp`
 - **Extensions:** `.swift .objc .objcpp`
 - **Install hint:** `Included with Xcode or the Swift toolchain`
 
 ## Install
 
-`sourcekit-code-intel` ships with the Swift toolchain — no separate install.
+`sourcekit-lsp` ships with the Swift toolchain — no separate install.
 
 - **macOS:** `xcode-select --install` (or install full Xcode). It resolves to the active toolchain selected by `xcode-select`.
-- **Linux:** Install a swift.org toolchain (`sourcekit-code-intel` ships inside it); add the toolchain's `usr/bin` to PATH.
-- **Windows:** Install the swift.org Windows toolchain; `sourcekit-code-intel` is bundled.
+- **Linux:** Install a swift.org toolchain (`sourcekit-lsp` ships inside it); add the toolchain's `usr/bin` to PATH.
+- **Windows:** Install the swift.org Windows toolchain; `sourcekit-lsp` is bundled.
 
 Confirm it resolves:
 
 ```bash
-command -v sourcekit-code-intel
+command -v sourcekit-lsp
 ```
 
 ## Configure
 
-Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/code-intel-client.json` (Auggie) AND `.opencode/code-intel.json` (OpenCode/Asterline):
+Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/lsp-client.json` (Auggie/Asterline):
 
 ```json
-{ "code-intel": { "sourcekit-code-intel": { "priority": 100 } } }
+{ "lsp": { "sourcekit-lsp": { "priority": 100 } } }
 ```
 
-For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/code-intel-client.json`).
+For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/lsp-client.json`).
 
 ### Initialization options (only if commonly needed)
 
@@ -34,11 +34,11 @@ None commonly required. For best results the project needs a **SwiftPM `Package.
 
 ## Alternatives
 
-- **No mainstream alternative.** `sourcekit-code-intel` is the official Apple/swift.org server and the only practical choice.
+- **No mainstream alternative.** `sourcekit-lsp` is the official Apple/swift.org server and the only practical choice.
 
 ## Troubleshooting
 
-- **PATH:** `sourcekit-code-intel` on PATH; reopen shell after install (or after `xcode-select -s`).
+- **PATH:** `sourcekit-lsp` on PATH; reopen shell after install (or after `xcode-select -s`).
 - **Wrong toolchain (macOS):** point `xcode-select` at the right Xcode/toolchain; mismatches cause stale or missing results.
 - **No `Package.swift` / compile db:** add a SwiftPM manifest or generate `compile_commands.json` for accurate indexing.
 - **Objective-C (`.objc`/`.objcpp`):** needs a compilation database to resolve headers and frameworks.
@@ -47,5 +47,5 @@ None commonly required. For best results the project needs a **SwiftPM `Package.
 ## Verify
 
 ```bash
-bun ../../scripts/verify-code-intel.ts path/to/File.swift
+bun ../../scripts/verify-lsp.ts path/to/File.swift
 ```

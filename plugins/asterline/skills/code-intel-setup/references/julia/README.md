@@ -14,10 +14,10 @@ Install Julia (juliaup recommended), then add the `LanguageServer` package:
 - **Linux:** `curl -fsSL https://install.julialang.org | sh` (installs juliaup)
 - **Windows:** `winget install julia -s msstore` (installs juliaup)
 
-Then add the package — ideally into a shared `@code-intel` environment so it is not tied to one project:
+Then add the package — ideally into a shared `@lsp` environment so it is not tied to one project:
 
 ```bash
-julia --project=@code-intel -e 'using Pkg; Pkg.add("LanguageServer")'
+julia --project=@lsp -e 'using Pkg; Pkg.add("LanguageServer")'
 ```
 
 Confirm Julia resolves (the LSP binary IS `julia`):
@@ -28,20 +28,20 @@ command -v julia
 
 ## Configure
 
-Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/code-intel-client.json` (Auggie) AND `.opencode/code-intel.json` (OpenCode/Asterline):
+Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/lsp-client.json` (Auggie/Asterline):
 
 ```json
-{ "code-intel": { "julials": { "priority": 100 } } }
+{ "lsp": { "julials": { "priority": 100 } } }
 ```
 
-For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/code-intel-client.json`).
+For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/lsp-client.json`).
 
 ### Initialization options (only if commonly needed)
 
 None commonly required. To pin which environment hosts LanguageServer.jl, set `JULIA_PROJECT` (or `JULIA_DEPOT_PATH`) via `env`:
 
 ```json
-{ "code-intel": { "julials": { "env": { "JULIA_PROJECT": "@code-intel" } } } }
+{ "lsp": { "julials": { "env": { "JULIA_PROJECT": "@lsp" } } } }
 ```
 
 ## Alternatives
@@ -51,10 +51,10 @@ None commonly required. To pin which environment hosts LanguageServer.jl, set `J
 ## Troubleshooting
 - **PATH:** `julia` on PATH (not a `julials` binary); reopen shell after juliaup install.
 - **First run precompiles — be patient:** the initial launch compiles LanguageServer.jl and may take minutes with no output; do not kill it. Subsequent starts are fast.
-- **Package not found:** `LanguageServer` must be installed in the environment the server runs in (e.g. `@code-intel`); add it there and set `JULIA_PROJECT`.
+- **Package not found:** `LanguageServer` must be installed in the environment the server runs in (e.g. `@lsp`); add it there and set `JULIA_PROJECT`.
 
 ## Verify
 
 ```bash
-bun ../../scripts/verify-code-intel.ts path/to/file.jl
+bun ../../scripts/verify-lsp.ts path/to/file.jl
 ```

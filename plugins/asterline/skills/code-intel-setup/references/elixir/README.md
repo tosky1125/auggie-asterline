@@ -2,12 +2,12 @@
 
 - **Builtin server:** `elixir-ls` — `elixir-ls`
 - **Extensions:** `.ex .exs`
-- **Install hint:** `https://github.com/elixir-code-intel/elixir-ls`
+- **Install hint:** `https://github.com/elixir-lsp/elixir-ls`
 
 ## Install
 
 ElixirLS needs Erlang/OTP and Elixir installed first. Build the release from
-`https://github.com/elixir-code-intel/elixir-ls` and put the `elixir-ls` launcher script on PATH.
+`https://github.com/elixir-lsp/elixir-ls` and put the `elixir-ls` launcher script on PATH.
 
 - **macOS:** `brew install elixir-ls` (Homebrew provides the launcher), or build the release manually
 - **Linux:** clone elixir-ls, run `mix deps.get && mix compile && mix elixir_ls.release2 -o release`, then add `release/` to PATH
@@ -21,13 +21,13 @@ command -v elixir-ls
 
 ## Configure
 
-Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/code-intel-client.json` (Auggie) AND `.opencode/code-intel.json` (OpenCode/Asterline):
+Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/lsp-client.json` (Auggie/Asterline):
 
 ```json
-{ "code-intel": { "elixir-ls": { "priority": 100 } } }
+{ "lsp": { "elixir-ls": { "priority": 100 } } }
 ```
 
-For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/code-intel-client.json`).
+For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/lsp-client.json`).
 
 ### Initialization options (only if commonly needed)
 
@@ -47,5 +47,5 @@ None commonly required.
 ## Verify
 
 ```bash
-bun ../../scripts/verify-code-intel.ts path/to/file.ex
+bun ../../scripts/verify-lsp.ts path/to/file.ex
 ```

@@ -8,4 +8,4 @@ interface:
     - "asterline-runtime bug"
     - "openai auggie bug"
     - "auggie upstream issue"
-  default_prompt: "Use $upstream-report to investigate this Asterline or Auggie bug, compare Asterline evidence with /tmp <owner>/<auggie-cli-source-repo> source, choose the correct GitHub repo, and file an issue (or, for <owner>/<auggie-cli-source-repo> only, a PR — never a PR on Asterline upstream source repository) with reproduction, root cause, fix guidance, and the asterline-generated label and footer."
+  default_prompt: "Use $upstream-report to investigate this Asterline or Auggie bug and file an evidence-backed issue on tosky1125/auggie-asterline. For Auggie core, require the user to supply the authoritative repository before routing or PR work."

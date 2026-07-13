@@ -3,23 +3,12 @@ name: clean-ai-code
 description: "Remove AI-generated code smells from branch changes or an explicit file list. Locks behavior with regression tests first, runs categorized cleanup, then verifies with quality gates. Covers performance equivalences, excessive complexity, and oversized modules that need modular refactoring. Use when the user asks to remove slop, clean AI code, deslop, or clean up AI-generated patterns."
 ---
 
-## Auggie Tool Compatibility
+## Auggie delegation compatibility
 
-This skill may include orchestration examples copied from another harness. In Auggie, do not call unavailable helper tools such as legacy agent calls, `task(...)`, `background_output(...)`, or team helpers literally. Translate those examples to the available Asterline orchestration tools:
+Auggie supports only bounded one-shot parallel decomposition. Inspect the currently visible delegation surface before using it; do not invent tool names. Give each worker a self-contained assignment with disjoint ownership, collect its terminal result through the host surface, and let the parent verify and integrate it.
 
-| Harness example | Asterline-compatible tool to use |
-| --- | --- |
-| `legacy_agent_call(subagent_type="explore", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as an explorer. ...","agent_type":"explorer","fork_context":false})` |
-| `legacy_agent_call(subagent_type="librarian", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as a librarian. ...","agent_type":"librarian","fork_context":false})` |
-| `task(subagent_type="plan", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as a planning agent. ...","agent_type":"plan","fork_context":false})` |
-| `task(subagent_type="oracle", ...)` for final verification | `multi_agent_v1.spawn_agent({"message":"TASK: act as a rigorous reviewer. ...","agent_type":"asterline-work-reviewer","fork_context":false})` |
-| `task(category="...", ...)` for implementation or QA | `multi_agent_v1.spawn_agent({"message":"TASK: act as an implementation or QA worker. ...","fork_context":false})` |
-| `background_output(task_id="...")` | `multi_agent_v1.wait_agent(...)` for mailbox signals |
-| `team_*(...)` | Use available subagents via `multi_agent_v1.spawn_agent`, `multi_agent_v1.send_input`, `multi_agent_v1.wait_agent`, and `multi_agent_v1.close_agent` |
+Persistent teams, rosters, worker messaging, thread creation, resume, and cross-turn worker identity are unavailable. Any foreign-harness orchestration example below is conceptual only: translate it to fresh independent one-shot assignments, or run serially when the work cannot be split safely. This capability boundary overrides every example in this skill.
 
-Role-specific behavior must be described in a self-contained `message`. Use `fork_context: false` to start the child with only the initial prompt (no parent history); use `fork_context: true` only when full parent history is truly required. Include any required conversation context, files, diffs, constraints, and requested skill names directly in the spawned agent's `message`. Asterline exposes these selectable agent roles when the host supports typed subagents: `explorer`, `librarian`, `plan`, `momus`, `metis`, and `asterline-work-reviewer` — pass the matching name as `agent_type` so the child gets that role's model and instructions. On `multi_agent_v2` sessions the same `agent_type` applies (the Asterline installer exposes it) with `fork_turns` instead of `fork_context`. If the spawn tool exposes no `agent_type` parameter, omit it and describe the role inside `message`. If a code block below conflicts with this section, this section wins.
-
-For work likely to exceed one wait cycle, require the child to send `WORKING: <task> - <current phase>` before long passes and `BLOCKED: <reason>` only when progress stops. A `multi_agent_v1.wait_agent` timeout only means no new mailbox update arrived. Treat a running child as alive. Fallback only when the child is completed without the deliverable, ack-only after followup, explicitly `BLOCKED:`, or no longer running.
 
 # Remove AI Slops Skill
 
@@ -48,6 +37,7 @@ The agent looks for these nine categories. The first three are stylistic, the ne
 2. **Over-defensive code** — null checks for guaranteed values, try/except around code that cannot raise, isinstance checks for statically typed params, default values for required params, backward-compat shims, redundant validation duplicated at multiple layers, **broad exception catching** (`except Exception`/`except BaseException` in Python, empty `catch {}` or `catch (e) { console.error(e) }` without narrowing in TypeScript/JavaScript).
    - KEEP: validation at system boundaries (user input, external APIs), I/O error handling, nullable DB fields. Top-level boundary catch-all (CLI `main()`, HTTP handler) with explicit logging + re-raise is acceptable.
    - REFACTOR: `except Exception` → catch the specific exception you expect. Empty `catch {}` → add `instanceof` narrowing or re-throw. `catch (e) { log(e) }` → narrow with `instanceof`, handle known cases, re-throw unknown.
+   - PROOF REQUIRED: before deleting any validation or error handling at a trust boundary, Phase 2 must include an **adversarial** regression (malformed or hostile input) that fails if the guard is removed. No adversarial test → the guard stays. Redundant defense to remove is a duplicate of a check that already runs *inside* the boundary; a guard with no proof of redundancy is load-bearing.
 
 3. **Excessive complexity** — deep nesting (>3 levels), nested ternaries, complex boolean expressions (combine 4+ predicates), long parameter lists (>5 args without a struct/dataclass/object), god functions (>50 lines doing many things), overly clever one-liners that sacrifice readability, `if/elif/else` chains for type/enum/literal discrimination (must be `match/case` + `assert_never`), `object` used as a type annotation (must be `Protocol`, `TypeVar`, or explicit union).
    - KEEP: established complexity patterns in this codebase, performance-critical hot paths that intentionally use a complex idiom. `if/else` for boolean conditions and range checks (not variant discrimination).
@@ -79,7 +69,7 @@ The agent looks for these nine categories. The first three are stylistic, the ne
    **Hard rule**: only apply when behavior equivalence is obvious. Do NOT change algorithms with subtle correctness implications. Do NOT micro-optimize hot paths without a benchmark. If in doubt, SKIP.
 
 ### Behavior coverage
-9. **Missing tests** — behavior present in changed files that is not locked by any regression test. The fix is not to remove code but to ADD the narrowest test that pins the behavior.
+9. **Missing tests** — behavior present in changed files that is not locked by any regression test. The fix is not to remove code but to ADD the narrowest test that pins the behavior. EXCEPTION: a PROSE file (prompt, `SKILL.md`, rule, markdown) has no behavioral seam — do NOT add a text/word-count/phrase pin for it; that guards a diff, not behavior. Cover only a machine-consumed value (parsed field, sentinel a runtime greps, a doc JSON sample through its real validator) or leave it to review.
 
 ### Structural
 10. **Oversized modules** — any source file exceeding **250 pure LOC** (non-blank, non-comment lines). This is an architectural defect, not a style preference. Measure: `awk '!/^[[:space:]]*$/ && !/^[[:space:]]*(#|\/\/)/' <file> | wc -l`.
@@ -139,62 +129,72 @@ For each in-scope source file:
 
 1. Identify the public/observable behavior the file exposes (exported functions, HTTP handlers, CLI commands, classes used elsewhere).
 2. Check whether existing tests cover that behavior. Use `git grep` / project test conventions to find related test files.
-3. **If behavior is uncovered or weakly covered, write the narrowest regression test that pins current behavior BEFORE editing the file.** Tests should pin observable outputs, not implementation details.
+3. **If behavior is uncovered or weakly covered, write the narrowest regression test that pins current behavior BEFORE editing the file.** Tests should pin observable outputs, not implementation details. A PROSE file (prompt/`SKILL.md`/rule/markdown) is exempt — its wording is not behavior; skip the test and rely on review, or assert only a machine-consumed value.
 4. Run the test suite (or at minimum the relevant tests). They must be **green** before any cleanup begins.
 
 If you cannot establish a green baseline (e.g., test runner is broken), STOP and report. Do not proceed with cleanup on unverified ground.
 
-### Phase 3: Cleanup plan
+### Phase 3: Cleanup plan — existence first, then smells
 
-Produce an explicit plan **before** spawning the removal agents:
+The largest, safest deletion is code that should not have existed. **Before categorizing smells, run the deletion ladder on each changed unit:**
+
+- **Delete entirely** — the behavior is not needed (YAGNI, speculative, dead on arrival).
+- **Reuse** — an existing helper or pattern in this repo already does it; replace the reimplementation with a call to it.
+- **Platform / stdlib / native / dependency** — the language stdlib, the runtime, or an already-installed dependency already does it (a hand-rolled date picker → `<input type="date">`, a custom query parser → `URLSearchParams`, a bespoke debounce → the util already imported).
+- **Simplify in place** — it must exist; make it smaller.
+
+Only code that lands on **Simplify in place** proceeds to the smell categories. This turns the pass from "find smells to trim" into "first decide whether the code should exist, then trim what survives." One function replaced by a platform call is a bigger, safer win than any in-place cleanup — and it needs no per-line smell analysis.
+
+For a diff that **fixes a bug**, grep the callers of every shared function it touches. Prefer one root-cause fix at the shared seam over repeated guards at each caller — a per-caller patch that leaves a sibling caller broken is a partial fix, not a cleanup.
+
+Then produce an explicit plan **before** spawning the removal agents:
 
 ```
 File: src/foo.py
+  Ladder: 2 units simplify-in-place; 1 unit delete (native <input> replaces custom picker)
   Categories: dead code, excessive complexity, performance
   Order: dead code → complexity → performance
   Risk: medium (touches caching layer)
 
 File: src/bar.py
+  Ladder: all simplify-in-place
   Categories: obvious comments, over-defensive
   Order: comments → defensive
   Risk: low
 ```
 
+**Intentional shortcuts:** if the plan deliberately keeps a bounded simplification (a naive scan fine under N rows, a global lock, an O(n²) path), mark it in-code with a `debt:` comment naming the ceiling and the upgrade trigger, and list it under "Remaining Risks / Deferred" in the report. That section is the debt ledger — a simplification with a known ceiling and no marker is indistinguishable from a bug.
+
 Order rule (safest → riskiest): comments → dead code → defensive → duplication → complexity → abstraction/boundary → performance → tests → oversized-modules. This minimizes blast radius of any one change.
 
 ### Phase 4: Parallel slop removal via `deep` agents in batches of 5
 
-Files are processed by `deep` category agents with the `$asterline:clean-ai-code` skill loaded, **batched 5 at a time in parallel**. The executable skill name is `clean-ai-code`. The `deep` category gives the agent enough thoroughness to correctly evaluate the 9 categories and respect the KEEP rule-sync without slipping into surface fixes; the 5-wide batch is the sweet spot — more than 5 creates result-merging noise and context contention, fewer wastes parallelism.
+Files are processed by `deep` category agents with the `$clean-ai-code` skill loaded, **batched 5 at a time in parallel**. The executable skill name is `clean-ai-code`. The `deep` category gives the agent enough thoroughness to correctly evaluate the 9 categories and respect the KEEP rule-sync without slipping into surface fixes; the 5-wide batch is the sweet spot — more than 5 creates result-merging noise and context contention, fewer wastes parallelism.
 
 **Batching protocol** (strict):
 
 1. Slice the in-scope file list into chunks of up to 5 files.
-2. For each chunk, launch all `task` calls **in a single message**, every one with `run_in_background=true`.
-3. End your turn. Wait for the system to send `<system-reminder>` notifications as each task finishes.
-4. Once all 5 in the batch complete, collect each result via `background_output(task_id=...)`.
+2. For each chunk, launch all independent one-shot assignments in the same parallel wave.
+3. Continue independent parent work while Auggie executes the wave.
+4. Once all 5 in the batch complete, collect the terminal result Auggie returns for each assignment.
 5. Launch the next batch of 5. Repeat until every file is processed.
 6. If total files ≤ 5, launch all in one batch.
 
 **Never** launch all files at once when there are more than 5; **never** launch them serially when more than one remains in the current batch.
 
-**Per-file invocation** (one of the 5 in a batch):
+**Per-file assignment content** (one of the 5 in a batch; prompt text, not callable syntax):
 
 ```
-task(
-  category="deep",
-  load_skills=["clean-ai-code"],
-  run_in_background=true,
-  description="Slop removal: {filename}",
-  prompt="""
+TASK: Remove AI slops from one file.
+DELIVERABLE: A minimal behavior-preserving cleanup plus a categorized report.
+SCOPE: {file_path}
+VERIFY: Run the applicable tests and diagnostics.
+
 Remove AI slops from: {file_path}
 
-In addition to your default categories (obvious comments, over-defensive code, spaghetti nesting), also evaluate these categories:
-- Excessive complexity: god functions, long parameter lists, complex booleans, nested ternaries
-- Needless abstraction: pass-through wrappers, single-use helpers, speculative indirection
-- Boundary violations: wrong-layer imports, leaky responsibilities, hidden coupling
-- Dead code: unused imports, unreachable branches, stale flags, debug leftovers
-- Duplication: copy-paste branches, redundant helpers
-- Performance equivalences: O(n²)→O(n) via set lookup, hoist computation out of loops, eager→lazy collections, batch redundant calls, cache repeated len()/length
+First run the deletion ladder from Phase 3 on this file (delete entirely / reuse existing repo code / platform-stdlib-native / simplify in place); only code that must exist proceeds to smell removal.
+
+Then evaluate EVERY category defined in this skill's "Categories (what counts as slop)" section, applying that section's KEEP and REFACTOR rules verbatim — the Categories section you have loaded is canonical, do not work from a restated subset.
 
 Apply changes in this order (safest → riskiest): comments → dead code → defensive → duplication → complexity → abstraction/boundary → performance → oversized-modules.
 
@@ -207,11 +207,9 @@ Hard constraints:
 
 Report changes grouped by category. For each change, give before/after, why-slop, why-safe.
 For each skipped issue, give reason.
-"""
-)
 ```
 
-**Batch failure handling**: a `multi_agent_v1.wait_agent` timeout only means no new mailbox update arrived, not that a `deep` agent failed. For long passes, require each child to send `WORKING: <file> - <current phase>` and `BLOCKED: <reason>` only when it cannot progress. Treat a running child as alive. Mark a file for retry only when the child is completed without the deliverable, ack-only after followup, explicitly `BLOCKED:`, or no longer running. Do NOT block the remaining 4 in that batch; collect successful results and retry the failed file once later. If retry also fails, escalate that file under "Issues Found & Fixed" in the final report.
+**Batch failure handling**: Auggie workers are bounded one-shot assignments, not persistent message channels. Do not block the remaining 4 lanes; integrate successful terminal results and retry an empty, inconclusive, or blocked file once as a smaller fresh assignment. If retry also fails, escalate that file under "Issues Found & Fixed" in the final report.
 
 ### Phase 5: Verify with quality gates + critical review
 
@@ -269,18 +267,19 @@ Behavior Lock:
   - Baseline status: GREEN
 
 Cleanup Plan:
-  - path/to/file1.ts: [dead code → complexity → performance]
-  - path/to/file2.py: [comments → defensive]
+  - path/to/file1.ts: [ladder: 1 delete (native) + simplify-in-place] → [dead code → complexity → performance]
+  - path/to/file2.py: [ladder: all simplify-in-place] → [comments → defensive]
 
-Per-File Results:
+Per-File Results (each cut shows what replaces it):
   path/to/file1.ts
-    - Dead code: 3 removed (lines X-Y, A-B, C)
+    - Ladder/delete: custom DatePicker (48 lines) → <input type="date"> (native), flatpickr import removed
+    - Dead code: 3 removed (lines X-Y, A-B, C) → nothing (unreachable)
     - Excessive complexity: 1 simplified (nested ternary at L42 → if/else)
     - Performance: 1 (line N: list scan → set lookup, O(n²)→O(n), behavior identical)
     - Skipped (preserved): 2 (defensive null check at boundary; commented WHY at L88)
 
   path/to/file2.py
-    - Obvious comments: 5 removed
+    - Obvious comments: 5 removed → nothing
     - Over-defensive: 1 simplified (redundant isinstance on typed param)
 
 Quality Gates:

@@ -2,34 +2,28 @@
 name: review-pass
 description: "Post-implementation review orchestrator for significant work. Runs independent checks for goal compliance, code quality, security, hands-on QA, and surrounding context, then reports blockers before approval. Use for review work, QA my work, verify implementation, check my work, or validate changes."
 ---
-## Auggie Tool Compatibility
+## Auggie delegation compatibility
 
-This skill may include orchestration examples copied from another harness. In Auggie, do not call unavailable helper tools such as legacy agent calls, `task(...)`, `background_output(...)`, or team helpers literally. Translate those examples to the available Asterline orchestration tools:
+Auggie supports only bounded one-shot parallel decomposition. Inspect the currently visible delegation surface before using it; do not invent tool names. Give each worker a self-contained assignment with disjoint ownership, collect its terminal result through the host surface, and let the parent verify and integrate it.
 
-| Harness example | Asterline-compatible tool to use |
-| --- | --- |
-| `legacy_agent_call(subagent_type="explore", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as an explorer. ...","agent_type":"explorer","fork_context":false})` |
-| `legacy_agent_call(subagent_type="librarian", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as a librarian. ...","agent_type":"librarian","fork_context":false})` |
-| `task(subagent_type="plan", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as a planning agent. ...","agent_type":"plan","fork_context":false})` |
-| `task(subagent_type="oracle", ...)` for final verification | `multi_agent_v1.spawn_agent({"message":"TASK: act as a rigorous reviewer. ...","agent_type":"asterline-work-reviewer","fork_context":false})` |
-| `task(category="...", ...)` for implementation or QA | `multi_agent_v1.spawn_agent({"message":"TASK: act as an implementation or QA worker. ...","fork_context":false})` |
-| `background_output(task_id="...")` | `multi_agent_v1.wait_agent(...)` for mailbox signals |
-| `team_*(...)` | Use available subagents via `multi_agent_v1.spawn_agent`, `multi_agent_v1.send_input`, `multi_agent_v1.wait_agent`, and `multi_agent_v1.close_agent` |
+Persistent teams, rosters, worker messaging, thread creation, resume, and cross-turn worker identity are unavailable. Any foreign-harness orchestration example below is conceptual only: translate it to fresh independent one-shot assignments, or run serially when the work cannot be split safely. This capability boundary overrides every example in this skill.
 
-Role-specific behavior must be described in a self-contained `message`. Use `fork_context: false` to start the child with only the initial prompt (no parent history); use `fork_context: true` only when full parent history is truly required. Include any required conversation context, files, diffs, constraints, and requested skill names directly in the spawned agent's `message`. Asterline exposes these selectable agent roles when the host supports typed subagents: `explorer`, `librarian`, `plan`, `momus`, `metis`, and `asterline-work-reviewer` — pass the matching name as `agent_type` so the child gets that role's model and instructions. On `multi_agent_v2` sessions the same `agent_type` applies (the Asterline installer exposes it) with `fork_turns` instead of `fork_context`. If the spawn tool exposes no `agent_type` parameter, omit it and describe the role inside `message`. If a code block below conflicts with this section, this section wins.
-
-For work likely to exceed one wait cycle, require the child to send `WORKING: <task> - <current phase>` before long passes and `BLOCKED: <reason>` only when progress stops. A `multi_agent_v1.wait_agent` timeout only means no new mailbox update arrived. Treat a running child as alive. Fallback only when the child is completed without the deliverable, ack-only after followup, explicitly `BLOCKED:`, or no longer running.
 
 ## Auggie Subagent Reliability
 
-Every `multi_agent_v1.spawn_agent` message must be self-contained. Start with
+Every `delegation assignment` message must be self-contained. Start with
 `TASK: <imperative assignment>`, then name `DELIVERABLE`, `SCOPE`, and
 `VERIFY`. State that it is an executable assignment, not a context
 handoff. Role or specialty instructions belong inside `message`.
-Use `fork_context: false` unless full history is truly
-required; paste only the review context that worker needs.
+Paste only the review context that worker needs; each assignment must stand alone.
 
-Plan and reviewer agents may run for a long time; spawn them in the background, keep doing independent root work, and poll with short `multi_agent_v1.wait_agent` cycles sized to the work. Never use a single long blocking wait for them, and never spin on tiny timeouts as a failure budget.
+Review lanes are leaf agents: a lane does its own reading, running, and
+judging inline and never spawns sub-reviewers of its own. Reviewers are
+one-shot: a lane ends at its verdict; a re-review after fixes is a fresh
+spawn scoped to the delta plus current evidence, never a `followup_task`
+to a long-lived reviewer carrying stale context.
+
+Launch independent review lanes in parallel and keep doing independent root work while Auggie executes them.
 
 Treat child status as a progress signal, not a timeout counter. For
 work likely to exceed one wait cycle, require the child to send
@@ -38,13 +32,9 @@ review passes, and `BLOCKED: <reason>` only when it cannot progress.
 While any child is active, keep the parent visibly alive with active
 subagent count, agent names, latest `WORKING:` phase, and whether the
 parent is waiting for mailbox updates. Track spawned agent names
-locally. Use `multi_agent_v1.wait_agent` for mailbox signals, not proof of completion.
-A timeout only means no new mailbox update arrived. Treat a running child as alive.
-Fallback only when the child is
-completed without the deliverable, ack-only after followup, explicitly
-`BLOCKED:`, or no longer running. Then mark that review lane
-`INCONCLUSIVE`, do not count it as PASS or approval, close if safe, and
-respawn a smaller `fork_context: false` reviewer with the missing
+locally. Auggie does not promise mailbox messaging, progress polling, resume, or re-tasking.
+If a terminal result is missing, empty, or explicitly `BLOCKED:`, mark that review lane
+`INCONCLUSIVE`, do not count it as PASS or approval, and launch a smaller fresh reviewer assignment with the missing
 deliverable. Preserve completed lane results immediately. If the retry
 budget is exhausted, keep the lane `INCONCLUSIVE` and still emit a final
 aggregate result.
@@ -58,7 +48,17 @@ gate, it is blocking. A timeout, missing deliverable, ack-only response,
 explicit `BLOCKED:`, or inconclusive lane is not a pass. Treat that lane as
 failed, investigate the underlying uncertainty with the `debug-trace` skill when
 runtime behavior may be wrong, fix with evidence, and rerun the affected lane
-before claiming completion or handing off a PR.
+before claiming completion, creating or handing off a PR, or merging.
+
+A rejecting lane must name its blockers inline in its final message — each
+blocker cites the violated goal criterion or requirement plus an evidence
+pointer. A bare REJECT/FAIL token without findings is not a verdict; treat it
+as an inconclusive lane (one bounded respawn, then record it inconclusive with
+that reason).
+
+When reviewing a PR or branch, collect diff, file contents, and verification
+results from a dedicated review worktree attached to that branch. Never
+checkout, test, or edit the review branch in the main worktree.
 
 Review evidence must be safe to share. Redact or mask secrets and sensitive
 user data before including evidence in logs, PR bodies, or handoffs. Never
@@ -95,7 +95,7 @@ Before launching agents, collect these inputs. Extract from conversation history
 </required_inputs>
 
 
-**NEVER CHECKOUT A PR BRANCH IN THE MAIN WORKTREE. ALWAYS CREATE A NEW GIT WORKTREE (`git worktree add`) AND WORK THERE. THIS PREVENTS CONTAMINATING THE USER'S WORKING DIRECTORY WITH UNRELATED BRANCH STATE.**
+Review PRs and branches from a dedicated review worktree only: create or attach one with `git worktree add <path> <branch>` before collecting changed files, diff, file contents, or running checks. The main worktree is read-only context; never checkout, test, or edit the review branch there.
 
 **Auto-collection sequence:**
 
@@ -130,13 +130,11 @@ Launch ALL 5 in a single turn. Every agent uses `run_in_background=true`. No seq
 
 This agent answers: "Did we build exactly what was asked, within the rule-sync we were given?"
 
-```
-task(
-  subagent_type="oracle",
-  run_in_background=true,
-  load_skills=[],
-  description="Verify implementation against original goal and constraints",
-  prompt="""
+```text
+TASK: Verify implementation against the original goal and constraints.
+DELIVERABLE: PASS or FAIL with cited blockers.
+SCOPE: The supplied goal, constraints, diff, and evidence.
+VERIFY: Check every stated requirement against concrete evidence.
 <review_type>GOAL & CONSTRAINT VERIFICATION</review_type>
 
 <original_goal>
@@ -198,7 +196,6 @@ OUTPUT FORMAT:
   - Evidence: specific code or logic reference
 </findings>
 <blocking_issues>Issues that MUST be fixed. Empty if PASS.</blocking_issues>
-""")
 ```
 
 ---
@@ -209,13 +206,11 @@ This agent answers: "Does it actually work when you run it?"
 
 The QA agent follows a structured process: brainstorm scenarios exhaustively first, then self-review and augment, then create a task list, then execute systematically.
 
-```
-task(
-  category="unspecified-high",
-  run_in_background=true,
-  load_skills=["playwright", "dev-browser"],
-  description="QA by actually running and using the application",
-  prompt="""
+```text
+TASK: Run hands-on application QA.
+DELIVERABLE: PASS or FAIL with commands, observations, and artifacts.
+SCOPE: The changed user-visible surface.
+VERIFY: Exercise happy, failure, and regression scenarios through the real surface.
 <review_type>QA - HANDS-ON APP EXECUTION</review_type>
 
 <original_goal>
@@ -235,6 +230,8 @@ task(
 </run_command>
 
 You are a QA engineer. Your job is to RUN the application and verify it works through hands-on testing. You do not review code - you test behavior.
+
+If the orchestrator already ran the `visual-check` dual-oracle gate on this same build, consume that verdict instead of re-running it - your lane covers hands-on behavior the visual gate does not.
 
 MANDATORY PROCESS (follow in order):
 
@@ -281,7 +278,7 @@ Work through the task list in priority order (P0 first). For each test:
 6. Mark the task complete
 
 **Execution guidance by app type:**
-- **Web app**: Use playwright/dev-browser to navigate, click, fill forms, verify visual output.
+- **Web app**: In Auggie, use `browser:control-in-app-browser` first for browser work that does not need an authenticated user session. Fall back to playwright/dev-browser when the Browser plugin is unavailable, lacks the needed action, or the test specifically needs a persistent/authenticated browser profile. Navigate, click, fill forms, and verify visual output through the chosen browser surface.
 - **CLI tool**: Run commands with various arguments, pipe inputs, check exit codes and output.
 - **Library/SDK**: Write and execute a test script that imports and exercises the public API.
 - **Backend API**: Use curl/httpie to hit endpoints with various payloads, verify response codes and bodies.
@@ -310,7 +307,6 @@ OUTPUT FORMAT:
   - Evidence: Screenshot path or terminal output snippet (if FAIL)
 </test_results>
 <blocking_issues>P0 or P1 failures only. Empty if PASS.</blocking_issues>
-""")
 ```
 
 ---
@@ -319,13 +315,11 @@ OUTPUT FORMAT:
 
 This agent answers: "Is the code well-written, maintainable, and consistent with the codebase?"
 
-```
-task(
-  subagent_type="oracle",
-  run_in_background=true,
-  load_skills=[],
-  description="Review overall code quality, patterns, and architecture",
-  prompt="""
+```text
+TASK: Review overall code quality, patterns, and architecture.
+DELIVERABLE: PASS or FAIL with severity-ranked findings.
+SCOPE: Changed files, neighboring patterns, and the diff.
+VERIFY: Cite every finding to a concrete location.
 <review_type>CODE QUALITY REVIEW</review_type>
 
 <changed_files>
@@ -385,7 +379,6 @@ OUTPUT FORMAT:
   - Suggestion: how to improve
 </findings>
 <blocking_issues>CRITICAL and MAJOR items only. Empty if PASS.</blocking_issues>
-""")
 ```
 
 ---
@@ -396,13 +389,11 @@ This agent answers: "Are there security vulnerabilities in these changes?"
 
 This is supplementary - it focuses exclusively on security. It does NOT comment on code style, architecture, or functionality unless those directly create a security risk.
 
-```
-task(
-  subagent_type="oracle",
-  run_in_background=true,
-  load_skills=[],
-  description="Security-focused review of implementation changes",
-  prompt="""
+```text
+TASK: Perform a security-focused review of the implementation changes.
+DELIVERABLE: PASS or FAIL with exploitable paths and mitigations.
+SCOPE: Changed files, data flows, and trust boundaries.
+VERIFY: Tie every finding to evidence and realistic impact.
 <review_type>SECURITY REVIEW (supplementary)</review_type>
 
 <changed_files>
@@ -443,7 +434,6 @@ OUTPUT FORMAT:
   - Remediation: Specific fix
 </findings>
 <blocking_issues>CRITICAL and HIGH items only. Empty if PASS.</blocking_issues>
-""")
 ```
 
 ---
@@ -452,13 +442,11 @@ OUTPUT FORMAT:
 
 This agent answers: "Did we miss any context that should have informed this implementation?"
 
-```
-task(
-  category="unspecified-high",
-  run_in_background=true,
-  load_skills=["git-flow"],
-  description="Mine all accessible contexts for missed requirements or background knowledge",
-  prompt="""
+```text
+TASK: Mine accessible context for missed requirements or background knowledge.
+DELIVERABLE: PASS or FAIL with relevant commits, issues, or surrounding constraints.
+SCOPE: Repository history and context available to the worker.
+VERIFY: Cite every claimed requirement to its source.
 <review_type>CONTEXT MINING - MISSED REQUIREMENTS & BACKGROUND</review_type>
 
 <original_goal>
@@ -530,7 +518,6 @@ OUTPUT FORMAT:
 </discovered_context>
 <missed_requirements>Requirements the implementation should address but doesn't. Empty if none.</missed_requirements>
 <blocking_issues>BLOCKING items only. Empty if PASS.</blocking_issues>
-""")
 ```
 
 ---
@@ -541,8 +528,7 @@ After launching all 5 agents in one turn, wait for completions in bounded
 cycles. Do not treat a timeout, ack-only reply, or empty child result as
 a PASS.
 
-As each completes, collect via the Auggie mapping above (`multi_agent_v1.wait_agent`,
-then the child's substantive final result). Preserve completed lane
+As each completes, collect the substantive terminal result Auggie returns. Preserve completed lane
 results immediately; never lose a PASS/FAIL because another lane is
 still running. Store each verdict independently:
 
@@ -561,7 +547,7 @@ inconclusive and respawn a smaller reviewer/worker for that exact lane.
 If it still remains unfinished after that retry, close the still-running
 agent if safe, keep the lane INCONCLUSIVE, and emit the final aggregate
 review result with the incomplete lane named. Do not spin in repeated
-wait/followup cycles. Do not use `multi_agent_v1.send_input` as an interrupt; queued
+wait/followup cycles. Do not use `unsupported worker messaging` as an interrupt; queued
 followups are not cancellation.
 
 ---

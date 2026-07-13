@@ -1,6 +1,6 @@
 ---
 name: upstream-fix
-description: "Contribute a verified bug fix for Asterline, Asterline CLI, asterline-runtime, bundled Asterline skills, or upstream Auggie CLI bugs. Opens a fork PR only for upstream <owner>/<auggie-cli-source-repo>; Asterline-owned defects become a verified-fix issue on Asterline upstream source repository (never a PR — that repo is a generated distribution mirror). Use when the user asks to fix a bug, contribute a bug fix, contribute to fix bug, open a PR for a bug, or debug and PR a Asterline/Auggie defect."
+description: "Contribute a verified bug fix for Asterline, its bundled skills, or Auggie CLI bugs. Asterline-owned defects become verified-fix issues on tosky1125/auggie-asterline. Auggie-core work requires an authoritative repository supplied by the user."
 metadata:
   short-description: Contribute verified Asterline or Auggie bug fixes
 ---
@@ -11,14 +11,14 @@ Use this skill to debug a concrete Asterline or Auggie defect, implement the sma
 
 Route ownership the same way as `$upstream-report`, but the deliverable differs by target:
 
-- `Asterline upstream source repository` for Asterline, Asterline CLI, asterline-runtime, bundled skills, hooks, MCP wiring, installer behavior, marketplace sync, docs, or packaging. Deliverable: a verified-fix issue with the patch embedded. NEVER open a PR or push a branch against this repo — its contents are regenerated from the source tree on every release, so PRs there cannot be merged and will be closed.
-- `<owner>/<auggie-cli-source-repo>` for upstream Auggie CLI bugs that reproduce without Asterline or come from Auggie core behavior. Deliverable: a PR from a fork.
+- `tosky1125/auggie-asterline` for Asterline, bundled skills, hooks, MCP wiring, marketplace sync, docs, or packaging. Deliverable: a verified-fix issue with the patch embedded. Do not open a PR unless the user explicitly changes that delivery policy.
+- For an Auggie-core defect, require the user to supply the authoritative repository as `AUGGIE_SOURCE_REPO`. The plugin does not publish or infer that repository.
 
 ## Required Outcome
 
-For `<owner>/<auggie-cli-source-repo>`, create a fork PR that includes:
+For a user-supplied `AUGGIE_SOURCE_REPO`, create a fork PR only when the user requested one and it includes:
 
-- a focused branch from a fresh `/tmp` clone/worktree
+- a focused branch from a fresh `${TMPDIR:-/tmp}` clone/worktree
 - reproduction logs from before the fix
 - the smallest implementation that fixes the defect
 - verification logs from after the fix
@@ -26,11 +26,11 @@ For `<owner>/<auggie-cli-source-repo>`, create a fork PR that includes:
 - the required Asterline footer tag `Tag: asterline-generated`
 - cleanup of temporary worktrees and clones
 
-For `Asterline upstream source repository`, create an issue (never a PR) that includes:
+For `tosky1125/auggie-asterline`, create an issue that includes:
 
 - reproduction logs from before the fix
 - the root cause with source evidence
-- the verified patch as a unified diff, produced and tested in a fresh `/tmp` clone/worktree
+- the verified patch as a unified diff, produced and tested in a fresh `${TMPDIR:-/tmp}` clone/worktree
 - verification logs from after the fix
 - the `asterline-generated` label and the footer tag `Tag: asterline-generated`
 - cleanup of temporary worktrees and clones
@@ -38,29 +38,62 @@ For `Asterline upstream source repository`, create an issue (never a PR) that in
 ## Required Workflow
 
 1. Read the user's bug report and identify the affected surface.
-2. Invoke `$asterline:debug-trace` for the investigation. If only unqualified skill names are exposed, invoke `$debug-trace` and state that it is the Asterline debug-trace skill.
+2. Invoke `$debug-trace` for the investigation.
 3. Materialize the latest sources, then decide the target repository. Sync both checkouts on every run and compare them before choosing — a stale checkout routes the fix to the wrong repo:
 
 ```bash
+ASTERLINE_SOURCE_ROOT="${ASTERLINE_SOURCE_ROOT:-${TMPDIR:-/tmp}/asterline-sources}"
+mkdir -p "$ASTERLINE_SOURCE_ROOT"
+
+valid_source_checkout() {
+  DEST="$1"
+  git -C "$DEST" rev-parse --is-inside-work-tree >/dev/null 2>&1 &&
+    git -C "$DEST" config --get remote.origin.url >/dev/null 2>&1
+}
+
+recover_corrupt_source_checkout() {
+  DEST="$1"
+  if [ -e "$DEST" ] && ! valid_source_checkout "$DEST"; then
+    QUARANTINED="$DEST.corrupt.$(date +%Y%m%d%H%M%S)"
+    mv "$DEST" "$QUARANTINED"
+    echo "Moved corrupt source cache $DEST to $QUARANTINED" >&2
+  fi
+}
+
 sync_latest_source() {
   REPO="$1"; DEST="$2"
-  if [ ! -d "$DEST/.git" ]; then
+  recover_corrupt_source_checkout "$DEST"
+  if [ ! -d "$DEST" ]; then
     gh repo clone "$REPO" "$DEST" -- --depth=1 \
       || git clone --depth=1 "https://github.com/$REPO" "$DEST"
   fi
+  if ! valid_source_checkout "$DEST"; then
+    echo "Source cache $DEST is not a usable git checkout after clone" >&2
+    return 1
+  fi
+  git -C "$DEST" remote set-url origin "https://github.com/$REPO.git" >/dev/null 2>&1 || true
   DEFAULT_BRANCH="$(git -C "$DEST" remote show origin | sed -n '/HEAD branch/s/.*: //p')"
+  if [ -z "$DEFAULT_BRANCH" ]; then
+    DEFAULT_BRANCH="$(git -C "$DEST" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')"
+  fi
+  if [ -z "$DEFAULT_BRANCH" ]; then
+    echo "Could not determine default branch for $REPO in $DEST" >&2
+    return 1
+  fi
   git -C "$DEST" fetch --depth=1 origin "$DEFAULT_BRANCH"
   git -C "$DEST" checkout -B "$DEFAULT_BRANCH" FETCH_HEAD
 }
-ASTERLINE_SOURCE_REPO="${ASTERLINE_SOURCE_REPO:-<owner>/<asterline-source-repo>}"
+ASTERLINE_SOURCE_REPO="${ASTERLINE_SOURCE_REPO:-tosky1125/auggie-asterline}"
 sync_latest_source "$ASTERLINE_SOURCE_REPO" /tmp/asterline-source
-sync_latest_source <owner>/<auggie-cli-source-repo> /tmp/auggie-cli-source
+if [ -n "${AUGGIE_SOURCE_REPO:-}" ]; then
+  sync_latest_source "$AUGGIE_SOURCE_REPO" /tmp/auggie-cli-source
+fi
 ```
-4. Create a fresh temporary clone and branch. Do not modify the user's current repository for the target fix unless the current repository is itself the requested target and the user explicitly asked for local edits.
+4. Create a fresh temporary clone and branch under `${TMPDIR:-/tmp}`. Do not modify the user's current repository for the target fix unless the current repository is itself the requested target and the user explicitly asked for local edits.
 
 ```bash
-ASTERLINE_SOURCE_REPO="${ASTERLINE_SOURCE_REPO:-<owner>/<asterline-source-repo>}"
-TARGET_REPO="$ASTERLINE_SOURCE_REPO" # or <owner>/<auggie-cli-source-repo>
+ASTERLINE_SOURCE_REPO="${ASTERLINE_SOURCE_REPO:-tosky1125/auggie-asterline}"
+TARGET_REPO="$ASTERLINE_SOURCE_REPO" # use $AUGGIE_SOURCE_REPO only when the user supplied it
 WORK_ROOT="$(mktemp -d /tmp/asterline-fix-XXXXXX)"
 gh repo clone "$TARGET_REPO" "$WORK_ROOT/repo" -- --depth=1
 cd "$WORK_ROOT/repo"
@@ -87,8 +120,8 @@ git log --oneline "origin/$BASE_BRANCH..HEAD"
 ```
 
 10. Build the delivery body for the target:
-   - `<owner>/<auggie-cli-source-repo>`: generate the PR body with `scripts/create-pr-body.mjs`.
-   - `Asterline upstream source repository`: export the verified patch and write the issue body from the Verified-Fix Issue Template below:
+   - User-supplied `AUGGIE_SOURCE_REPO`: generate the PR body with `scripts/create-pr-body.mjs`.
+   - `tosky1125/auggie-asterline`: export the verified patch and write the issue body from the Verified-Fix Issue Template below:
 
 ```bash
 PATCH_FILE="/tmp/asterline-fix-<short-slug>.patch"
@@ -107,20 +140,20 @@ fi
 ```
 
 12. Deliver the fix.
-   - `Asterline upstream source repository`: create the verified-fix issue. Never push a branch to this repo and never run `gh pr create` against it:
+   - `tosky1125/auggie-asterline`: create the verified-fix issue. Never push a branch to this repo unless the user explicitly changes the delivery policy:
 
 ```bash
 ISSUE_BODY="/tmp/asterline-fix-<short-slug>-issue.md"
 gh issue create --repo "$ASTERLINE_SOURCE_REPO" --title "<short fix title>" "${LABEL_ARGS[@]}" --body-file "$ISSUE_BODY"
 ```
 
-   - `<owner>/<auggie-cli-source-repo>`: fork, push the branch to the fork, and create the PR:
+   - User-supplied `AUGGIE_SOURCE_REPO`: fork, push the branch to the fork, and create the PR:
 
 ```bash
-gh repo fork <owner>/<auggie-cli-source-repo> --remote --remote-name fork
+gh repo fork "$AUGGIE_SOURCE_REPO" --remote --remote-name fork
 GH_USER="$(gh api user --jq .login)"
 git push -u fork "$BRANCH_NAME"
-gh pr create --repo <owner>/<auggie-cli-source-repo> --base "$BASE_BRANCH" --head "$GH_USER:$BRANCH_NAME" --title "<short fix title>" "${LABEL_ARGS[@]}" --body-file "$PR_BODY"
+gh pr create --repo "$AUGGIE_SOURCE_REPO" --base "$BASE_BRANCH" --head "$GH_USER:$BRANCH_NAME" --title "<short fix title>" "${LABEL_ARGS[@]}" --body-file "$PR_BODY"
 ```
 
 13. Clean up:
@@ -161,18 +194,18 @@ Write the issue body in English. Embed the patch verbatim so a maintainer can ap
 - [Manual QA command and result]
 
 ---
-This fix was debugged, implemented, and verified with [Asterline](https://github.com/<owner>/<asterline-source-repo>).
+This fix was debugged, implemented, and verified with [Asterline](https://github.com/tosky1125/auggie-asterline).
 Tag: asterline-generated
 ````
 
-## PR Body Generator (<owner>/<auggie-cli-source-repo>)
+## PR Body Generator (user-supplied Auggie repository)
 
 Use the bundled script to generate the PR body. Create a JSON file with this shape:
 
 ```json
 {
   "title": "Fix short user-visible failure",
-  "targetRepository": "<owner>/<auggie-cli-source-repo>",
+  "targetRepository": "value of AUGGIE_SOURCE_REPO",
   "problem": "What is broken for the user.",
   "reproductionLogs": "Exact failing command, log excerpt, or trace.",
   "approach": "What changed and why this is the smallest correct fix.",
@@ -191,7 +224,7 @@ PR_BODY="/tmp/asterline-fix-<short-slug>-pr.md"
 node "<skill-root>/scripts/create-pr-body.mjs" "$PR_INPUT" "$PR_BODY"
 ```
 
-## PR Body Template (<owner>/<auggie-cli-source-repo>)
+## PR Body Template (user-supplied Auggie repository)
 
 The generated body must follow this structure:
 
@@ -220,7 +253,7 @@ The generated body must follow this structure:
 - [Manual QA command and result]
 
 ---
-This PR was debugged, implemented, and created with [Asterline](https://github.com/<owner>/<asterline-source-repo>).
+This PR was debugged, implemented, and created with [Asterline](https://github.com/tosky1125/auggie-asterline).
 Tag: asterline-generated
 ```
 

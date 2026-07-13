@@ -2,23 +2,12 @@
 name: init-knowledge
 description: "(builtin) Initialize hierarchical AGENTS.md knowledge base"
 ---
-## Auggie Tool Compatibility
+## Auggie delegation compatibility
 
-This skill may include orchestration examples copied from another harness. In Auggie, do not call unavailable helper tools such as legacy agent calls, `task(...)`, `background_output(...)`, or team helpers literally. Translate those examples to the available Asterline orchestration tools:
+Auggie supports only bounded one-shot parallel decomposition. Inspect the currently visible delegation surface before using it; do not invent tool names. Give each worker a self-contained assignment with disjoint ownership, collect its terminal result through the host surface, and let the parent verify and integrate it.
 
-| Harness example | Asterline-compatible tool to use |
-| --- | --- |
-| `legacy_agent_call(subagent_type="explore", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as an explorer. ...","agent_type":"explorer","fork_context":false})` |
-| `legacy_agent_call(subagent_type="librarian", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as a librarian. ...","agent_type":"librarian","fork_context":false})` |
-| `task(subagent_type="plan", ...)` | `multi_agent_v1.spawn_agent({"message":"TASK: act as a planning agent. ...","agent_type":"plan","fork_context":false})` |
-| `task(subagent_type="oracle", ...)` for final verification | `multi_agent_v1.spawn_agent({"message":"TASK: act as a rigorous reviewer. ...","agent_type":"asterline-work-reviewer","fork_context":false})` |
-| `task(category="...", ...)` for implementation or QA | `multi_agent_v1.spawn_agent({"message":"TASK: act as an implementation or QA worker. ...","fork_context":false})` |
-| `background_output(task_id="...")` | `multi_agent_v1.wait_agent(...)` for mailbox signals |
-| `team_*(...)` | Use available subagents via `multi_agent_v1.spawn_agent`, `multi_agent_v1.send_input`, `multi_agent_v1.wait_agent`, and `multi_agent_v1.close_agent` |
+Persistent teams, rosters, worker messaging, thread creation, resume, and cross-turn worker identity are unavailable. Any foreign-harness orchestration example below is conceptual only: translate it to fresh independent one-shot assignments, or run serially when the work cannot be split safely. This capability boundary overrides every example in this skill.
 
-Role-specific behavior must be described in a self-contained `message`. Use `fork_context: false` to start the child with only the initial prompt (no parent history); use `fork_context: true` only when full parent history is truly required. Include any required conversation context, files, diffs, constraints, and requested skill names directly in the spawned agent's `message`. Asterline exposes these selectable agent roles when the host supports typed subagents: `explorer`, `librarian`, `plan`, `momus`, `metis`, and `asterline-work-reviewer` — pass the matching name as `agent_type` so the child gets that role's model and instructions. On `multi_agent_v2` sessions the same `agent_type` applies (the Asterline installer exposes it) with `fork_turns` instead of `fork_context`. If the spawn tool exposes no `agent_type` parameter, omit it and describe the role inside `message`. If a code block below conflicts with this section, this section wins.
-
-For work likely to exceed one wait cycle, require the child to send `WORKING: <task> - <current phase>` before long passes and `BLOCKED: <reason>` only when progress stops. A `multi_agent_v1.wait_agent` timeout only means no new mailbox update arrived. Treat a running child as alive. Fallback only when the child is completed without the deliverable, ack-only after followup, explicitly `BLOCKED:`, or no longer running.
 
 # /init-knowledge
 
@@ -38,7 +27,7 @@ Generate hierarchical AGENTS.md files. Root + complexity-scored subdirectories.
 
 1. **Discovery + Analysis** (concurrent)
    - Fire background explore agents immediately
-   - Main session: bash structure + LSP codemap + read existing AGENTS.md
+   - Main session: bash structure + LSP/codegraph code map + read existing AGENTS.md
 2. **Score & Decide** - Determine AGENTS.md locations from merged findings
 3. **Generate** - Root first, then subdirs in parallel
 4. **Review** - Deduplicate, trim, validate
@@ -47,7 +36,7 @@ Generate hierarchical AGENTS.md files. Root + complexity-scored subdirectories.
 **TodoWrite ALL phases. Mark in_progress → completed in real-time.**
 ```
 TodoWrite([
-  { id: "discovery", content: "Fire explore agents + LSP codemap + read existing", status: "pending", priority: "high" },
+  { id: "discovery", content: "Fire explore agents + LSP/codegraph map + read existing", status: "pending", priority: "high" },
   { id: "scoring", content: "Score directories, determine locations", status: "pending", priority: "high" },
   { id: "generate", content: "Generate AGENTS.md files (root + subdirs)", status: "pending", priority: "high" },
   { id: "review", content: "Deduplicate, validate, trim", status: "pending", priority: "medium" }
@@ -63,16 +52,16 @@ TodoWrite([
 
 ### Fire Background Explore Agents IMMEDIATELY
 
-Don't wait-these run async while main session works.
+Don't wait-these run async while main session works. **Equip every agent with the code graph**: any task touching structure, entry points, dependencies, or hotspots MUST query `codegraph_*` (explore/search/callers/callees/impact) and `lsp_symbols` when present, and ground its claims in that data instead of guessing from conventions. Richer real-graph context per agent = a more accurate project map.
 
 ```
 // Fire all at once, collect results later
-task(subagent_type="explore", load_skills=[], description="Explore project structure", run_in_background=true, prompt="Project structure: PREDICT standard patterns for detected language → REPORT deviations only")
-task(subagent_type="explore", load_skills=[], description="Find entry points", run_in_background=true, prompt="Entry points: FIND main files → REPORT non-standard organization")
-task(subagent_type="explore", load_skills=[], description="Find conventions", run_in_background=true, prompt="Conventions: FIND config files (.eslintrc, pyproject.toml, .editorconfig) → REPORT project-specific rule-sync")
-task(subagent_type="explore", load_skills=[], description="Find anti-patterns", run_in_background=true, prompt="Anti-patterns: FIND 'DO NOT', 'NEVER', 'ALWAYS', 'DEPRECATED' comments → LIST forbidden patterns")
-task(subagent_type="explore", load_skills=[], description="Explore build/CI", run_in_background=true, prompt="Build/CI: FIND .github/workflows, Makefile → REPORT non-standard patterns")
-task(subagent_type="explore", load_skills=[], description="Find test patterns", run_in_background=true, prompt="Test patterns: FIND test configs, test structure → REPORT unique conventions")
+one-shot assignment for role="explore", load_skills=[], description="Explore project structure", run_in_background=true, prompt="Project structure: PREDICT standard patterns for detected language → REPORT deviations only")
+one-shot assignment for role="explore", load_skills=[], description="Find entry points", run_in_background=true, prompt="Entry points: FIND main files → REPORT non-standard organization")
+one-shot assignment for role="explore", load_skills=[], description="Find conventions", run_in_background=true, prompt="Conventions: FIND config files (.eslintrc, pyproject.toml, .editorconfig) → REPORT project-specific rule-sync")
+one-shot assignment for role="explore", load_skills=[], description="Find anti-patterns", run_in_background=true, prompt="Anti-patterns: FIND 'DO NOT', 'NEVER', 'ALWAYS', 'DEPRECATED' comments → LIST forbidden patterns")
+one-shot assignment for role="explore", load_skills=[], description="Explore build/CI", run_in_background=true, prompt="Build/CI: FIND .github/workflows, Makefile → REPORT non-standard patterns")
+one-shot assignment for role="explore", load_skills=[], description="Find test patterns", run_in_background=true, prompt="Test patterns: FIND test configs/structure; codegraph_callers on core modules to see what is covered → REPORT unique conventions")
 ```
 
 <dynamic-agents>
@@ -98,9 +87,9 @@ max_depth=$(find . -type d -not -path '*/node_modules/*' -not -path '*/.git/*' |
 Example spawning:
 ```
 // 500 files, 50k lines, depth 6, 15 large files → spawn 5+5+2+1 = 13 additional agents
-task(subagent_type="explore", load_skills=[], description="Analyze large files", run_in_background=true, prompt="Large file analysis: FIND files >500 lines, REPORT complexity hotspots")
-task(subagent_type="explore", load_skills=[], description="Explore deep modules", run_in_background=true, prompt="Deep modules at depth 4+: FIND hidden patterns, internal conventions")
-task(subagent_type="explore", load_skills=[], description="Find shared utilities", run_in_background=true, prompt="Cross-cutting concerns: FIND shared utilities across directories")
+one-shot assignment for role="explore", load_skills=[], description="Analyze large files", run_in_background=true, prompt="Large file analysis: FIND files >500 lines, REPORT complexity hotspots")
+one-shot assignment for role="explore", load_skills=[], description="Explore deep modules", run_in_background=true, prompt="Deep modules at depth 4+: FIND hidden patterns, internal conventions")
+one-shot assignment for role="explore", load_skills=[], description="Find shared utilities", run_in_background=true, prompt="Cross-cutting concerns: FIND shared utilities across directories")
 // ... more based on calculation
 ```
 </dynamic-agents>
@@ -134,33 +123,28 @@ For each existing file found:
 
 If `--create-new`: Read all existing first (preserve context) → then delete all → regenerate.
 
-#### 3. LSP Codemap (if available)
-```
-LspServers()  # Check availability
+#### 3. Code Map - drive LSP AND codegraph (do NOT skip)
 
-# Entry points (parallel)
-LspDocumentSymbols(filePath="src/index.ts")
-LspDocumentSymbols(filePath="main.py")
+Highest-signal source for the CODE MAP and the Symbol/Export/Reference scoring rows. Complementary, not alternatives - run BOTH when present, alongside the explore agents.
 
-# Key symbols (parallel)
-LspWorkspaceSymbols(filePath=".", query="class")
-LspWorkspaceSymbols(filePath=".", query="interface")
-LspWorkspaceSymbols(filePath=".", query="function")
+**LSP** - check `lsp_status`; model-facing names are `lsp_status`/`lsp_symbols`/`lsp_find_references`/`lsp_goto_definition` (some harnesses drop the `lsp_` prefix):
+- `lsp_symbols` scope="document" on each entry point -> file outline.
+- `lsp_symbols` scope="workspace", query by kind (class/interface/function) -> symbol inventory.
+- `lsp_find_references` on top exports (line/character from the symbols result) -> reference centrality.
 
-# Centrality for top exports
-LspFindReferences(filePath="...", line=X, character=Y)
-```
+**codegraph** - when `codegraph_*` tools exist (check `codegraph_status`); a first-class peer to LSP, NOT a last resort:
+- `codegraph_explore` -> overview; `codegraph_callers`/`codegraph_callees`/`codegraph_impact` -> centrality + blast radius for the scoring matrix; `codegraph_search`/`codegraph_files` -> symbol/file inventory.
 
-**LSP Fallback**: If unavailable, rely on explore agents + AST-grep.
+Only if NEITHER exists: explore agents + the ast-grep skill (`sg`), and mark centrality unmeasured in the CODE MAP.
 
 ### Collect Background Results
 
 ```
 // After main session analysis done, collect all task results
-for each background task ID (`bg_...`): background_output(task_id="bg_...")
+collect the terminal result Auggie returns for each one-shot assignment
 ```
 
-**Merge: bash + LSP + existing + explore findings. Mark "discovery" as completed.**
+**Merge: bash + LSP/codegraph + existing + explore findings. Mark "discovery" as completed.**
 
 ---
 
@@ -177,9 +161,9 @@ for each background task ID (`bg_...`): background_output(task_id="bg_...")
 | Code ratio | 2x | >70% | bash |
 | Unique patterns | 1x | Has own config | explore |
 | Module boundary | 2x | Has index.ts/__init__.py | bash |
-| Symbol density | 2x | >30 symbols | LSP |
-| Export count | 2x | >10 exports | LSP |
-| Reference centrality | 3x | >20 refs | LSP |
+| Symbol density | 2x | >30 symbols | LSP/cg |
+| Export count | 2x | >10 exports | LSP/cg |
+| Reference centrality | 3x | >20 refs | LSP/cg |
 
 ### Decision Rules
 
@@ -236,7 +220,7 @@ NEVER use Write to overwrite an existing file. ALWAYS check existence first via 
 |------|----------|-------|
 
 ## CODE MAP
-{From LSP - skip if unavailable or project <10 files}
+{From LSP/codegraph - skip only if neither exists or project <10 files}
 
 | Symbol | Type | Location | Refs | Role |
 |--------|------|----------|------|------|
@@ -267,7 +251,7 @@ Launch writing tasks for each location:
 
 ```
 for loc in AGENTS_LOCATIONS (except root):
-  task(category="writing", load_skills=[], run_in_background=false, description="Generate AGENTS.md", prompt=`
+  one-shot assignment for category="writing", load_skills=[], run_in_background=false, description="Generate AGENTS.md", prompt=`
     Generate AGENTS.md for: ${loc.path}
     - Reason: ${loc.reason}
     - 30-80 lines max
@@ -319,7 +303,7 @@ Hierarchy:
 ## Anti-Patterns
 
 - **Static agent count**: MUST vary agents based on project size/depth
-- **Sequential execution**: MUST parallel (explore + LSP concurrent)
+- **Sequential execution**: MUST parallel (explore + LSP + codegraph concurrent)
 - **Ignoring existing**: ALWAYS read existing first, even with --create-new
 - **Over-documenting**: Not every dir needs AGENTS.md
 - **Redundancy**: Child never repeats parent

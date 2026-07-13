@@ -20,30 +20,17 @@ This skill is intentionally compact. The full workflow lives in `references/full
 ## Non-Negotiables
 
 - Use the work-loop CLI state under `.asterline/work-loop`; do not hand-edit goal state.
-- After any compaction or context loss, re-read brief + goals + ledger FIRST (`asterline sparkshell cat .asterline/work-loop/ledger.jsonl` or read directly) plus `asterline work-loop status --json`, then resume; never re-plan from scratch.
-- If `asterline work-loop create-goals` says the existing aggregate is already complete, start unrelated new work with a fresh `--session-id <new-id>` instead of steering or forcing the completed default state. Use `--force` only to intentionally overwrite completed evidence.
+- After any compaction or context loss, read `.asterline/work-loop/brief.md`, `goals.json`, and `ledger.jsonl` directly, then run `node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop status --json`; never re-plan from scratch.
+- If the direct Node CLI's `create-goals` command says the existing aggregate is already complete, start unrelated new work with a fresh `--session-id <new-id>` instead of steering or forcing the completed default state. Use `--force` only to intentionally overwrite completed evidence.
 - Every success criterion needs observable evidence from a real surface: a channel (tmux, HTTP, browser, computer-use) or, for CLI- or data-shaped criteria, an auxiliary surface (CLI stdout, DB diff, parsed config dump).
 - Record evidence through the CLI only after cleanup receipts are available.
 - Delegate code edits, test writes, fixes, and QA execution to right-sized available subagents when the workflow requires it.
-- Every `multi_agent_v1.spawn_agent` message starts with `TASK:`, then names `DELIVERABLE`, `SCOPE`, and `VERIFY`; put role and specialty instructions inside `message`; use `fork_context: false` unless full history is truly required.
-- Plan and reviewer agents may run for a long time; spawn them in the background, keep doing independent root work, and poll with short `multi_agent_v1.wait_agent` cycles. Never use a single long blocking wait for them.
-- For work likely to exceed one wait cycle, require the child to send `WORKING: <task> - <current phase>` before long reading, testing, or review passes, and `BLOCKED: <reason>` only when it cannot progress.
-- Track spawned agent names locally. Use `multi_agent_v1.wait_agent` for mailbox signals, not proof of completion. A timeout only means no new mailbox update arrived. Treat a running child as alive.
-- While children run, surface the active subagent count, agent names, and latest `WORKING:` phase.
-- Fallback only when the child is completed without the deliverable, ack-only after followup, explicitly `BLOCKED:`, or no longer running. Then record inconclusive and respawn a smaller `fork_context: false` task with the missing deliverable.
+- Every delegated unit is a self-contained one-shot assignment beginning with `TASK:`, then naming `DELIVERABLE`, `SCOPE`, and `VERIFY`; put role and specialty instructions inside the assignment.
+- Launch independent lanes in parallel and keep doing independent root work while Auggie executes them.
+- Auggie integration supports parallel splitting only. Do not rely on worker messaging, progress polling, follow-up tasks, resume, persistent teams, or cross-turn worker identity.
+- Integrate only terminal results. A missing, empty, or blocked result is inconclusive and may be retried once as a smaller fresh assignment.
 - Use `git-flow` for git-tracked edits: inspect recent and touched-path commit history, then commit each verified work unit atomically in the repository's observed language, scope, and message style with only that unit's files staged.
 
-## Auggie Tool Mapping
+## Auggie Delegation Boundary
 
-The full workflow may mention OpenCode-style orchestration examples. In Auggie, translate them to available tools:
-
-| Workflow intent | Asterline-compatible tool |
-| --- | --- |
-| Plan agent | `multi_agent_v1.spawn_agent({"message":"TASK: act as a planning agent. ...","fork_context":false})` |
-| Search/read-only worker | `multi_agent_v1.spawn_agent({"message":"TASK: act as an explorer. ...","fork_context":false})` |
-| Implementation or QA worker | `multi_agent_v1.spawn_agent({"message":"TASK: act as an implementation or QA worker. ...","fork_context":false})` |
-| Final verification reviewer | `multi_agent_v1.spawn_agent({"message":"TASK: act as a rigorous reviewer. ...","fork_context":false})` |
-| Wait for background result | `multi_agent_v1.wait_agent(...)` |
-| Clean up finished worker | `multi_agent_v1.close_agent(...)` |
-
-When translating `load_skills=[...]`, include the requested skill names in the spawned agent's `message`.
+Inspect the currently visible Auggie tools before delegating and use their exact schema. The full workflow's worker descriptions are assignment content, not callable syntax. Only fresh bounded one-shot parallel assignments are portable here; the parent remains the integrator and independently verifies every returned result.

@@ -5,25 +5,25 @@ description: Use when Auggie needs language-server diagnostics, definitions, ref
 
 # Asterline Code Intelligence
 
-Call `code-intel` MCP tools through the tool interface; `code-intel.*`/`mcp__code-intel__*` are tool-call names, not shell commands.
+The public skill is `$code-intel`; the installed MCP server registration is `lsp`. Call its tools through Auggie's tool interface rather than as shell commands.
 
 ## Tools
 
-- `code-intel.status`: list configured, installed, missing, disabled, and active language servers.
-- `code-intel.diagnostics`: check one file or directory for LSP diagnostics. Prefer `severity: "error"` after edits.
-- `code-intel.goto_definition`: locate a symbol definition from file, line, and character.
-- `code-intel.find_references`: find usages of a symbol across the workspace.
-- `code-intel.symbols`: inspect document symbols or search workspace symbols.
-- `code-intel.prepare_rename`: check whether a rename is valid at a position.
-- `code-intel.rename`: apply a language-server workspace edit for a rename.
+- `lsp.status`: list configured, installed, missing, disabled, and active language servers.
+- `lsp.diagnostics`: check one file or directory for LSP diagnostics. Prefer `severity: "error"` after edits.
+- `lsp.goto_definition`: locate a symbol definition from file, line, and character.
+- `lsp.find_references`: find usages of a symbol across the workspace.
+- `lsp.symbols`: inspect document symbols or search workspace symbols.
+- `lsp.prepare_rename`: check whether a rename is valid at a position.
+- `lsp.rename`: apply a language-server workspace edit for a rename.
 
 ## Config
 
-Project config lives at `.asterline/code-intel.json`; user config lives at `~/.asterline/code-intel.json`.
+Project config lives at `.asterline/lsp-client.json`; user config lives at `~/.asterline/lsp-client.json`.
 
 ```json
 {
-	"code-intel": {
+	"lsp": {
 		"typescript": {
 			"command": ["typescript-language-server", "--stdio"],
 			"extensions": [".ts", ".tsx", ".js", ".jsx"]
@@ -32,4 +32,4 @@ Project config lives at `.asterline/code-intel.json`; user config lives at `~/.a
 }
 ```
 
-Use `code-intel.status` first when diagnostics report a missing language server.
+Use `lsp.status` first when diagnostics report a missing language server.

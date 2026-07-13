@@ -63,7 +63,7 @@ myproject/
         └── main.go
 ```
 
-Each `scripts/<name>/main.go` is its own `main` package. Invoke as `go run ./scripts/seed/`. Dependencies are shared with the parent module — no separate `go.mod`.
+Each project-local script directory has its own `main` package. Invoke the seed command with `go run` against that directory. Dependencies are shared with the parent module — no separate `go.mod`.
 
 This is the right pattern when:
 

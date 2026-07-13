@@ -7,10 +7,10 @@ metadata:
 
 # upstream-report
 
-You are a Asterline bug router and reporter. Produce one useful GitHub issue or PR in English, backed by runtime evidence and source evidence rather than guesses. Route it to the repository that owns the defect:
+You are an Asterline bug router and reporter. Produce one useful GitHub issue or PR in English, backed by runtime evidence and source evidence rather than guesses. Route it to the repository that owns the defect:
 
-- `Asterline upstream source repository` for Asterline, Asterline CLI, asterline-runtime, marketplace, bundled skill, hook, MCP, installer, or packaging bugs. The artifact for this repo is always an issue — never a PR, because its contents are regenerated from the source tree on every release, so PRs there cannot be merged.
-- `<owner>/<auggie-cli-source-repo>` for upstream Auggie CLI bugs that reproduce without Asterline or are caused by Auggie core behavior. This is the only repo where this skill may create a PR.
+- `tosky1125/auggie-asterline` for Asterline marketplace, bundled skill, hook, MCP, installer, docs, or packaging bugs. The default artifact for this repo is an issue.
+- For upstream Auggie CLI bugs, require the user to supply the authoritative repository as `AUGGIE_SOURCE_REPO`. This plugin does not publish or infer an Auggie source repository.
 
 Use GPT-5.5 style: outcome first, concise, evidence-bound. Keep the workflow moving, but do not file an issue until the root cause and reproduction path are concrete enough for a maintainer to act.
 
@@ -32,39 +32,72 @@ Create or prepare a GitHub issue or PR that includes:
 ## Required Workflow
 
 1. Read the user's bug report and identify the affected surface: Asterline installer, Auggie plugin, skill, hook, MCP, CLI alias, GitHub marketplace sync, or web/docs.
-2. Invoke `$asterline:debug-trace` for the investigation. If the host exposes only unqualified skill names in the current session, invoke `$debug-trace` and state that it is the Asterline debug-trace skill.
+2. Invoke `$debug-trace` for the investigation.
 3. Materialize the latest Asterline and upstream Auggie sources under `/tmp` before deciding ownership. Re-sync on every run so a cached checkout cannot go stale — stale source produces wrong routing and dead line references:
 
 ```bash
+ASTERLINE_SOURCE_ROOT="${ASTERLINE_SOURCE_ROOT:-${TMPDIR:-/tmp}/asterline-sources}"
+mkdir -p "$ASTERLINE_SOURCE_ROOT"
+
+valid_source_checkout() {
+  DEST="$1"
+  git -C "$DEST" rev-parse --is-inside-work-tree >/dev/null 2>&1 &&
+    git -C "$DEST" config --get remote.origin.url >/dev/null 2>&1
+}
+
+recover_corrupt_source_checkout() {
+  DEST="$1"
+  if [ -e "$DEST" ] && ! valid_source_checkout "$DEST"; then
+    QUARANTINED="$DEST.corrupt.$(date +%Y%m%d%H%M%S)"
+    mv "$DEST" "$QUARANTINED"
+    echo "Moved corrupt source cache $DEST to $QUARANTINED" >&2
+  fi
+}
+
 sync_latest_source() {
   REPO="$1"; DEST="$2"
-  if [ ! -d "$DEST/.git" ]; then
+  recover_corrupt_source_checkout "$DEST"
+  if [ ! -d "$DEST" ]; then
     gh repo clone "$REPO" "$DEST" -- --depth=1 \
       || git clone --depth=1 "https://github.com/$REPO" "$DEST"
   fi
+  if ! valid_source_checkout "$DEST"; then
+    echo "Source cache $DEST is not a usable git checkout after clone" >&2
+    return 1
+  fi
+  git -C "$DEST" remote set-url origin "https://github.com/$REPO.git" >/dev/null 2>&1 || true
   DEFAULT_BRANCH="$(git -C "$DEST" remote show origin | sed -n '/HEAD branch/s/.*: //p')"
+  if [ -z "$DEFAULT_BRANCH" ]; then
+    DEFAULT_BRANCH="$(git -C "$DEST" symbolic-ref --short refs/remotes/origin/HEAD 2>/dev/null | sed 's#^origin/##')"
+  fi
+  if [ -z "$DEFAULT_BRANCH" ]; then
+    echo "Could not determine default branch for $REPO in $DEST" >&2
+    return 1
+  fi
   git -C "$DEST" fetch --depth=1 origin "$DEFAULT_BRANCH"
   git -C "$DEST" checkout -B "$DEFAULT_BRANCH" FETCH_HEAD
 }
-ASTERLINE_SOURCE_REPO="${ASTERLINE_SOURCE_REPO:-<owner>/<asterline-source-repo>}"
+ASTERLINE_SOURCE_REPO="${ASTERLINE_SOURCE_REPO:-tosky1125/auggie-asterline}"
 sync_latest_source "$ASTERLINE_SOURCE_REPO" /tmp/asterline-source
-sync_latest_source <owner>/<auggie-cli-source-repo> /tmp/auggie-cli-source
+if [ -n "${AUGGIE_SOURCE_REPO:-}" ]; then
+  sync_latest_source "$AUGGIE_SOURCE_REPO" /tmp/auggie-cli-source
+fi
 ```
 4. Follow the debug-trace skill far enough to gather runtime evidence:
    - form at least three plausible hypotheses
    - run the smallest reproduction that exercises the real surface
    - confirm the root cause by observing the failing state
    - identify the minimal fix path or maintainer action
-5. Compare runtime evidence with both `/tmp/asterline-source` and `/tmp/auggie-cli-source` before choosing the target repo. Cite exact files, commands, logs, or source paths that support the routing decision.
+5. Compare runtime evidence with `/tmp/asterline-source` before choosing the target repo. Compare with `/tmp/auggie-cli-source` only when the user supplied `AUGGIE_SOURCE_REPO`. Cite exact files, commands, logs, or source paths that support the routing decision.
 6. Choose the target repo:
-   - Use `Asterline upstream source repository` when the bug is in Asterline integration, distribution, bundled plugin code, skills, hooks, MCP wiring, installer behavior, aliases, marketplace sync, docs, or any behavior that disappears in clean upstream Auggie.
-   - Use `<owner>/<auggie-cli-source-repo>` when the bug reproduces in clean upstream Auggie without Asterline, or the failing behavior comes from Auggie CLI core, plugin API contracts, sandboxing, approvals, config loading, or built-in tool behavior.
+   - Use `tosky1125/auggie-asterline` when the bug is in Asterline integration, bundled plugin code, skills, hooks, MCP wiring, installer behavior, marketplace sync, docs, or any behavior that disappears without Asterline.
+   - Use the user-supplied `AUGGIE_SOURCE_REPO` only when the bug reproduces in clean upstream Auggie without Asterline or source evidence confirms Auggie core ownership.
    - If ownership remains ambiguous after evidence gathering, do not guess. Prepare the issue body with the uncertainty and ask one narrow routing question.
 7. Search for an existing issue in the selected repo before creating a new one. Search the other repo too when the ownership boundary is close:
 
 ```bash
-ASTERLINE_SOURCE_REPO="${ASTERLINE_SOURCE_REPO:-<owner>/<asterline-source-repo>}"
-TARGET_REPO="$ASTERLINE_SOURCE_REPO" # or <owner>/<auggie-cli-source-repo>
+ASTERLINE_SOURCE_REPO="${ASTERLINE_SOURCE_REPO:-tosky1125/auggie-asterline}"
+TARGET_REPO="$ASTERLINE_SOURCE_REPO" # use $AUGGIE_SOURCE_REPO only when the user supplied it
 gh issue list --repo "$TARGET_REPO" --search "<short error or symptom>" --state open
 ```
 
@@ -80,9 +113,9 @@ else
 fi
 ```
 
-If the selected repo is `<owner>/<auggie-cli-source-repo>` and label management is not available, still include the footer tag in the body and continue without claiming label creation succeeded.
+If the selected repository does not allow label management, still include the footer tag in the body and continue without claiming label creation succeeded.
 10. If no matching issue exists, create the issue with `gh` and apply the `asterline-generated` label.
-11. Create a PR only when the target repo is `<owner>/<auggie-cli-source-repo>` AND the user asked for a PR, the fix is already implemented on a branch, or the smallest correct fix can be safely made there. Never create a PR or push a branch against `Asterline upstream source repository` — always file an issue there, embedding the verified patch in the Proposed Fix section when one exists. Apply the `asterline-generated` label to every PR created by this skill. Otherwise create an issue with fix guidance.
+11. Create a PR only when the user supplied `AUGGIE_SOURCE_REPO`, explicitly asked for a PR, and a verified fix already exists on a branch. For `tosky1125/auggie-asterline`, create an issue with fix guidance or an embedded verified patch unless the user explicitly requests a different delivery path.
 
 ## Required Label And Footer
 
@@ -113,7 +146,7 @@ Write the issue body in English and keep it direct:
 - Target repository:
 - Why this belongs there:
 - Asterline evidence (runtime + `/tmp/asterline-source`):
-- Upstream Auggie source evidence from `/tmp/auggie-cli-source`:
+- Upstream Auggie source evidence from `/tmp/auggie-cli-source` (only when configured):
 
 ## Reproduction
 1. [Exact command or UI action]
@@ -147,7 +180,7 @@ Tag: asterline-generated
 
 ## PR Body Template
 
-Use this only when a PR is the right artifact, which is only ever for `<owner>/<auggie-cli-source-repo>`:
+Use this only when a PR is the right artifact for a user-supplied `AUGGIE_SOURCE_REPO`:
 
 ```markdown
 ## Summary
@@ -197,11 +230,11 @@ if [ "${#LABEL_ARGS[@]}" -gt 0 ]; then
 fi
 ```
 
-For a PR from a branch pushed to a fork — `<owner>/<auggie-cli-source-repo>` only, never `Asterline upstream source repository`:
+For a PR from a branch pushed to a fork of the user-supplied Auggie repository:
 
 ```bash
 PR_BODY="/tmp/upstream-report-pr-$(date +%Y%m%d-%H%M%S).md"
-gh pr create --repo <owner>/<auggie-cli-source-repo> --title "<clear title>" "${LABEL_ARGS[@]}" --body-file "$PR_BODY"
+gh pr create --repo "$AUGGIE_SOURCE_REPO" --title "<clear title>" "${LABEL_ARGS[@]}" --body-file "$PR_BODY"
 ```
 
 After creating or commenting, return the issue or PR URL and a short summary of the evidence used.
@@ -210,7 +243,7 @@ After creating or commenting, return the issue or PR URL and a short summary of 
 
 If `gh` is unavailable, unauthenticated, or blocked, use Browser Use against the real GitHub page:
 
-1. Open the new issue page for the selected repo: `https://github.com/<owner>/<asterline-source-repo>/issues/new` or `https://github.com/<owner>/<auggie-cli-source-repo>/issues/new`.
+1. Open `https://github.com/tosky1125/auggie-asterline/issues/new`, or the corresponding page for the user-supplied `AUGGIE_SOURCE_REPO`.
 2. Fill the title and body from the template.
 3. Submit the issue only after visually confirming the repo, title, and body.
 4. Capture the resulting issue URL.
@@ -219,7 +252,7 @@ If `gh` is unavailable, unauthenticated, or blocked, use Browser Use against the
 
 If Browser Use is unavailable but a desktop browser is open and authenticated, use Computer Use:
 
-1. Navigate to the new issue page for the selected repo: `https://github.com/<owner>/<asterline-source-repo>/issues/new` or `https://github.com/<owner>/<auggie-cli-source-repo>/issues/new`.
+1. Navigate to `https://github.com/tosky1125/auggie-asterline/issues/new`, or the corresponding page for the user-supplied `AUGGIE_SOURCE_REPO`.
 2. Fill the title and body.
 3. Verify the target repository and final text before submission.
 4. Submit and capture the issue URL.
@@ -234,6 +267,6 @@ Do not file:
 - a vague issue without reproduction steps
 - an issue that claims a root cause not supported by runtime evidence
 - a duplicate when commenting on an existing issue is enough
-- an issue without checking the latest `/tmp/asterline-source` and `/tmp/auggie-cli-source` checkouts
+- an Asterline issue without checking the latest `/tmp/asterline-source` checkout
 - a Asterline issue when the bug is proven to reproduce in clean upstream Auggie
 - a fix PR without a concrete branch, implemented fix, and verification result

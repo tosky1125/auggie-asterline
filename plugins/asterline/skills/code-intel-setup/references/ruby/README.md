@@ -1,14 +1,14 @@
 # Ruby — LSP setup
 
-- **Builtin server:** `ruby-code-intel` — `rubocop --code-intel`
+- **Builtin server:** `ruby-lsp` — `rubocop --lsp`
 - **Extensions:** `.rb .rake .gemspec .ru`
-- **Install hint:** `gem install ruby-code-intel`
+- **Install hint:** `gem install ruby-lsp`
 
-> **Note:** the builtin id is `ruby-code-intel`, but the executable actually invoked is **`rubocop`** (`rubocop --code-intel`). RuboCop must be installed: `gem install rubocop`.
+> **Note:** the builtin id is `ruby-lsp`, but the executable actually invoked is **`rubocop`** (`rubocop --lsp`). RuboCop must be installed: `gem install rubocop`.
 
 ## Install
 
-- **macOS:** `gem install rubocop` (and `gem install ruby-code-intel` for the install hint's gem)
+- **macOS:** `gem install rubocop` (and `gem install ruby-lsp` for the install hint's gem)
 - **Linux:** `gem install rubocop`
 - **Windows:** `gem install rubocop`
 
@@ -22,13 +22,13 @@ command -v rubocop
 
 ## Configure
 
-Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/code-intel-client.json` (Auggie) AND `.opencode/code-intel.json` (OpenCode/Asterline):
+Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/lsp-client.json` (Auggie/Asterline):
 
 ```json
-{ "code-intel": { "ruby-code-intel": { "priority": 100 } } }
+{ "lsp": { "ruby-lsp": { "priority": 100 } } }
 ```
 
-For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/code-intel-client.json`).
+For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/lsp-client.json`).
 
 ### Initialization options (only if commonly needed)
 
@@ -36,18 +36,18 @@ None commonly required. Behavior is driven by your `.rubocop.yml`; the server su
 
 ## Alternatives
 
-- **`ruby-code-intel` gem server** (not builtin) — the standalone Shopify Ruby LSP binary (`ruby-code-intel` executable), richer navigation than RuboCop alone. Configure as a custom server with `command: ["ruby-code-intel"]` in the USER config.
+- **`ruby-lsp` gem server** (not builtin) — the standalone Shopify Ruby LSP binary (`ruby-lsp` executable), richer navigation than RuboCop alone. Configure as a custom server with `command: ["ruby-lsp"]` in the USER config.
 - **`solargraph`** (not builtin) — older completion/type server; install with `gem install solargraph`, custom `command: ["solargraph", "stdio"]`.
 
 ## Troubleshooting
 
-- **PATH:** `rubocop` on PATH (that is the invoked binary, not `ruby-code-intel`); reopen shell after install.
-- **`rubocop` not found:** the builtin fails even if the `ruby-code-intel` gem is installed — install RuboCop with `gem install rubocop`.
+- **PATH:** `rubocop` on PATH (that is the invoked binary, not `ruby-lsp`); reopen shell after install.
+- **`rubocop` not found:** the builtin fails even if the `ruby-lsp` gem is installed — install RuboCop with `gem install rubocop`.
 - **Bundler mismatch:** if the project pins RuboCop in its `Gemfile`, run inside the bundle so versions match.
 - **No diagnostics:** check `.rubocop.yml` is valid and not disabling everything.
 
 ## Verify
 
 ```bash
-bun ../../scripts/verify-code-intel.ts path/to/file.rb
+bun ../../scripts/verify-lsp.ts path/to/file.rb
 ```

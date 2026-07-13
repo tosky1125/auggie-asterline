@@ -22,20 +22,20 @@ command -v typescript-language-server
 
 ## Configure
 
-Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/code-intel-client.json` (Auggie) AND `.opencode/code-intel.json` (OpenCode/Asterline):
+Builtin — usually NO config needed (auto-resolved by extension). Configure only to set priority, init options, override extensions, or disable. Same JSON shape in `.asterline/lsp-client.json` (Auggie/Asterline):
 
 ```json
-{ "code-intel": { "typescript": { "priority": 100 } } }
+{ "lsp": { "typescript": { "priority": 100 } } }
 ```
 
-For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/code-intel-client.json`).
+For builtin ids in a PROJECT config, `command` is supplied automatically — only set `priority`/`initialization`/`extensions`/`disabled`/`env`. A fully custom (non-builtin) server with its own `command` must go in the USER config (`~/.asterline/lsp-client.json`).
 
 ### Initialization options (only if commonly needed)
 
 None commonly required. To favor inlay hints or tweak preferences:
 
 ```json
-{ "code-intel": { "typescript": { "initialization": { "preferences": { "includeInlayParameterNameHints": "all" } } } } }
+{ "lsp": { "typescript": { "initialization": { "preferences": { "includeInlayParameterNameHints": "all" } } } } }
 ```
 
 ## Alternatives
@@ -45,10 +45,10 @@ All builtin — pick by toolchain. Raise the alternative's `priority` and/or
 
 | id           | command                                  | when to choose                          |
 | ------------ | ---------------------------------------- | --------------------------------------- |
-| `deno`       | `deno code-intel`                               | Deno projects (handles `.ts/.tsx/.js`)  |
-| `biome`      | `biome code-intel-proxy --stdio`                | Biome lint/format as the LSP            |
+| `deno`       | `deno lsp`                               | Deno projects (handles `.ts/.tsx/.js`)  |
+| `biome`      | `biome lsp-proxy --stdio`                | Biome lint/format as the LSP            |
 | `eslint`     | `vscode-eslint-language-server --stdio`  | ESLint diagnostics (install below)      |
-| `oxlint`     | `oxlint --code-intel`                           | fast Oxc-based linting                  |
+| `oxlint`     | `oxlint --lsp`                           | fast Oxc-based linting                  |
 | `vue`        | `vue-language-server --stdio`            | `.vue` single-file components           |
 | `svelte`     | `svelteserver --stdio`                   | `.svelte` files                         |
 | `astro`      | `astro-ls --stdio`                       | `.astro` files                          |
@@ -58,7 +58,7 @@ All builtin — pick by toolchain. Raise the alternative's `priority` and/or
 Pick Deno or Biome over the default:
 
 ```json
-{ "code-intel": {
+{ "lsp": {
   "typescript": { "disabled": true },
   "deno": { "priority": 100 }
 } }
@@ -73,5 +73,5 @@ Pick Deno or Biome over the default:
 ## Verify
 
 ```bash
-bun ../../scripts/verify-code-intel.ts path/to/file.ts
+bun ../../scripts/verify-lsp.ts path/to/file.ts
 ```
