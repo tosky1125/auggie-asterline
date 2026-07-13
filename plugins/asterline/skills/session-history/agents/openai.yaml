@@ -1,0 +1,4 @@
+interface:
+  display_name: "Asterline session-history"
+  short_description: "Find local coding-agent session history"
+  default_prompt: "Use $session-history to find the coding-agent session where I worked on a recent bug."
