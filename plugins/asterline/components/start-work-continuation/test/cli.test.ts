@@ -14,7 +14,7 @@ afterEach(() => {
 describe("start-work continuation CLI", () => {
 	it("#given valid Stop stdin #when CLI runs #then stdout contains block JSON", () => {
 		// given
-		const cwd = createWorkspace(["asterline:s1"]);
+		const cwd = createWorkspace(["auggie:s1"]);
 		const payload = JSON.stringify(makePayload(cwd, false, "Stop"));
 
 		// when
@@ -26,9 +26,23 @@ describe("start-work continuation CLI", () => {
 		expect(result.stdout).toContain('"decision":"block"');
 	});
 
-	it("#given valid SubagentStop stdin #when CLI runs #then stdout contains block JSON", () => {
+	it("#given unsupported SubagentStop stdin #when CLI runs #then stdout stays empty", () => {
 		// given
-		const cwd = createWorkspace(["asterline:s1"]);
+		const cwd = createWorkspace(["auggie:s1"]);
+		const payload = JSON.stringify(makePayload(cwd, false, "SubagentStop"));
+
+		// when
+		const result = runCli("stop", payload);
+
+		// then
+		if (result.error !== undefined) throw result.error;
+		expect(result.status).toBe(0);
+		expect(result.stdout).toBe("");
+	});
+
+	it("#given unsupported subagent-stop command #when CLI runs #then command is rejected", () => {
+		// given
+		const cwd = createWorkspace(["auggie:s1"]);
 		const payload = JSON.stringify(makePayload(cwd, false, "SubagentStop"));
 
 		// when
@@ -36,13 +50,14 @@ describe("start-work continuation CLI", () => {
 
 		// then
 		if (result.error !== undefined) throw result.error;
-		expect(result.status).toBe(0);
-		expect(result.stdout).toContain('"decision":"block"');
+		expect(result.status).toBe(1);
+		expect(result.stdout).toBe("");
+		expect(result.stderr).toContain("hook stop");
 	});
 
 	it("#given active stop hook stdin #when CLI runs #then stdout is empty and exit is zero", () => {
 		// given
-		const cwd = createWorkspace(["asterline:s1"]);
+		const cwd = createWorkspace(["auggie:s1"]);
 		const payload = JSON.stringify(makePayload(cwd, true, "Stop"));
 
 		// when

@@ -1,9 +1,8 @@
 {
 	"name": "@code-yeongyu/asterline-start-work-continuation",
-	"version": "4.10.0",
-	"description": "Asterline Stop hook continuation injector for asterline-runtime start-work plans.",
+	"version": "4.17.1",
+	"description": "Asterline Stop hook continuation injector for Auggie run-plan work.",
 	"type": "module",
-	"packageManager": "npm@11.12.1",
 	"license": "MIT",
 	"homepage": "https://github.com/code-yeongyu/asterline-start-work-continuation",
 	"repository": {
@@ -16,13 +15,13 @@
 	"keywords": [
 		"asterline",
 		"asterline-plugin",
-		"start-work",
+		"run-plan",
 		"continuation",
 		"hooks",
 		"boulder"
 	],
 	"bin": {
-		"asterline-start-work-continuation": "./dist/cli.js"
+		"asterline-run-plan-continuation": "./dist/cli.js"
 	},
 	"scripts": {
 		"build": "tsc -p tsconfig.build.json",

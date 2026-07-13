@@ -7,7 +7,7 @@ import type { ReadonlyFileSystem, StopInput } from "../src/types.js";
 const WORKSPACE = "/repo";
 const BOULDER_PATH = join(WORKSPACE, ".asterline", "boulder.json");
 const PLAN_PATH = join(WORKSPACE, ".asterline", "plans", "plan.md");
-const LEDGER_PATH = join(WORKSPACE, ".asterline", "start-work", "ledger.jsonl");
+const LEDGER_PATH = join(WORKSPACE, ".asterline", "run-plan", "ledger.jsonl");
 
 describe("start-work Stop hook", () => {
 	it("#given stop hook is already active #when hook runs #then returns empty output", () => {
@@ -37,11 +37,11 @@ describe("start-work Stop hook", () => {
 		expect(output).toBe("");
 	});
 
-	it("#given active asterline work with remaining top-level tasks #when hook runs #then returns block JSON", () => {
+	it("#given active Auggie work with remaining top-level tasks #when hook runs #then returns block JSON", () => {
 		// given
 		const fs = createMemoryFs({
 			[BOULDER_PATH]: createBoulderJson({
-				sessionIds: ["asterline:sess_abc"],
+				sessionIds: ["auggie:sess_abc"],
 				status: "active",
 				worktreePath: "/tmp/worktree",
 			}),
@@ -61,7 +61,7 @@ describe("start-work Stop hook", () => {
 		expect(parsed.reason).toContain("- Next incomplete task: `First`");
 		expect(parsed.reason).toContain("- Worktree: `/tmp/worktree`");
 		expect(parsed.reason).toContain(`- Ledger: \`${LEDGER_PATH}\``);
-		expect(parsed.reason).toContain("- Your session id in boulder.json: `asterline:sess_abc`");
+		expect(parsed.reason).toContain("- Your session id in boulder.json: `auggie:sess_abc`");
 	});
 
 	it("#given context-window pressure in transcript #when hook runs #then it does not inject continuation text", () => {
@@ -69,7 +69,7 @@ describe("start-work Stop hook", () => {
 		const transcriptPath = "/repo/transcript.jsonl";
 		const fs = createMemoryFs({
 			[BOULDER_PATH]: createBoulderJson({
-				sessionIds: ["asterline:sess_abc"],
+				sessionIds: ["auggie:sess_abc"],
 				status: "active",
 			}),
 			[PLAN_PATH]: ["# Plan", "", "## TODOs", "- [ ] First"].join("\n"),
@@ -96,11 +96,11 @@ describe("start-work Stop hook", () => {
 		expect(output).toBe("");
 	});
 
-	it("#given active asterline work #when continuation directive is emitted #then subagent guidance is reliable", () => {
+	it("#given active Auggie work #when continuation directive is emitted #then one-shot subagent guidance is reliable", () => {
 		// given
 		const fs = createMemoryFs({
 			[BOULDER_PATH]: createBoulderJson({
-				sessionIds: ["asterline:sess_abc"],
+				sessionIds: ["auggie:sess_abc"],
 				status: "active",
 			}),
 			[PLAN_PATH]: ["# Plan", "", "## TODOs", "- [ ] First"].join("\n"),
@@ -111,19 +111,19 @@ describe("start-work Stop hook", () => {
 
 		// then
 		const parsed = parseBlockOutput(output);
-		expect(parsed.reason).toMatch(/TASK:/);
-		expect(parsed.reason).toMatch(/fork_context:\s*false/);
-		expect(parsed.reason).toMatch(/wait_agent.*mailbox signals/);
-		expect(parsed.reason).toMatch(/TASK STILL ACTIVE/);
-		expect(parsed.reason).toMatch(/respawn.*smaller/);
-		expect(parsed.reason).toMatch(/WORKING:/);
+		expect(parsed.reason).toMatch(/self-contained and executable/);
+		expect(parsed.reason).toMatch(/goal, deliverable, exact scope/);
+		expect(parsed.reason).toMatch(/one-shot parallel decomposition/);
+		expect(parsed.reason).toMatch(/currently available Auggie subagent/);
+		expect(parsed.reason).toMatch(/persistent team.*unavailable/i);
+		expect(parsed.reason).not.toMatch(/multi_agent_v1|wait_agent|fork_context/);
 	});
 
-	it("#given active asterline work #when continuation directive is emitted #then QA weight is tier-scoped without echo bloat", () => {
+	it("#given active Auggie work #when continuation directive is emitted #then QA weight is tier-scoped without echo bloat", () => {
 		// given
 		const fs = createMemoryFs({
 			[BOULDER_PATH]: createBoulderJson({
-				sessionIds: ["asterline:sess_abc"],
+				sessionIds: ["auggie:sess_abc"],
 				status: "active",
 			}),
 			[PLAN_PATH]: ["# Plan", "", "## TODOs", "- [ ] First"].join("\n"),
@@ -137,7 +137,8 @@ describe("start-work Stop hook", () => {
 		expect(parsed.reason).toMatch(/LIGHT/);
 		expect(parsed.reason).toMatch(/HEAVY/);
 		expect(parsed.reason).toMatch(/When unsure[^.]{0,30}HEAVY/);
-		expect(parsed.reason).toMatch(/mirrors its implementation/);
+		expect(parsed.reason).toMatch(/real surface/);
+		expect(parsed.reason).toMatch(/mock-call assertion/);
 		expect((parsed.reason.match(/malformed input, prompt injection/g) ?? []).length).toBe(1);
 		expect(parsed.reason.split(/\s+/).filter(Boolean).length).toBeLessThanOrEqual(1100);
 	});
@@ -173,7 +174,7 @@ describe("start-work Stop hook", () => {
 	it("#given completed boulder work #when hook runs #then returns empty output", () => {
 		// given
 		const fs = createMemoryFs({
-			[BOULDER_PATH]: createBoulderJson({ sessionIds: ["asterline:sess_abc"], status: "completed" }),
+			[BOULDER_PATH]: createBoulderJson({ sessionIds: ["auggie:sess_abc"], status: "completed" }),
 			[PLAN_PATH]: "- [ ] First",
 		});
 
@@ -248,6 +249,9 @@ function createMemoryFs(files: Record<string, string> = {}): ReadonlyFileSystem 
 			const value = files[path];
 			if (value === undefined) throw new Error(`Missing fixture: ${path}`);
 			return value;
+		},
+		realpathSync(path) {
+			return path;
 		},
 	};
 }

@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-import { readFileSync } from "node:fs";
+import { readFileSync, realpathSync } from "node:fs";
 import { stdin as processStdin, stdout as processStdout } from "node:process";
 
 import { runStopHook } from "./asterline-hook.js";
@@ -9,15 +9,18 @@ const nodeFileSystem: ReadonlyFileSystem = {
 	readFileSync(path, encoding) {
 		return readFileSync(path, encoding);
 	},
+	realpathSync(path) {
+		return realpathSync(path);
+	},
 };
 
 const command = process.argv[2];
 const subcommand = process.argv[3];
 
-if (command === "hook" && (subcommand === "stop" || subcommand === "subagent-stop")) {
+if (command === "hook" && subcommand === "stop") {
 	await runHookCli();
 } else {
-	process.stderr.write("Usage: asterline-start-work-continuation hook <stop|subagent-stop>\n");
+	process.stderr.write("Usage: asterline-run-plan-continuation hook stop\n");
 	process.exitCode = 1;
 }
 

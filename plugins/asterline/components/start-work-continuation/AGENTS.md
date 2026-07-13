@@ -2,13 +2,13 @@
 
 ## OVERVIEW
 
-Stop/SubagentStop adapter that reads Boulder state and remaining plan checkboxes, then emits the separately shipped continuation directive when work remains.
+Stop adapter that reads Boulder state and remaining plan checkboxes, then emits the separately shipped continuation directive when work remains.
 
 ## FLOW
 
 ```text
 stdin CLI
-  -> strict Stop/SubagentStop guard
+  -> strict Stop guard
   -> .asterline/boulder.json lookup
   -> plan checkbox count
   -> directive.md placeholder render
@@ -24,11 +24,11 @@ stdin CLI
 - `directive.md` is a runtime asset beside dist; tsc does not copy it.
 - Spawned CLI tests execute committed dist; the inherited component build-order rule applies.
 
-## INSTALLED CONTRACT DRIFT
+## INSTALLED CONTRACT
 
-The bundled run-plan skill writes `auggie:<session_id>` and `.asterline/run-plan/ledger.jsonl`. Current source/dist reader expects `asterline:<session_id>` and `.asterline/start-work/ledger.jsonl`; the directive also references an absent upstream skill path. A real `auggie:` probe currently emits nothing. Treat this as an unresolved integration defect; do not encode the stale prefix/ledger in new tests.
+The bundled run-plan skill and continuation reader share `auggie:<session_id>` and `.asterline/run-plan/ledger.jsonl`. The directive references the installed Asterline `run-plan` skill. Auggie supports parent `Stop` only; do not restore `SubagentStop` claims or wiring.
 
-Parent aggregate wiring uses `hooks/bin/run-plan-{,subagent-}stop.sh`; the component-local direct manifest is not the installed adapter.
+Parent aggregate wiring must preserve the component's Stop-only behavior. The component-local direct manifest is not the installed adapter.
 
 ## VALIDATION
 
