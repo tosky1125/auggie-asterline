@@ -1,37 +1,46 @@
-# Repository Conventions
+# TELEMETRY COMPONENT
 
-Conventions for human contributors and AI agents working on this component.
+## OVERVIEW
 
-## Style
+Silent SessionStart activity telemetry with daily local deduplication. The hook ignores session/transcript payload fields, emits no conversation context, and degrades to empty output on telemetry failures.
 
-- Terse technical prose. No emojis in commits, issues, PR comments, or code.
-- TypeScript strict mode. No `any`, no `@ts-ignore`, no `@ts-expect-error`, no enums.
-- ESM modules with `.js` suffix in runtime import paths.
-- Tabs for indentation. Double quotes for strings.
-- Tests use vitest with `#given .. #when .. #then` descriptions or plain `// given / // when / // then` body comments.
+## DATA FLOW
 
-## Commands
+- `src/cli.ts`: validates `hook session-start`; malformed/unknown payloads no-op.
+- `src/asterline-hook.ts`: constructs client, derives distinct ID, captures once, shuts down.
+- `src/posthog.ts`: metadata envelope and lazy PostHog adapter.
+- `src/posthog-activity-state.ts`: once-per-UTC-day gate.
+- `src/data-path.ts`, `atomic-write.ts`, `diagnostics.ts`: local state and retained diagnostics.
+- `src/product-identity.ts`: event/cache/version constants used by aggregate contract tests.
 
-- `npm install` - install dependencies.
-- `npm test` - run vitest once.
-- `npm run typecheck` - strict TypeScript check.
-- `npm run check` - type check, biome, and build.
-- `npm run build` - emit `dist/`.
-- `node dist/cli.js hook session-start < fixture.json` - smoke-test the SessionStart hook.
+## LOCAL CONTRACTS
 
-## Constraints
+- Telemetry failure paths stay silent, exit 0, and return empty stdout. Unsupported CLI commands may return usage failure.
+- Never emit `additionalContext` or `systemMessage`.
+- PostHog is the only network sink. New events need independent dedup state rather than replacing the daily-active slot.
+- Do not capture prompt, transcript, cwd, API keys, or raw hook payload fields.
+- New environment variables require matching README/privacy documentation.
 
-- No Bun APIs. Runtime is Node only because Asterline launches plugin hooks with Node.
-- The single hook handler is `runSessionStartHook`. Do not add new hook handlers without also wiring them in `hooks/hooks.json` and `plugin/hooks/hooks.json`.
-- Telemetry MUST be silent on every failure path. The CLI MUST exit 0 with empty stdout even when PostHog construction, capture, or shutdown throws.
-- Telemetry MUST be daily-deduplicated. Adding a new event type requires a new state file slot, not removal of the existing dedup.
-- Hook output MUST stay empty (no `additionalContext`, no `systemMessage`). This component is observability-only and MUST NOT inject context into the Asterline conversation.
-- Constants in `src/product-identity.ts` MUST stay byte-equivalent with `packages/asterline-runtime/src/telemetry/product-identity.ts`. The cross-package equivalence test will fail otherwise.
-- Do not couple this component back to asterline internal source paths beyond what `cross-package-equivalence.test.ts` already asserts at the constants layer.
+## PRIVACY / INTEGRITY NOTES
 
-## Don'ts
+The current payload includes a stable hostname-derived hash plus machine/OS/locale metadata, and geo-IP is not disabled. Describe it as pseudonymous device activity, not anonymous data. Local diagnostics currently persist raw error messages with default permissions; add secret/path redaction and user-only file mode before treating them as privacy-safe.
 
-- No `git add -A` or `git add .`. Stage only the files you changed.
-- No `git commit --no-verify`. No force pushes. No history rewriting on shared branches.
-- No new network calls. PostHog is the only allowed sink.
-- No new env vars without README + privacy-policy update.
+The existing README and former AGENTS references to an absent cross-package identity file/test are not valid in this checkout. The aggregate contract test is the live identity assertion.
+
+Vendored `posthog-node` lacks the exact path currently imported by telemetry; lazy import failure silently selects the no-op client. Fix the consumer path and add a capture-envelope test rather than adding a vendor shim.
+
+## VALIDATION
+
+```bash
+npm run check
+npm test
+printf '%s\n' '{"hook_event_name":"SessionStart","session_id":"qa","transcript_path":null,"cwd":"/tmp","model":"qa","permission_mode":"default","source":"startup"}' | ASTERLINE_DISABLE_POSTHOG=1 node dist/cli.js hook session-start
+```
+
+Keep routine smoke tests opted out so they cannot send device metadata. Exercise constructor/capture/shutdown failure, dedup, and a real lazy-import success path only in a stubbed test harness. Then run the inherited plugin packaging gate.
+
+## ANTI-PATTERNS
+
+- Do not infer network success from empty hook output.
+- Do not weaken privacy wording to match stale README claims.
+- Do not inject telemetry status into the conversation.

@@ -1,34 +1,43 @@
-# Repository Conventions
+# RULE ENGINE COMPONENT
 
-Conventions for human contributors and AI agents working on this repository.
+## OVERVIEW
 
-## Style
+Standalone rule discovery/matching/injection engine for SessionStart, UserPromptSubmit, PostToolUse, and PostCompact. It is separate from the parent `plugins/asterline/rules/*.md` native Auggie policy surface.
 
-- Terse technical prose. No emojis in commits, issues, PR comments, or code.
-- TypeScript strict mode. No `any`, no `@ts-ignore`, no `@ts-expect-error`, no enums.
-- ESM modules with `.js` suffix in runtime import paths.
-- Tabs for indentation. Double quotes for strings.
-- Tests use vitest with `#given .. #when .. #then` descriptions or plain `// given / // when / // then` body comments.
+## ARCHITECTURE
 
-## Commands
+- `src/asterline-hook.ts`: event coordination and stable hook output.
+- `src/static-injection.ts`, `persistent-cache.ts`: budgets, transcript dedup, locks, compaction recovery.
+- `src/rules/`: deterministic discovery → parse/frontmatter → match/order → truncate/format.
+- `createRulesEngine`: dependency-injected core boundary.
+- `dist/`: tracked one-to-one JS/declaration output consumed by the marketplace.
 
-- `npm install` - install dependencies.
-- `npm test` - run vitest once.
-- `npm run typecheck` - strict TypeScript check.
-- `npm run check` - type check, biome, and build.
-- `npm pack --dry-run` - release package smoke test.
-- `node dist/cli.js hook session-start < fixture.json` - smoke-test static rule injection.
-- `node dist/cli.js hook post-tool-use < fixture.json` - smoke-test dynamic rule injection.
+## LOCAL CONTRACTS
 
-## Constraints
+- Keep discovery deterministic and boundary failures fail-open.
+- Cover all four events plus read/edit/patch/shell target extraction.
+- Synchronize README, skill prose, config schema, source lists, environment variables, and tests when adding a source or budget.
+- Parent native policy Markdown is not input to this engine; do not merge the two concepts.
+- Warning-band files include `asterline-hook.ts`, `persistent-cache.ts`, and `parser-yaml.ts`; split by responsibility before they exceed the component ceiling.
 
-- No Bun APIs. Runtime is Node only because Asterline launches plugin hooks with Node.
-- Keep `SessionStart`, `UserPromptSubmit`, and `PostToolUse` hook behavior covered by tests.
-- Keep Asterline file path extraction for reads, edits, `apply_patch`, and shell-style tools covered by tests.
-- Hook output must use the stable Asterline hook JSON contract.
-- Do not couple this package back to pi, asterline, or senpi internal source paths.
+## SOURCE / DIST HAZARD
 
-## Don'ts
+`src/rules/matcher.ts` imports bare `picomatch`, while committed marketplace dist points directly into `../../../../vendor/picomatch`. The normal tsc build does not reproduce that rewrite and may overwrite the packaged-safe import. Fix/document the post-build transformation before treating `npm run check` as a reproducible package build.
 
-- No `git add -A` or `git add .`. Stage only the files you changed.
-- No `git commit --no-verify`. No force pushes. No history rewriting on shared branches.
+Component-local hooks use standalone `${PLUGIN_ROOT}` commands and upstream matchers. Parent aggregate hooks use wrappers and Auggie matchers. Verify both targets deliberately.
+
+## VALIDATION
+
+```bash
+npm run typecheck
+npm run lint
+```
+
+The Vitest suite owns hook payload fixtures for all four events, but one process test invokes the build and rewrites dist. Run tests in a reviewable worktree, then regenerate dist, reapply the audited picomatch vendor-import transform, and confirm that only intended generated changes remain before the inherited plugin packaging gate.
+
+## ANTI-PATTERNS
+
+- Do not hand-edit dist without repairing the build transform.
+- Do not re-enable agent instruction files as rule sources; current config/tests deliberately exclude them.
+- Do not assume aggregate validation proves source/dist equivalence.
+- Do not couple this standalone engine to internal upstream application source trees.

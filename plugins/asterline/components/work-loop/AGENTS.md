@@ -1,48 +1,49 @@
-# Repository Conventions
+# WORK-LOOP COMPONENT
 
-Conventions for human contributors and AI agents working on this repository.
+## OVERVIEW
 
-## Stack
+Durable goal CLI/state machine with evidence, completion gates, steering, host-goal reconciliation, and UserPromptSubmit integration.
 
-- Node >=20 runtime.
-- npm package manager.
-- TypeScript 6 strict mode.
-- Biome 2 linting and formatting.
-- Vitest 4 test runner.
+## ARCHITECTURE
 
-## Forbidden
+| Layer | Modules |
+| --- | --- |
+| CLI parsing/output | `cli-arg-parser`, `cli-commands`, `cli-steering`, `cli-output` |
+| State lifecycle | `plan-crud`, `plan-io`, `goal-status` |
+| Gates/mutations | `evidence`, `checkpoint`, `quality-gate`, `review-blockers`, `steering` |
+| Host integration | `host-goal-snapshot`, `host-goal-instruction` |
+| Domain contracts | `types`, `domain-types`, `command-types`, `steering-types`, `runtime` |
 
-- No `as any` or `as unknown`.
-- No `@ts-ignore` or `@ts-expect-error`.
-- No enums.
-- No non-null assertions.
-- No default exports. `vitest.config.ts` is exempt because the framework requires that shape.
+State lives under `.asterline/work-loop[/<session>]/{brief.md,goals.json,ledger.jsonl}`. Plan writes use temp+rename; ledger writes append JSONL; locking is process-local only.
 
-## File Ceiling
+## LOCAL CONTRACTS
 
-- Keep each `src/` TypeScript file under 250 pure LOC.
-- Split by responsibility before a file reaches the ceiling.
+- Preserve completion criteria, host-goal compatibility, final quality-gate coverage, and third-recurrence authorization blocker escalation.
+- Keep plan/ledger mutations scoped by repository plus session.
+- Treat `readWorkLoopPlan()` as potentially mutating because it performs legacy migration.
+- Hooks fail open; CLI commands return typed `WorkLoopError` codes.
+- Keep source files below 250 pure LOC. `steering.ts` is already near the ceiling; `checkpoint.ts` is the densest policy module.
+- Preserve `.asterline/work-loop/` state paths, the `ASTERLINE_WORK_LOOP_*` environment prefix, and the `asterline work-loop` CLI form; do not introduce alternate aliases.
+- Repository history for this component uses atomic Conventional Commits whose build/tests pass independently.
 
-## Test Discipline
+## INSTALLED WIRING / DRIFT
 
-- Use Vitest with nested `describe` names in `#given`, `#when`, and `#then` form, or inline `// given`, `// when`, and `// then` comments.
-- Never use Arrange-Act-Assert comments.
-- Keep fixtures in `test/fixtures/`.
+Source implements UserPromptSubmit steering and a PreToolUse goal guard. Component and aggregate hook manifests currently register only UserPromptSubmit, while package smoke expects the guard. Do not claim the guard is installed until aggregate wiring and payload coverage exist.
 
-## Commit Style
+README/changelog retain scaffold-era paths/version/command claims. Code and tests are authoritative, but update docs when touching the affected surface. Remove remaining alternate CLI aliases rather than normalizing them in new examples.
 
-- Use Conventional Commits.
-- Keep commits atomic.
-- Each commit's tests and build must pass on its own.
+## VALIDATION
 
-## Branding
+```bash
+npm run check
+npm test
+node dist/cli.js --help
+```
 
-- Repo artifacts live under `.asterline/work-loop/` paths.
-- Environment variables use the `ASTERLINE_WORK_LOOP_*` prefix.
-- CLI commands use the `asterline work-loop` form.
-- Do not use any alternate legacy CLI alias anywhere.
+`check` does not run tests. Current checkout lacks component dependencies, so record missing-tool failures rather than treating them as product failures. Then run the inherited plugin packaging gate.
 
-## Build and Hooks
+## ANTI-PATTERNS
 
-- Build output goes to `dist/`.
-- `hooks/hooks.json` runs `node ${PLUGIN_ROOT}/dist/cli.js hook user-prompt-submit`.
+- Do not assume process-local locking is cross-process transactional safety.
+- Do not add compact one-line policy to evade the file ceiling.
+- Do not test only source when shipped CLI behavior depends on committed dist.

@@ -1,43 +1,46 @@
-# Repository Conventions
+# RUN-PLAN CONTINUATION COMPONENT
 
-Conventions for human contributors and AI agents working on this repository.
+## OVERVIEW
 
-## Stack
+Stop/SubagentStop adapter that reads Boulder state and remaining plan checkboxes, then emits the separately shipped continuation directive when work remains.
 
-- Node >=20 runtime.
-- npm package manager.
-- TypeScript 6 strict mode.
-- Biome 2 linting and formatting.
-- Vitest 4 test runner.
+## FLOW
 
-## Forbidden
+```text
+stdin CLI
+  -> strict Stop/SubagentStop guard
+  -> .asterline/boulder.json lookup
+  -> plan checkbox count
+  -> directive.md placeholder render
+  -> block JSON
+```
 
-- No `as any` or `as unknown`.
-- No `@ts-ignore` or `@ts-expect-error`.
-- No enums.
-- No non-null assertions.
-- No default exports. `vitest.config.ts` is exempt because the framework requires that shape.
+## LOCAL CONTRACTS
 
-## File Ceiling
+- Malformed input, recursive stop hooks, missing state, completed plans, and context-pressure transcripts must not block a turn.
+- No network calls. Keep directive prose in `directive.md`, not TypeScript.
+- Count only column-zero checkboxes under `## TODOs` and `## Final Verification Wave`; fall back to all column-zero checkboxes only when both sections are absent.
+- Active and paused Boulder works are eligible when their session ID matches exactly.
+- `directive.md` is a runtime asset beside dist; tsc does not copy it.
+- Spawned CLI tests execute committed dist; the inherited component build-order rule applies.
 
-- Keep each `src/` TypeScript file under 250 pure LOC.
-- Split by responsibility before a file reaches the ceiling.
+## INSTALLED CONTRACT DRIFT
 
-## Test Discipline
+The bundled run-plan skill writes `auggie:<session_id>` and `.asterline/run-plan/ledger.jsonl`. Current source/dist reader expects `asterline:<session_id>` and `.asterline/start-work/ledger.jsonl`; the directive also references an absent upstream skill path. A real `auggie:` probe currently emits nothing. Treat this as an unresolved integration defect; do not encode the stale prefix/ledger in new tests.
 
-- Use Vitest with nested `describe` names in `#given`, `#when`, and `#then` form, or inline `// given`, `// when`, and `// then` comments.
-- Never use Arrange-Act-Assert comments.
-- Keep fixtures in `test/fixtures/`.
+Parent aggregate wiring uses `hooks/bin/run-plan-{,subagent-}stop.sh`; the component-local direct manifest is not the installed adapter.
 
-## Build and Hooks
+## VALIDATION
 
-- Build output goes to `dist/`.
-- `hooks/hooks.json` registers Asterline `Stop` and `SubagentStop` hooks.
-- Hook commands run `node ${PLUGIN_ROOT}/components/start-work-continuation/dist/cli.js hook stop` and `node ${PLUGIN_ROOT}/components/start-work-continuation/dist/cli.js hook subagent-stop`.
+```bash
+npm run check
+npm test
+```
 
-## Constraints
+The spawned CLI tests own temporary Boulder/plan payloads. Include one installed-contract fixture using `auggie:` state and the run-plan ledger path, then run the inherited plugin packaging gate.
 
-- Never let the hook block a Asterline turn because of malformed input.
-- Never make a network call from the hook.
-- Keep the directive in `directive.md`. Do not inline it into TypeScript files.
-- The hook only continues sessions listed in `.asterline/boulder.json` as `asterline:<session_id>`.
+## ANTI-PATTERNS
+
+- Do not inline or duplicate the directive.
+- Do not let tests preserve obsolete session/ledger names merely because current dist uses them.
+- Do not run tests against stale dist.

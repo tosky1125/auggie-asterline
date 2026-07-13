@@ -1,41 +1,44 @@
-# Repository Conventions
+# DEEP-RESEARCH TRIGGER COMPONENT
 
-Conventions for human contributors and AI agents working on this repository.
+## OVERVIEW
 
-## Style
+UserPromptSubmit detector for word-boundary `ultrawork|ulw`, exposed publicly as Asterline deep research. It injects the separate directive once and suppresses malformed, duplicate, identifier-like, or context-pressure triggers.
 
-- Terse technical prose. No emojis in commits, issues, PR comments, or code.
-- TypeScript strict mode. No `any`, no `@ts-ignore`, no `@ts-expect-error`, no enums, no non-null assertions.
-- ESM modules with `.js` suffix in runtime import paths.
-- Runtime is Node only because Asterline launches plugin hooks with Node.
-- Tabs for indentation in JSON, TypeScript, and Markdown tables.
-- Double quotes for JSON strings.
+## LAYOUT
 
-## Layout
+- `src/cli.ts`: stdin/command adapter.
+- `src/asterline-hook.ts`: pure matching, transcript dedup, pressure suppression.
+- `src/directive.ts`: loads `directive.md` at runtime.
+- `directive.md`: shipped orchestration policy; never inline it in TypeScript.
+- `dist/`: committed JS/declarations used by aggregate wrappers.
+- `agents/*.toml`: upstream component assets not directly exported by the Auggie plugin manifest.
 
-- `src/cli.ts` — `UserPromptSubmit` hook CLI. Reads JSON on stdin, writes the directive to stdout when the keyword matches, exits 0 otherwise.
-- `src/asterline-hook.ts` — pure detector/hook behavior.
-- `directive.md` — bundled ultrawork directive text.
-- `agents/*.toml` — bundled Asterline agent role files. Installed as regular files into `ASTERLINE_HOME/agents/` by `src/cli/install-asterline/link-cached-plugin-agents.ts` at install time. Public `sisyphuslabs` installs source them from Asterline's installed-marketplace snapshot, not the versioned plugin cache, so they survive Asterline auto-update cache pruning and temporary snapshot cleanup. No runtime `SessionStart` hook is involved.
-- `hooks/hooks.json` — registers the prompt-detector hook only.
-- `.augment-plugin/plugin.json` — Asterline plugin manifest. Marketplace metadata lives here, not in `package.json`.
+## LOCAL CONTRACTS
 
-## Constraints
+- Valid hook paths fail open and make no network calls.
+- Preserve case-insensitive word boundaries: `ulw_helper` and similar identifiers must not trigger.
+- Search only the bounded transcript tail for dedup/context-pressure markers.
+- Keep directive text external and measure size/entropy after edits; the formerly referenced prompt skill is not present in this checkout.
+- Unsupported CLI commands may exit nonzero; do not document “always exit 0” beyond hook handling.
 
-- Never let the hook block a turn — exit code is always 0.
-- Never make a network call from the hook.
-- Keep the directive in `directive.md`. Do not inline it into TypeScript files.
-- Keep bundled agent role prompts concise and model-specific; measure prompt length when changing them.
-- When editing `directive.md`, apply the `prompt-engineering` skill's entropy gate: every edit must reduce uncertainty per token. Re-measure character count before committing.
+## INSTALLED WIRING
 
-## Commands
+Parent `deep-research-user-prompt-submit.sh` invokes this component, and the package bin is `asterline-deep-research-engine`. Current source usage says `asterline-ultrawork` while committed dist says the public bin name; resolve source/dist naming intentionally.
+
+No component-local plugin manifest exists. Parent plugin metadata is authoritative.
+
+## VALIDATION
 
 ```bash
-# smoke test the hook
-PAYLOAD='{"cwd":"/tmp","hook_event_name":"UserPromptSubmit","model":"gpt-5.5","permission_mode":"default","session_id":"x","transcript_path":"","turn_id":"y","prompt":"please ultrawork"}'
-npm run build
-echo "$PAYLOAD" | node dist/cli.js hook user-prompt-submit | head -3
-
-# pattern boundary check (must be empty)
-echo '{"hook_event_name":"UserPromptSubmit","prompt":"refactor ulw_helper.ts"}' | node dist/cli.js hook user-prompt-submit | wc -c
+npm run check
+npm test
+printf '%s\n' '{"hook_event_name":"UserPromptSubmit","prompt":"please ultrawork","transcript_path":null}' | node dist/cli.js hook user-prompt-submit
 ```
+
+Smoke a valid trigger, `ulw_helper`, malformed JSON, duplicate transcript, and context-pressure transcript, then run the inherited plugin packaging gate. Valid installed smoke currently emits a roughly 22k-character directive.
+
+## ANTI-PATTERNS
+
+- Do not duplicate directive content in code/tests.
+- Do not expose upstream TOML agents as if they were installed Auggie agents.
+- Do not keep stale README length/behavior claims after directive changes.

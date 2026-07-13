@@ -1,35 +1,49 @@
-# Repository Conventions
+# COMMENT-CHECKER COMPONENT
 
-Conventions for human contributors and AI agents working on this repository.
+## OVERVIEW
 
-## Style
+Post-edit adapter that converts supported edit payloads into the optional native comment checker contract. Warnings block with a normalized reason; missing checker, malformed input, and operational errors fail open.
 
-- Terse technical prose. No emojis in commits, issues, PR comments, or code.
-- TypeScript strict mode. No `any`, no `unknown` casts where avoidable, no `@ts-ignore`, no `@ts-expect-error`, no enums.
-- ESM modules with `.js` suffix in runtime import paths.
-- Tabs for indentation. Double quotes for strings.
-- Tests use vitest with `#given .. #when .. #then` descriptions or plain `// given / // when / // then` body comments.
+## FLOW
 
-## Commands
+```text
+parent PostToolUse wrapper
+  -> dist/cli.js
+  -> strict hook input guard
+  -> request-extractor / apply-patch parser
+  -> native checker subprocess
+  -> capped warning feedback
+```
 
-- `npm install` - install dependencies.
-- `npm test` - run vitest once.
-- `npm run typecheck` - strict TypeScript check.
-- `npm run check` - type check, biome, and build.
-- `npm pack --dry-run` - release package smoke test.
-- `node dist/cli.js hook post-tool-use < fixture.json` - smoke-test the Asterline hook.
+## LOCAL CONTRACTS
 
-## Constraints
+- Avoid `unknown` casts when handwritten boundary guards can narrow the payload.
+- Keep raw patch and structured metadata extraction behavior aligned. Structured `files`, `result.files`, or `metadata.files` takes precedence.
+- Ignore deletes, empty additions, failed tool output, and unsupported tool names.
+- Cap subprocess stdout/stderr and user feedback; preserve the tighter context-pressure feedback budget.
+- `@code-yeongyu/comment-checker` remains optional. Missing/native errors must not break the hook.
+- Preserve the stable PostToolUse JSON adapter and newline normalization.
+- Do not expose this component as an MCP server.
 
-- No Bun APIs. Runtime is Node only because Asterline launches plugin hooks with Node.
-- Keep Asterline `PostToolUse` hook behavior covered by tests.
-- Keep `apply_patch` extraction covered by tests.
-- `apply_patch` must support Asterline `tool_input.command`, raw patch text, and ASTERLINE-compatible metadata.
-- Hook output must use the stable Asterline hook JSON contract.
-- Do not expose an MCP server or MCP tool from this plugin.
+## INSTALLED WIRING
 
-## Don'ts
+The aggregate plugin uses `comment-guard-post-tool-use.sh` and Auggie matchers `str-replace-editor|save-file`. The extractor currently recognizes `write`, `edit`, `multiedit`, `multi_edit`, and `apply_patch`; wrappers do not translate names. Require an end-to-end Auggie payload test before claiming the installed hook checks edits.
 
-- No `git add -A` or `git add .`. Stage only the files you changed.
-- No `git commit --no-verify`. No force pushes. No history rewriting on shared branches.
-- Do not couple this package back to pi, asterline, or senpi internal source paths.
+The standalone README/package references a component plugin manifest that is absent here. The parent plugin manifest is authoritative for this checkout.
+
+## VALIDATION
+
+```bash
+npm run check
+npm test
+node dist/cli.js hook post-tool-use < test/fixtures/post-tool-use.json
+```
+
+CLI tests execute committed dist while most unit tests import source. Then run the inherited plugin packaging gate.
+
+## ANTI-PATTERNS
+
+- Do not patch dist alone.
+- Do not make optional checker absence a blocking error.
+- Do not copy upstream edit names into aggregate matchers without adapting the payload contract.
+- Do not couple this standalone package to internal upstream application source trees.
