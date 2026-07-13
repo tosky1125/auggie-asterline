@@ -2,42 +2,36 @@
 
 ## OVERVIEW
 
-Asterline-specific PostToolUse/PostCompact adapter around vendored LSP daemon/tools. This component owns edited-path extraction and hook feedback; it does not own the core LSP manager implementation.
+Auggie-specific `PostToolUse` adapter around the committed `mcp/lsp/dist` interface. This component
+owns payload-to-diagnostics feedback; `runtime/**` owns the upstream LSP MCP materialization.
 
 ## SOURCE BOUNDARIES
 
-| Surface | Owner |
+| Surface | Role |
 | --- | --- |
-| `src/` | Hook input, diagnostics feedback, per-session suppression, CLI |
-| `dist/` | Tracked component runtime consumed by wrappers |
-| `../../vendor/lsp-tools-mcp/dist/` | `LspManager`, clients, tools, server definitions |
-| `../../vendor/lsp-daemon/dist/` | Daemon/socket/proxy runtime |
-| `../../mcp/lsp/dist/` | Marketplace-transformed daemon/MCP copy |
+| `src/` | Successful edit filtering, diagnostics feedback, CLI |
+| `dist/` | Deterministic self-contained bundles consumed by installed wrappers |
+| `runtime/` | Separately owned LSP MCP source lock and builder |
+| `../../mcp/lsp/dist/` | Committed daemon/MCP interface bundled by this component |
+| `../hook-bridge/src/` | Exact Auggie 0.32 payload boundary bundled by this component |
 
-- Runtime tool calls acquire clients through vendored `withLspClient`; static status is the exception.
-- Rename applies workspace edits and must remain sequential at the MCP caller.
-- Hook diagnostics may process up to four edited files concurrently.
-- Missing-server/unavailable diagnostics are fail-open and cached per session until PostCompact.
+## CONTRACT
 
-## INSTALLED WIRING
+- Support only `PostToolUse` for `apply_patch`, `str-replace-editor`, and `save-file`.
+- Diagnose only events whose normalized state is `succeeded` and only their affected paths.
+- Failed, cancelled, unknown, malformed, clean, and unavailable-server outcomes fail open silently.
+- Do not add unsupported events, `matcher`, `statusMessage`, telemetry, runtime package managers,
+  `vendor/` imports, or bare runtime imports.
+- Build with `scripts/build.mjs`; it delegates to the plugin's pinned F3 bundler and audits the output.
+- Keep each handwritten source module at or below 250 pure lines.
 
-Parent wrappers invoke diagnostics for Auggie `str-replace-editor|save-file`. `src/mutated-file-paths.ts` currently accepts only `apply_patch`, `write`, `edit`, `multiedit`, and `multi_edit`; require an installed-payload test when changing extraction or matchers.
-
-The public MCP key is `lsp`; runtime configuration is `.asterline/lsp-client.json` with a top-level `lsp` map. Keep skill prose and helper scripts aligned with those actual names.
-
-## BUILD REALITY
-
-Component-local dependency metadata points at a machine-specific path and build helpers expect absent upstream sibling packages. The parent plugin runs committed artifacts; do not present standalone `npm install` as reproducible until those paths are fixed.
+## VERIFICATION
 
 ```bash
-npm run check && npm test
+node scripts/build.mjs
+node --test ../../test/v4171-lsp-hook.test.mjs
+node ../../scripts/audit-runtime-imports.mjs --root dist --config scripts/runtime-audit.json
+node ../../scripts/audit-package-manager-runtime.mjs --root dist --config scripts/runtime-audit.json
 ```
 
-Then run the inherited plugin/root gates. Any LSP runtime refresh must coordinate `mcp/lsp` and both vendored LSP packages, documenting the transformation between copies.
-
-## ANTI-PATTERNS
-
-- Do not patch vendored manager logic in component source.
-- Do not hand-edit one daemon copy without checking the other.
-- Do not document renamed helper/config files that do not exist.
-- Do not add dependencies on internal upstream application source trees.
+Do not edit `runtime/**` from this component task.

@@ -1,5 +1,12 @@
 # Changelog
 
+## 4.17.1
+
+- Parse exact Auggie 0.32 edit payloads through the shared hook bridge.
+- Diagnose only successful affected files and fail open for unavailable language servers.
+- Replace external package paths and lifecycle scripts with deterministic self-contained bundles.
+- Remove unsupported PostCompact and status-message hook wiring.
+
 ## Unreleased
 
 - Reuse the repository-level `packages/lsp-tools-mcp` package instead of carrying a second copy under `components/lsp/packages`.

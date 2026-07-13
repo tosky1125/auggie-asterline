@@ -1,9 +1,9 @@
 {
-	"mcpServers": {
-		"lsp": {
-			"command": "node",
-			"args": ["../../../../lsp-daemon/dist/cli.js", "mcp"],
-			"cwd": "."
-		}
-	}
+  "mcpServers": {
+    "lsp": {
+      "command": "node",
+      "args": ["../../mcp/lsp/dist/cli.js", "mcp"],
+      "cwd": "."
+    }
+  }
 }
