@@ -147,12 +147,14 @@ work_loop checkpoint --goal-id <id> --status complete --evidence "<e2e evidence 
 ```json
 {
   "codeReview": { "by": "judge", "recommendation": "APPROVE", "codeQualityStatus": "CLEAR", "reportPath": "<currentAttemptDir>/code.md", "evidence": "review synthesis", "blockers": [] },
-  "manualQa": { "by": "operator", "status": "passed", "evidence": "real-surface QA", "surfaceEvidence": [{ "id": "S1", "criterionRef": "C001", "surface": "cli", "invocation": "node --test", "verdict": "passed", "artifactRefs": ["A1"] }], "adversarialCases": [{ "id": "X1", "criterionRef": "C002", "scenario": "malformed input", "expectedBehavior": "typed rejection", "verdict": "passed", "artifactRefs": ["A1"] }], "artifactRefs": [{ "id": "A1", "kind": "cli-transcript", "description": "QA transcript", "path": "<currentAttemptDir>/qa.log" }] },
+  "manualQa": { "by": "operator", "status": "passed", "evidence": "real-surface QA", "surfaceEvidence": [{ "id": "S1", "criterionRef": "C001", "surface": "cli", "invocation": "node --test", "verdict": "passed", "artifactRefs": ["A1"] }, { "id": "S2", "criterionRef": "C003", "surface": "cli", "invocation": "node --test", "verdict": "passed", "artifactRefs": ["A1"] }], "adversarialCases": [{ "id": "X1", "criterionRef": "C002", "scenario": "malformed input", "expectedBehavior": "typed rejection", "verdict": "passed", "artifactRefs": ["A1"] }], "artifactRefs": [{ "id": "A1", "kind": "cli-transcript", "description": "QA transcript", "path": "<currentAttemptDir>/qa.log" }] },
   "gateReview": { "by": "skeptic", "recommendation": "APPROVE", "reportPath": "<currentAttemptDir>/gate.md", "evidence": "gate review", "blockers": [] },
   "iteration": { "fullRerun": true, "status": "passed", "rerunCommands": ["node --test"], "evidence": "post-cleaner rerun" },
   "criteriaCoverage": { "totalCriteria": N, "passCount": N, "originalIntent": "...", "desiredOutcome": "...", "userOutcomeReview": "...", "adversarialClassesCovered": ["malformed_input"] }
 }
 ```
+
+Every plan criterion must appear exactly once across `surfaceEvidence` and `adversarialCases`. Set both coverage counts from the current plan rather than supplying independent totals. A bare `C001` is valid only when that criterion id is unique across the plan; use the qualified `G001:C001` form when multiple goals reuse the same criterion id. Artifact and report paths must be non-empty regular files from `currentAttemptDir`; directories and symlinks are rejected.
 Obtain `<currentAttemptDir>` from `work_loop status --json`. Every referenced file must already exist there and be non-empty. If no adversarial class applies, record `"adversarialClassesCovered": ["none-applicable: <reason>"]` and a structured `not_applicable` adversarial case with its reason.
 
 ## Dynamic Steering

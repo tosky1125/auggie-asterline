@@ -107,6 +107,7 @@ function finalSection(plan: WorkLoopPlan, goal: WorkLoopItem, isFinal: boolean, 
 	return joinLines([
 		"Final story — run mandatory quality gate before update_goal:",
 		"- Run clean-ai-code on changed files even when it is a no-op, rerun verification, then run review-pass. Auggie may split bounded review tasks in parallel but does not provide persistent team messaging, resumption, or threads.",
+		"- Derive coverage from the current plan: reference every plan criterion exactly once across QA rows, using goal-qualified criterionRef values when criterion ids repeat.",
 		"- If the final review is not APPROVE with architect status CLEAR, do not call update_goal. Record blocker work first:",
 		`  ${blockerCommand}`,
 		aggregate

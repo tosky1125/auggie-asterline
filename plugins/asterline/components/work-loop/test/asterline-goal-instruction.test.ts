@@ -84,6 +84,16 @@ describe("buildHostGoalInstruction aggregate mode", () => {
 		expect(text).toMatch(/quality gate/i);
 	});
 
+	it("Given a final run When rendering the quality gate Then it requires exact plan-derived criterion coverage", () => {
+		const { text } = buildHostGoalInstruction({
+			plan: makePlan({ hostGoalMode: "aggregate" }),
+			goal: makeGoal(),
+			isFinal: true,
+		});
+		expect(text).toMatch(/every plan criterion exactly once/i);
+		expect(text).toMatch(/goal-qualified criterionRef/i);
+	});
+
 	it("#given a scoped plan #when rendering final commands #then includes the session id option", () => {
 		const { text } = buildHostGoalInstruction({
 			plan: makePlan({

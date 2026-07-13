@@ -9,8 +9,11 @@ const UNCONDITIONAL_APPROVAL_PATTERN = /\bUNCONDITIONAL\s+APPROVAL\b/i;
 
 export { classifyExternalAuthorizationBlocker, clearGoalBlockerFields, normalizeBlockerEvidence, sameBlockerOccurrences } from "./quality-gate-blockers.js";
 
-export interface QualityGateFs { readonly existsSync: (path: string) => boolean; readonly statSync: (path: string) => { readonly size: number } }
-export interface ValidateQualityGateOptions { readonly repoRoot: string; readonly fs: QualityGateFs; readonly currentAttemptDir?: string }
+interface QualityGateFileInfo { readonly size: number; readonly isFile: () => boolean; readonly isSymbolicLink: () => boolean }
+export interface QualityGateFs { readonly existsSync: (path: string) => boolean; readonly lstatSync: (path: string) => QualityGateFileInfo; readonly realpathSync: (path: string) => string }
+export interface QualityGateCriterion { readonly goalId: string; readonly criterionId: string }
+export interface ValidateQualityGateOptions { readonly repoRoot: string; readonly fs: QualityGateFs; readonly criteria: readonly QualityGateCriterion[]; readonly currentAttemptDir?: string }
+interface CriteriaCoverageInput { readonly totalCriteria: number; readonly passCount: number; readonly refs: readonly string[] }
 
 function reviewerRoleField<T extends string>(value: unknown, expected: T, field: string): T {
 	const actual = textField(value, field);
@@ -39,8 +42,42 @@ function checkFile(path: string, field: string, opts?: ValidateQualityGateOption
 	if (opts === undefined) return;
 	const absolute = resolve(opts.repoRoot, path);
 	if (!opts.fs.existsSync(absolute)) invalid(`${field} must point to an existing artifact.`, field);
-	if (opts.fs.statSync(absolute).size <= 0) invalid(`${field} must point to a non-empty artifact.`, field);
-	if (opts.currentAttemptDir !== undefined && !isWithinAttemptDir(absolute, resolve(opts.repoRoot, opts.currentAttemptDir))) invalid(`${field} (${path}) must point to an artifact from the current attempt (${opts.currentAttemptDir}).`, field);
+	const info = opts.fs.lstatSync(absolute);
+	if (info.isSymbolicLink() || !info.isFile()) invalid(`${field} must point to a regular non-symlink file.`, field);
+	if (info.size <= 0) invalid(`${field} must point to a non-empty artifact.`, field);
+	if (opts.currentAttemptDir === undefined) return;
+	const attempt = resolve(opts.repoRoot, opts.currentAttemptDir);
+	if (!isWithinAttemptDir(absolute, attempt)) invalid(`${field} (${path}) must point to an artifact from the current attempt (${opts.currentAttemptDir}).`, field);
+	const realRepo = opts.fs.realpathSync(resolve(opts.repoRoot));
+	const realAttempt = opts.fs.realpathSync(attempt);
+	const realArtifact = opts.fs.realpathSync(absolute);
+	if (!isWithinAttemptDir(realAttempt, realRepo) || !isWithinAttemptDir(realArtifact, realAttempt)) invalid(`${field} (${path}) must resolve inside the current attempt (${opts.currentAttemptDir}).`, field);
+}
+
+function validateCriteriaCoverage(input: CriteriaCoverageInput, opts?: ValidateQualityGateOptions): void {
+	const { totalCriteria, passCount, refs } = input;
+	if (opts === undefined) {
+		if (passCount < totalCriteria) invalid("criteriaCoverage.passCount must cover totalCriteria.", "criteriaCoverage.passCount");
+		return;
+	}
+	const expected = new Map<string, string>();
+	const idCounts = new Map<string, number>();
+	for (const criterion of opts.criteria) idCounts.set(criterion.criterionId, (idCounts.get(criterion.criterionId) ?? 0) + 1);
+	for (const criterion of opts.criteria) {
+		const canonical = `${criterion.goalId}:${criterion.criterionId}`;
+		expected.set(canonical, canonical);
+		if (idCounts.get(criterion.criterionId) === 1) expected.set(criterion.criterionId, canonical);
+	}
+	const expectedCount = opts.criteria.length;
+	if (totalCriteria !== expectedCount) invalid(`criteriaCoverage.totalCriteria must equal the plan criterion count (${expectedCount}).`, "criteriaCoverage.totalCriteria");
+	if (passCount !== expectedCount) invalid(`criteriaCoverage.passCount must equal the plan criterion count (${expectedCount}).`, "criteriaCoverage.passCount");
+	const covered = new Set<string>();
+	for (const ref of refs) {
+		const canonical = expected.get(ref) ?? invalid(`criterionRef references unknown or ambiguous plan criterion ${ref}.`, "manualQa.criterionRef");
+		if (covered.has(canonical)) invalid(`criterionRef contains duplicate plan criterion ${ref}.`, "manualQa.criterionRef");
+		covered.add(canonical);
+	}
+	if (covered.size !== expectedCount) invalid("criterionRef must cover every plan criterion exactly once.", "manualQa.criterionRef");
 }
 
 function parseArtifactRefs(value: unknown, opts?: ValidateQualityGateOptions): readonly WorkLoopManualQaArtifactRef[] {
@@ -92,7 +129,7 @@ export function validateQualityGate(input: unknown, opts?: ValidateQualityGateOp
 	if (opts === undefined && gate["aiSlopCleaner"] !== undefined) return validateLegacyQualityGate(gate);
 	const codeReview = section(gate["codeReview"], "codeReview"); const manualQa = section(gate["manualQa"], "manualQa"); const gateReview = section(gate["gateReview"], "gateReview"); const iteration = section(gate["iteration"], "iteration"); const coverage = section(gate["criteriaCoverage"], "criteriaCoverage");
 	const totalCriteria = numberField(coverage["totalCriteria"], "criteriaCoverage.totalCriteria"); const passCount = numberField(coverage["passCount"], "criteriaCoverage.passCount");
-	if (passCount < totalCriteria) invalid("criteriaCoverage.passCount must cover totalCriteria.", "criteriaCoverage.passCount");
 	const artifactRefs = parseArtifactRefs(manualQa["artifactRefs"], opts); const byId = new Map(artifactRefs.map((ref) => [ref.id, ref])); const surfaceEvidence = parseSurfaceEvidence(manualQa["surfaceEvidence"], byId); const adversarialCases = parseAdversarialCases(manualQa["adversarialCases"], byId); const codeReportPath = textField(codeReview["reportPath"], "codeReview.reportPath"); const gateReportPath = textField(gateReview["reportPath"], "gateReview.reportPath"); checkFile(codeReportPath, "codeReview.reportPath", opts); checkFile(gateReportPath, "gateReview.reportPath", opts);
+	validateCriteriaCoverage({ totalCriteria, passCount, refs: [...surfaceEvidence, ...adversarialCases].map((item) => item.criterionRef) }, opts);
 	return { codeReview: { by: reviewerRoleField(codeReview["by"], REVIEWER_ROLES.codeReview, "codeReview.by"), recommendation: literal(codeReview["recommendation"], "APPROVE", "codeReview.recommendation"), codeQualityStatus: codeQualityStatusField(codeReview["codeQualityStatus"], "codeReview.codeQualityStatus"), reportPath: codeReportPath, evidence: textField(codeReview["evidence"], "codeReview.evidence"), blockers: emptyBlockers(codeReview["blockers"], "codeReview.blockers") }, manualQa: { by: reviewerRoleField(manualQa["by"], REVIEWER_ROLES.manualQa, "manualQa.by"), status: literal(manualQa["status"], "passed", "manualQa.status"), evidence: textField(manualQa["evidence"], "manualQa.evidence"), surfaceEvidence, adversarialCases, artifactRefs }, gateReview: { by: reviewerRoleField(gateReview["by"], REVIEWER_ROLES.gateReview, "gateReview.by"), recommendation: literal(gateReview["recommendation"], "APPROVE", "gateReview.recommendation"), reportPath: gateReportPath, evidence: textField(gateReview["evidence"], "gateReview.evidence"), blockers: emptyBlockers(gateReview["blockers"], "gateReview.blockers") }, iteration: { fullRerun: literal(iteration["fullRerun"], true, "iteration.fullRerun"), status: literal(iteration["status"], "passed", "iteration.status"), rerunCommands: stringArray(iteration["rerunCommands"], "iteration.rerunCommands"), evidence: textField(iteration["evidence"], "iteration.evidence") }, criteriaCoverage: { totalCriteria, passCount, originalIntent: textField(coverage["originalIntent"], "criteriaCoverage.originalIntent"), desiredOutcome: textField(coverage["desiredOutcome"], "criteriaCoverage.desiredOutcome"), userOutcomeReview: textField(coverage["userOutcomeReview"], "criteriaCoverage.userOutcomeReview"), adversarialClassesCovered: stringArray(coverage["adversarialClassesCovered"], "criteriaCoverage.adversarialClassesCovered") } };
 }

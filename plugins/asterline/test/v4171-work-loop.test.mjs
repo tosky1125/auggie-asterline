@@ -295,7 +295,7 @@ test("Given a v2 aggregate plan When an intermediate goal completes Then only es
 	assert.equal(JSON.parse(checkpoint.stdout).goal.status, "complete");
 });
 
-test("Given a final v2 checkpoint When gate artifacts are stale or current Then containment rejects stale and accepts current", async (t) => {
+test("Given a final v2 checkpoint When gate evidence is unsafe or exact Then unsafe gates reject and exact current evidence completes", async (t) => {
 	const cwd = await mkdtemp(join(tmpdir(), "asterline-work-loop-gate-"));
 	t.after(() => rm(cwd, { recursive: true, force: true }));
 	const created = JSON.parse((await run(cwd, ["work-loop", "create-goals", "--brief", "Final verified delivery", "--session-id", "gate-session", "--json"])).stdout).plan;
@@ -307,11 +307,32 @@ test("Given a final v2 checkpoint When gate artifacts are stale or current Then 
 	await mkdir(join(cwd, status.currentAttemptDir), { recursive: true });
 	for (const name of ["code.md", "gate.md", "qa.log"]) await writeFile(join(cwd, status.currentAttemptDir, name), `${name} verified\n`);
 	await writeFile(join(cwd, "stale.log"), "old attempt\n");
-	const gate = (artifactPath) => JSON.stringify({ codeReview: { by: "judge", recommendation: "APPROVE", codeQualityStatus: "CLEAR", reportPath: `${status.currentAttemptDir}/code.md`, evidence: "review passed", blockers: [] }, manualQa: { by: "operator", status: "passed", evidence: "manual QA passed", surfaceEvidence: [{ id: "S1", criterionRef: "C001", surface: "cli", invocation: "node --test", verdict: "passed", artifactRefs: ["A1"] }], adversarialCases: [{ id: "X1", criterionRef: "C002", scenario: "malformed input", expectedBehavior: "typed rejection", verdict: "passed", artifactRefs: ["A1"] }], artifactRefs: [{ id: "A1", kind: "cli-transcript", description: "QA transcript", path: artifactPath }] }, gateReview: { by: "skeptic", recommendation: "APPROVE", reportPath: `${status.currentAttemptDir}/gate.md`, evidence: "gate passed", blockers: [] }, iteration: { fullRerun: true, status: "passed", rerunCommands: ["node --test"], evidence: "full rerun passed" }, criteriaCoverage: { totalCriteria: 3, passCount: 3, originalIntent: "deliver safely", desiredOutcome: "verified delivery", userOutcomeReview: "outcome met", adversarialClassesCovered: ["malformed_input"] } });
+	await mkdir(join(cwd, status.currentAttemptDir, "qa-dir"));
+	await symlink(join(cwd, status.currentAttemptDir, "qa.log"), join(cwd, status.currentAttemptDir, "qa-link"));
+	await mkdir(join(cwd, "outside"));
+	await writeFile(join(cwd, "outside", "qa.log"), "forged QA\n");
+	await symlink(join(cwd, "outside"), join(cwd, status.currentAttemptDir, "escape"));
+	const gate = (artifactPath) => JSON.stringify({ codeReview: { by: "judge", recommendation: "APPROVE", codeQualityStatus: "CLEAR", reportPath: `${status.currentAttemptDir}/code.md`, evidence: "review passed", blockers: [] }, manualQa: { by: "operator", status: "passed", evidence: "manual QA passed", surfaceEvidence: [{ id: "S1", criterionRef: "C001", surface: "cli", invocation: "node --test", verdict: "passed", artifactRefs: ["A1"] }, { id: "S2", criterionRef: "C003", surface: "cli", invocation: "node --test", verdict: "passed", artifactRefs: ["A1"] }], adversarialCases: [{ id: "X1", criterionRef: "C002", scenario: "malformed input", expectedBehavior: "typed rejection", verdict: "passed", artifactRefs: ["A1"] }], artifactRefs: [{ id: "A1", kind: "cli-transcript", description: "QA transcript", path: artifactPath }] }, gateReview: { by: "skeptic", recommendation: "APPROVE", reportPath: `${status.currentAttemptDir}/gate.md`, evidence: "gate passed", blockers: [] }, iteration: { fullRerun: true, status: "passed", rerunCommands: ["node --test"], evidence: "full rerun passed" }, criteriaCoverage: { totalCriteria: 3, passCount: 3, originalIntent: "deliver safely", desiredOutcome: "verified delivery", userOutcomeReview: "outcome met", adversarialClassesCovered: ["malformed_input"] } });
 	const baseArgs = ["work-loop", "checkpoint", "--goal-id", goal.id, "--status", "complete", "--evidence", "final work complete and validation passed", "--host-goal-json", JSON.stringify({ goal: { objective: created.asterlineObjective, status: "complete" } }), "--session-id", "gate-session", "--json"];
-	const stale = await run(cwd, [...baseArgs, "--quality-gate-json", gate("stale.log")]);
-	assert.equal(stale.code, 1);
-	assert.match(stale.stdout, /WORK_LOOP_QUALITY_GATE_INVALID/u);
+	for (const artifactPath of ["stale.log", `${status.currentAttemptDir}/qa-dir`, `${status.currentAttemptDir}/qa-link`, `${status.currentAttemptDir}/escape/qa.log`]) {
+		const unsafe = await run(cwd, [...baseArgs, "--quality-gate-json", gate(artifactPath)]);
+		assert.equal(unsafe.code, 1, `${artifactPath}: ${unsafe.stdout}`);
+		assert.match(unsafe.stdout, /WORK_LOOP_QUALITY_GATE_INVALID/u);
+	}
+	const fabricated = JSON.parse(gate(`${status.currentAttemptDir}/qa.log`));
+	fabricated.criteriaCoverage.totalCriteria = 999;
+	fabricated.criteriaCoverage.passCount = 999;
+	const missing = JSON.parse(gate(`${status.currentAttemptDir}/qa.log`));
+	missing.manualQa.surfaceEvidence.pop();
+	const unknown = JSON.parse(gate(`${status.currentAttemptDir}/qa.log`));
+	unknown.manualQa.surfaceEvidence[1].criterionRef = "C999";
+	const duplicate = JSON.parse(gate(`${status.currentAttemptDir}/qa.log`));
+	duplicate.manualQa.surfaceEvidence[1].criterionRef = "C001";
+	for (const invalidGate of [fabricated, missing, unknown, duplicate]) {
+		const rejected = await run(cwd, [...baseArgs, "--quality-gate-json", JSON.stringify(invalidGate)]);
+		assert.equal(rejected.code, 1, rejected.stdout);
+		assert.match(rejected.stdout, /WORK_LOOP_QUALITY_GATE_INVALID/u);
+	}
 	const current = await run(cwd, [...baseArgs, "--quality-gate-json", gate(`${status.currentAttemptDir}/qa.log`)]);
 	assert.equal(current.code, 0, current.stderr || current.stdout);
 	assert.equal(JSON.parse(current.stdout).aggregateCompletion.status, "complete");

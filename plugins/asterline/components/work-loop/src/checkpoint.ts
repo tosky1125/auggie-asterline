@@ -1,5 +1,5 @@
 // biome-ignore-all format: keep checkpoint orchestration below the pure LOC budget.
-import { existsSync, statSync } from "node:fs";
+import { existsSync, lstatSync, realpathSync } from "node:fs";
 import { readFile } from "node:fs/promises";
 import { resolve } from "node:path";
 import { INSTALLED_WORK_LOOP_COMMAND } from "./constants.js";
@@ -150,7 +150,7 @@ export async function checkpointWorkLoop(repoRoot: string, args: CheckpointWorkL
 			}
 			if (final) aggregateCompletion = makeAggregateCompletion(now, evidence, hostGoal);
 			if (final || aggregateCompletion !== undefined) {
-				const gateOptions = plan.evidenceLayoutVersion === 2 ? { repoRoot, fs: { existsSync, statSync }, currentAttemptDir: workLoopAttemptEvidenceDir(goal.id, goal.attempt, scope) } : undefined;
+				const gateOptions = plan.evidenceLayoutVersion === 2 ? { repoRoot, fs: { existsSync, lstatSync, realpathSync }, currentAttemptDir: workLoopAttemptEvidenceDir(goal.id, goal.attempt, scope), criteria: plan.goals.flatMap((item) => item.successCriteria.map((criterion) => ({ goalId: item.id, criterionId: criterion.id }))) } : undefined;
 				qualityGate = validateQualityGate(await readJsonInput(args.qualityGateJson, repoRoot), gateOptions);
 			}
 			goal.status = "complete";
