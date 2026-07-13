@@ -1,0 +1,195 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "repository": "https://github.com/code-yeongyu/oh-my-openagent",
+    "tag": "v4.17.1",
+    "commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a"
+  },
+  "toolchain": {
+    "command": "bun",
+    "version": "1.3.14"
+  },
+  "sources": [
+    {
+      "package": "lsp-core",
+      "path": "packages/lsp-core",
+      "treeOid": "7c659151e5184fd413e4982d48a1199ec77e8d00"
+    },
+    {
+      "package": "lsp-daemon",
+      "path": "packages/lsp-daemon",
+      "treeOid": "27dbcdb0aae86e19c86f6236684885799cbab3f4"
+    },
+    {
+      "package": "lsp-tools-mcp",
+      "path": "packages/lsp-tools-mcp",
+      "treeOid": "f810a4ec1c22a8a59f7d6a135c2ff7a9a79671c3"
+    },
+    {
+      "package": "mcp-stdio-core",
+      "path": "packages/mcp-stdio-core",
+      "treeOid": "a45d3a3459dc68efeaf06413dd9a4c09fc3f1f8d"
+    }
+  ],
+  "entries": [
+    {
+      "source": "packages/lsp-daemon/src/cli.ts",
+      "output": "cli.js",
+      "executable": true
+    },
+    {
+      "source": "packages/lsp-daemon/src/index.ts",
+      "output": "index.js"
+    },
+    {
+      "source": "packages/lsp-tools-mcp/src/cli.ts",
+      "output": "standalone.js",
+      "executable": true
+    }
+  ],
+  "aliases": [
+    {
+      "specifier": "@oh-my-opencode/lsp-core",
+      "source": "packages/lsp-core/src"
+    },
+    {
+      "specifier": "@oh-my-opencode/mcp-stdio-core",
+      "source": "packages/mcp-stdio-core/src"
+    }
+  ],
+  "transforms": [
+    {
+      "file": "packages/lsp-core/src/lsp/cleanup-errors.ts",
+      "from": "CODEX_LSP_DEBUG_CLEANUP",
+      "to": "ASTERLINE_LSP_DEBUG_CLEANUP",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-core/src/lsp/cleanup-errors.ts",
+      "from": "[codex-lsp]",
+      "to": "[asterline-lsp]",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-core/src/lsp/client-wrapper.ts",
+      "from": ".codex/lsp-client.json",
+      "to": ".asterline/lsp-client.json",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-core/src/lsp/config-loader.ts",
+      "from": ".codex",
+      "to": ".asterline",
+      "expectedCount": 3
+    },
+    {
+      "file": "packages/lsp-core/src/lsp/server-install-state.ts",
+      "from": ".codex",
+      "to": ".asterline",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-core/src/lsp/server-definitions.ts",
+      "from": "npm install -g ",
+      "to": "Provision outside Asterline and expose on PATH: ",
+      "expectedCount": 13
+    },
+    {
+      "file": "packages/lsp-core/src/lsp/server-definitions.ts",
+      "from": "export const AUTO_INSTALLABLE_SERVERS: Record<string, string[]> = {",
+      "to": "export const AUTO_INSTALLABLE_SERVERS: Record<string, string[]> = {};\n",
+      "expectedCount": 1,
+      "removeThroughEof": true
+    },
+    {
+      "file": "packages/lsp-daemon/src/ensure-daemon.ts",
+      "from": "CODEX_LSP_DAEMON_CLI",
+      "to": "ASTERLINE_LSP_DAEMON_CLI",
+      "expectedCount": 3
+    },
+    {
+      "file": "packages/lsp-daemon/src/paths.ts",
+      "from": "CODEX_LSP_DAEMON_VERSION",
+      "to": "ASTERLINE_LSP_DAEMON_VERSION",
+      "expectedCount": 3
+    },
+    {
+      "file": "packages/lsp-daemon/src/paths.ts",
+      "from": "CODEX_LSP_DAEMON_DIR",
+      "to": "ASTERLINE_LSP_DAEMON_DIR",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-daemon/src/paths.ts",
+      "from": "CODEX_HOME",
+      "to": "ASTERLINE_HOME",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-daemon/src/paths.ts",
+      "from": "codexHome",
+      "to": "asterlineHome",
+      "expectedCount": 4
+    },
+    {
+      "file": "packages/lsp-daemon/src/paths.ts",
+      "from": ".codex",
+      "to": ".asterline",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-daemon/src/paths.ts",
+      "from": "codex-lsp",
+      "to": "asterline-lsp",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-daemon/src/paths.ts",
+      "from": "omo-lsp-",
+      "to": "asterline-lsp-",
+      "expectedCount": 2
+    },
+    {
+      "file": "packages/lsp-daemon/src/daemon-server.ts",
+      "from": "[lsp-daemon]",
+      "to": "[asterline-lsp-daemon]",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-daemon/src/proxy.ts",
+      "from": "[lsp-daemon]",
+      "to": "[asterline-lsp-daemon]",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-daemon/src/run-daemon.ts",
+      "from": "[lsp-daemon]",
+      "to": "[asterline-lsp-daemon]",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-daemon/src/cli.ts",
+      "from": "import { argv, stderr } from \"node:process\";",
+      "to": "import { argv, stderr, stdout } from \"node:process\";",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-daemon/src/cli.ts",
+      "from": "\tconst [command = \"mcp\"] = argv.slice(2);",
+      "to": "\tconst [command = \"mcp\"] = argv.slice(2);\n\n\tif (command === \"--help\" || command === \"-h\") {\n\t\tstdout.write(\"Usage: asterline-lsp-daemon [mcp | daemon]\\n\");\n\t\treturn;\n\t}",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-daemon/src/cli.ts",
+      "from": "Usage: omo-lsp-daemon",
+      "to": "Usage: asterline-lsp-daemon",
+      "expectedCount": 1
+    },
+    {
+      "file": "packages/lsp-tools-mcp/src/cli.ts",
+      "from": "Usage: omo-lsp",
+      "to": "Usage: asterline-lsp",
+      "expectedCount": 1
+    }
+  ]
+}

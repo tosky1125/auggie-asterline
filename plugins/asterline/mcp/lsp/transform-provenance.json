@@ -1,0 +1,89 @@
+{
+  "schemaVersion": 1,
+  "upstream": {
+    "repository": "https://github.com/code-yeongyu/oh-my-openagent",
+    "tag": "v4.17.1",
+    "commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a"
+  },
+  "recipeSha256": "bb0ff7465528e9abd0a5dc280a635a201355a82f9214a841fcfe83571eeecc5f",
+  "transformedFiles": [
+    {
+      "file": "packages/lsp-core/src/lsp/cleanup-errors.ts",
+      "canonicalSha256": "341795ce2b97a273cedde5d4863da322b66b8dd7494b8ced5894ba83be9582b7",
+      "transformedSha256": "6296e43e5dd9e00583becc7d9a544f1f38ffee6698c588529334de371c78861f"
+    },
+    {
+      "file": "packages/lsp-core/src/lsp/client-wrapper.ts",
+      "canonicalSha256": "594504c9c19e258a25ce3dffc5eac28e37d3592a97b38bd445f08ffc3a2d3bf0",
+      "transformedSha256": "22b08ec8c2f33e27d5aec8228c01199560bbcc3995582baa505b6408a08d83b0"
+    },
+    {
+      "file": "packages/lsp-core/src/lsp/config-loader.ts",
+      "canonicalSha256": "4facb7f875ed765ac1db54b526a7c349bd0f7c2a192424423e4134c9af068200",
+      "transformedSha256": "c9e811ab434422b722b54f033a3ab3afd5723822ac871c390ea0dc73247d1470"
+    },
+    {
+      "file": "packages/lsp-core/src/lsp/server-definitions.ts",
+      "canonicalSha256": "dfe73f6dbd2d63d819b3ca2229a79ee693a77bab519b70764e466f5561d5e988",
+      "transformedSha256": "3051daaf5a2d44e9282efbdaff159fa86d2f3e4cc06f9f274e82de531075707a"
+    },
+    {
+      "file": "packages/lsp-core/src/lsp/server-install-state.ts",
+      "canonicalSha256": "30601ff31c064ef0eecde2798caf461c2eb826f0bcdb9b462ff99746e7e459f3",
+      "transformedSha256": "eccec38c114312ed7c6fbe398270c60e05ef1e5e8f29c7105af7d04f780ac53b"
+    },
+    {
+      "file": "packages/lsp-daemon/src/cli.ts",
+      "canonicalSha256": "ba4e36502362dc512465013898390c2d0f50075514fe2b9cc51c39342fc5e059",
+      "transformedSha256": "4cf89420b199ec7d4696cc6efdb24e8c25f7bf844cf2f3d317072c29f7748a05"
+    },
+    {
+      "file": "packages/lsp-daemon/src/daemon-server.ts",
+      "canonicalSha256": "88edc03373948df24500a1c67e5a6d8258c4ea43bfeefecd42556f2e3a0fc4b4",
+      "transformedSha256": "4e6b4c48ed37cf72f7862774db08e454ec03c61ab41221396bef9055ea93ec7e"
+    },
+    {
+      "file": "packages/lsp-daemon/src/ensure-daemon.ts",
+      "canonicalSha256": "27f94c170751638bfeb299217eb8afce7176438ca07ed7eeba6f25dba3444e4d",
+      "transformedSha256": "c51e271925a2ff6b4f026d09f97eb0e91cd2c9b1d9e608ebe3ab9d116662bf1c"
+    },
+    {
+      "file": "packages/lsp-daemon/src/paths.ts",
+      "canonicalSha256": "dd749af7e71f406acf9a8a93fe8fc7dd8850d2984e15808b920f7f54794f7bd5",
+      "transformedSha256": "4644b3416d73382af92517de26a5e6ce2aceb6e72c54b8d2a0cfe74a315f6121"
+    },
+    {
+      "file": "packages/lsp-daemon/src/proxy.ts",
+      "canonicalSha256": "a4cd88c6a3ef2ccd8d3750c6e37ab0bace317cab152219b0add703c61dc0e8b0",
+      "transformedSha256": "3b01acebe5932edc981e4342db49bf78ac945e74616e08b8570126f016ff9b02"
+    },
+    {
+      "file": "packages/lsp-daemon/src/run-daemon.ts",
+      "canonicalSha256": "af08172c8be5710203d9144841086536175c8c271f44c28d2d52de4fa85d6af9",
+      "transformedSha256": "5412fddf8667182cda83f64024050b426f49b30dfc5abe7733e6451c89b3495c"
+    },
+    {
+      "file": "packages/lsp-tools-mcp/src/cli.ts",
+      "canonicalSha256": "2eae68a7970ffa7eb4fc9c83c1c287a372b9a5e0f71e5be4265d7e115f17ec9a",
+      "transformedSha256": "4594449d5a7d99128022fbcf4635b32b8c082ca5194845fc02b43e60e57ae4ee"
+    }
+  ],
+  "outputFiles": [
+    {
+      "file": "dist/cli.js",
+      "sha256": "2fe147512012e97dbf1816f9eb9175fe2e4bdb2c8cb4f34c41abad2fd9da74ef"
+    },
+    {
+      "file": "dist/index.js",
+      "sha256": "64157b2d3c75a1f9e33acb87b1f49d39cd0f99fc4b3880e3e54a9c222a7181e0"
+    },
+    {
+      "file": "dist/package.json",
+      "sha256": "9fba88bac9d34d426671aac57709dc86fde552bed7db92723c5ba904e86b68d4"
+    },
+    {
+      "file": "dist/standalone.js",
+      "sha256": "b8eb456554c42d32203eff06b3a4617799efe77a203176187aa64828be6d5724"
+    }
+  ]
+}
