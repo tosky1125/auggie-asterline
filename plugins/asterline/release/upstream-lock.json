@@ -1,0 +1,83 @@
+{
+  "schemaVersion": 1,
+  "release": "4.17.1",
+  "sources": [
+    {
+      "id": "lazycodex-generated",
+      "tag": "v4.17.1",
+      "commit": "3d7416bff3e6c80ebf5542b4dd12f5c76298d46d",
+      "gitlinks": {
+        "src": "65715d1c2c35e27ccf2195ef688b0909dddb403c"
+      },
+      "paths": [
+        {
+          "source": "plugins/omo/skills",
+          "destination": "generated/plugins/omo/skills",
+          "type": "tree",
+          "oid": "7da0054dfc49e2be00060086d4cabee06253a85f"
+        }
+      ]
+    },
+    {
+      "id": "oh-my-openagent",
+      "tag": "v4.17.1",
+      "commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a",
+      "paths": [
+        {
+          "source": "packages/omo-codex/plugin",
+          "destination": "canonical/packages/omo-codex/plugin",
+          "type": "tree",
+          "oid": "fb65c4fd828f13d4ef20ade019dce5d2771cf439"
+        },
+        {
+          "source": "packages/shared-skills/skills",
+          "destination": "canonical/packages/shared-skills/skills",
+          "type": "tree",
+          "oid": "2c50d1df2694ce939cf45de7dbb8c9d4395ad180"
+        },
+        {
+          "source": "packages/utils",
+          "destination": "canonical/packages/utils",
+          "type": "tree",
+          "oid": "6f66e37d2fb4f182ecdd2c83f2a76001b1f7b56d"
+        },
+        {
+          "source": "packages/comment-checker-core",
+          "destination": "canonical/packages/comment-checker-core",
+          "type": "tree",
+          "oid": "26fb378197ccb8e6c36be1eb73862b3b10d85b4a"
+        },
+        {
+          "source": "packages/rules-engine",
+          "destination": "canonical/packages/rules-engine",
+          "type": "tree",
+          "oid": "2d16db1c98437dc6524fdc50b734b80e1b8ee8b0"
+        },
+        {
+          "source": "packages/lsp-core",
+          "destination": "canonical/packages/lsp-core",
+          "type": "tree",
+          "oid": "7c659151e5184fd413e4982d48a1199ec77e8d00"
+        },
+        {
+          "source": "packages/lsp-daemon",
+          "destination": "canonical/packages/lsp-daemon",
+          "type": "tree",
+          "oid": "27dbcdb0aae86e19c86f6236684885799cbab3f4"
+        },
+        {
+          "source": "packages/lsp-tools-mcp",
+          "destination": "canonical/packages/lsp-tools-mcp",
+          "type": "tree",
+          "oid": "f810a4ec1c22a8a59f7d6a135c2ff7a9a79671c3"
+        },
+        {
+          "source": "packages/mcp-stdio-core",
+          "destination": "canonical/packages/mcp-stdio-core",
+          "type": "tree",
+          "oid": "a45d3a3459dc68efeaf06413dd9a4c09fc3f1f8d"
+        }
+      ]
+    }
+  ]
+}
