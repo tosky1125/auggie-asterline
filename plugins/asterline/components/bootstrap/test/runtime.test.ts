@@ -7,6 +7,14 @@ import { containedPath, parseDataOverride } from "../src/paths.ts";
 import { acquireLock, LOCK_STALE_MS, writeJsonAtomic } from "../src/state.ts";
 import type { AtomicFileOps } from "../src/state.ts";
 import { runSessionStart } from "../src/hook.ts";
+import { downloadsEnabled } from "../src/worker.ts";
+
+test("Given bootstrap download configuration, when parsed, then only exact opt-in enables network access", () => {
+	expect(downloadsEnabled({})).toBe(false);
+	expect(downloadsEnabled({ ASTERLINE_BOOTSTRAP_DOWNLOAD: "0" })).toBe(false);
+	expect(downloadsEnabled({ ASTERLINE_BOOTSTRAP_DOWNLOAD: "true" })).toBe(false);
+	expect(downloadsEnabled({ ASTERLINE_BOOTSTRAP_DOWNLOAD: "1" })).toBe(true);
+});
 
 test("Given path traversal, when resolved, then the data boundary rejects it", () => {
 	expect(() => containedPath("/safe/root", "..", "escape")).toThrow("contained");

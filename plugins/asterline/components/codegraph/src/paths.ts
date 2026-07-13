@@ -3,6 +3,8 @@ import { homedir } from "node:os"
 import { isAbsolute, join, resolve } from "node:path"
 import { fileURLToPath } from "node:url"
 
+import { nativeAssetDoctor } from "../../../scripts/native-assets.mjs"
+
 const VERSION = "1.0.1"
 
 type Environment = Readonly<Record<string, string | undefined>>
@@ -27,12 +29,12 @@ export function pluginData(env: Environment): string {
 	return join(resolve(env["HOME"]?.trim() || homedir()), ".augment", "asterline", "plugin-data")
 }
 
-export function resolveCodegraphBinary(options: {
+export async function resolveCodegraphBinary(options: {
 	readonly env: Environment
 	readonly pluginRoot: string
 	readonly platform?: NodeJS.Platform
 	readonly arch?: string
-}): { readonly executablePath?: string; readonly reason?: string } {
+}): Promise<{ readonly executablePath?: string; readonly reason?: string }> {
 	const platform = options.platform ?? process.platform
 	const arch = options.arch ?? process.arch
 	let manifest: unknown
@@ -42,15 +44,22 @@ export function resolveCodegraphBinary(options: {
 		return { reason: `CodeGraph MCP unavailable: native manifest could not be read (${message(error)}).` }
 	}
 	const component = codegraphComponent(manifest)
-	if (component === undefined || component.version !== VERSION) {
+	if (component?.version !== VERSION) {
 		return { reason: `CodeGraph MCP unavailable: checksum-pinned CodeGraph ${VERSION} is absent from the native manifest.` }
 	}
-	const slug = `${platform}-${arch}`
-	const asset = component.assets[slug]
-	if (asset === undefined) return { reason: `CodeGraph MCP unavailable: CodeGraph ${VERSION} does not support ${slug}.` }
-	const executablePath = join(pluginData(options.env), "native", "codegraph", VERSION, slug, asset.executable)
-	if (!existsSync(executablePath)) return { reason: `CodeGraph MCP unavailable: verified native asset is missing at ${executablePath}.` }
-	return { executablePath }
+	try {
+		const result = await nativeAssetDoctor({
+			sbom: manifest,
+			toolId: "codegraph",
+			cacheRoot: join(pluginData(options.env), "native"),
+			platform,
+			arch,
+		})
+		if (result.status === "available") return { executablePath: result.executablePath }
+		return { reason: `CodeGraph MCP unavailable: ${result.message}.` }
+	} catch (error) {
+		return { reason: `CodeGraph MCP unavailable: native verification failed (${message(error)}).` }
+	}
 }
 
 export function resolveProjectRoot(env: Environment, fallback: string): string {
@@ -63,20 +72,13 @@ export function resolveProjectRoot(env: Environment, fallback: string): string {
 	return resolve(fallback)
 }
 
-type NativeComponent = { readonly assets: Readonly<Record<string, { readonly executable: string }>>; readonly version: string }
+type NativeComponent = { readonly version: string }
 
 function codegraphComponent(value: unknown): NativeComponent | undefined {
 	if (!record(value) || !Array.isArray(value["components"])) return undefined
 	const raw = value["components"].find((entry) => record(entry) && entry["id"] === "codegraph")
-	if (!record(raw) || typeof raw["version"] !== "string" || !record(raw["assets"])) return undefined
-	const assets: Record<string, { readonly executable: string }> = {}
-	for (const [slug, asset] of Object.entries(raw["assets"])) {
-		if (!record(asset) || typeof asset["executable"] !== "string") return undefined
-		const executable = asset["executable"]
-		if (isAbsolute(executable) || executable.includes("\\") || executable.split("/").some((part) => part === ".." || part === "")) return undefined
-		assets[slug] = { executable }
-	}
-	return { assets, version: raw["version"] }
+	if (!record(raw) || typeof raw["version"] !== "string") return undefined
+	return { version: raw["version"] }
 }
 
 function record(value: unknown): value is Record<string, unknown> {

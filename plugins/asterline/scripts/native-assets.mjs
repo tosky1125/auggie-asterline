@@ -1,9 +1,10 @@
 import { createHash, randomUUID } from "node:crypto"
-import { chmod, mkdir, rename, rm } from "node:fs/promises"
+import { mkdir, rename, rm } from "node:fs/promises"
 import { basename, dirname, isAbsolute, join, resolve } from "node:path"
 
 import { extractNativeArchive, NativeArchiveError } from "./native-archive.mjs"
 import { probeExecutable } from "./native-probe.mjs"
+import { hardenExecutableParents, hardenNativeDirectories, verifyNativeExecutable } from "./native-verification.mjs"
 
 const MAX_ARCHIVE_BYTES = 128 * 1024 * 1024
 const SHA256 = /^[0-9a-f]{64}$/, SLUG = /^(darwin|linux|win32)-(arm64|x64)$/
@@ -50,9 +51,10 @@ function safeRelativePath(value, path) {
 }
 
 function parseAsset(value, path) {
-  const raw = record(value, path, ["archive", "executable", "sha256", "url"])
+  const raw = record(value, path, ["archive", "executable", "executableSha256", "sha256", "url"])
   if (!["tar.gz", "tgz", "zip"].includes(raw.archive)) throw new NativeManifestError(`${path}.archive is invalid`)
   safeRelativePath(raw.executable, `${path}.executable`)
+  text(raw.executableSha256, `${path}.executableSha256`, SHA256)
   text(raw.sha256, `${path}.sha256`, SHA256)
   httpsUrl(raw.url, `${path}.url`)
   return raw
@@ -116,6 +118,13 @@ export async function nativeAssetDoctor(options) {
   const selection = selectNativeAsset(options)
   if (selection.status === "unavailable") return selection
   const executablePath = join(options.cacheRoot, selection.tool.id, selection.tool.version, selection.slug, selection.asset.executable)
+  const verification = await verifyNativeExecutable({
+    cacheRoot: options.cacheRoot,
+    executablePath,
+    expectedSha256: selection.asset.executableSha256,
+    platform: selection.platform,
+  })
+  if (verification.status === "unavailable") return verification
   const probe = await probeExecutable({ executablePath, probe: selection.tool.probe, platform: selection.platform })
   if (!probe.ok) return unavailable("missing_or_unhealthy", `${selection.tool.id} ${selection.tool.version} is unavailable: ${probe.error}`)
   return { status: "available", executablePath, probe }
@@ -139,7 +148,7 @@ async function acquireInstallLock(lockPath) {
 }
 
 async function publishStagedInstall(options) {
-  await mkdir(dirname(options.finalRoot), { recursive: true })
+  await hardenNativeDirectories(options.cacheRoot, dirname(options.finalRoot))
   const release = await acquireInstallLock(`${options.finalRoot}.lock`)
   try {
     const existing = await nativeAssetDoctor(options.doctorOptions)
@@ -193,12 +202,20 @@ export async function provisionNativeAsset(options) {
   const stage = join(dirname(cacheRoot), `.${basename(cacheRoot)}-native-${randomUUID()}`)
   const executablePath = join(stage, selection.asset.executable)
   try {
+    await mkdir(stage, { mode: 0o700 })
     await extractNativeArchive({ bytes, format: selection.asset.archive, destination: stage })
-    await chmod(executablePath, 0o755)
+    await hardenExecutableParents(stage, executablePath)
+    const verification = await verifyNativeExecutable({
+      cacheRoot: stage,
+      executablePath,
+      expectedSha256: selection.asset.executableSha256,
+      platform: selection.platform,
+    })
+    if (verification.status === "unavailable") return verification
     const probe = await probeExecutable({ executablePath, probe: selection.tool.probe, platform: selection.platform })
     if (!probe.ok) return unavailable("probe_failed", probe.error)
     const finalRoot = join(cacheRoot, selection.tool.id, selection.tool.version, selection.slug)
-    const existingAfterLock = await publishStagedInstall({ stage, finalRoot, doctorOptions: { ...options, cacheRoot } })
+    const existingAfterLock = await publishStagedInstall({ stage, finalRoot, cacheRoot, doctorOptions: { ...options, cacheRoot } })
     if (existingAfterLock !== null) return existingAfterLock
     return { status: "available", executablePath: join(finalRoot, selection.asset.executable), probe }
   } catch (error) {

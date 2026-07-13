@@ -20,6 +20,10 @@ export type WorkerOptions = {
 	readonly now?: number;
 };
 
+export function downloadsEnabled(env: BootstrapEnvironment): boolean {
+	return env["ASTERLINE_BOOTSTRAP_DOWNLOAD"] === "1";
+}
+
 async function pluginVersion(pluginRoot: string): Promise<string | undefined> {
 	const manifest = await readJsonRecord(containedPath(pluginRoot, ".augment-plugin", "plugin.json"));
 	return typeof manifest["version"] === "string" ? manifest["version"] : undefined;
@@ -35,7 +39,7 @@ async function provisionTool(
 		sbom,
 		toolId,
 		cacheRoot: containedPath(input.dataRoot, "native"),
-		allowDownload: input.env["ASTERLINE_BOOTSTRAP_DOWNLOAD"] !== "0",
+		allowDownload: downloadsEnabled(input.env),
 	});
 	return result.status === "available" ? undefined : { component: toolId, reason: result.message };
 }

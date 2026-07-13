@@ -12,7 +12,7 @@ const VERSION = "1.0.1"
 
 export async function runCodegraphMcp(): Promise<number> {
 	const root = pluginRoot(import.meta.url)
-	const resolution = resolveCodegraphBinary({ env, pluginRoot: root })
+	const resolution = await resolveCodegraphBinary({ env, pluginRoot: root })
 	if (resolution.executablePath === undefined) {
 		const reason = `${resolution.reason ?? "CodeGraph MCP unavailable."}\n`
 		stderr.write(reason)

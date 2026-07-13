@@ -22,7 +22,8 @@ function temporaryRoot() {
 function fixtureExecutable(root, source) {
 	const executable = join(root, "data/native/codegraph/1.0.1/linux-x64/codegraph-linux-x64/bin/codegraph")
 	mkdirSync(dirname(executable), { recursive: true })
-	writeFileSync(executable, `#!/usr/bin/env node
+	const body = `#!/usr/bin/env node
+if (process.argv.includes("--version")) { process.stdout.write("1.0.1\\n"); process.exit(0) }
 const readline = require("node:readline")
 require("node:fs").writeFileSync(__filename + ".log", JSON.stringify({ args: process.argv.slice(2), env: { daemon: process.env.CODEGRAPH_NO_DAEMON, download: process.env.CODEGRAPH_NO_DOWNLOAD, install: process.env.CODEGRAPH_INSTALL_DIR, telemetry: process.env.CODEGRAPH_TELEMETRY, track: process.env.DO_NOT_TRACK } }))
 const lines = readline.createInterface({ input: process.stdin })
@@ -34,13 +35,30 @@ lines.on("line", (line) => {
   if (request.method === "tools/call") process.stdout.write(JSON.stringify({ jsonrpc: "2.0", id: request.id, result: { content: [{ type: "text", text: "Structural outline only\\nRead a member" }] } }) + "\\n")
 })
 lines.on("close", () => { if (${JSON.stringify(source)} !== "hang") process.exit(0) })
-`)
+`
+	writeFileSync(executable, body)
 	chmodSync(executable, 0o755)
+	const payload = join(root, "plugin")
+	const payloadBundle = join(payload, "mcp/codegraph/dist/serve.js")
+	mkdirSync(dirname(payloadBundle), { recursive: true })
+	cpSync(bundle, payloadBundle)
+	mkdirSync(join(payload, "native"), { recursive: true })
+	writeFileSync(join(payload, "native/SBOM.json"), JSON.stringify({
+		schemaVersion: 1,
+		components: [{
+			id: "codegraph", version: "1.0.1",
+			license: { spdx: "MIT", provenance: "https://example.invalid/LICENSE" },
+			source: { repository: "https://example.invalid/codegraph", revision: "a".repeat(40) },
+			probe: { args: ["--version"], expectedExit: 0, expectedStdout: "1.0.1\n", timeoutMs: 1000 },
+			assets: { "linux-x64": { archive: "tar.gz", executable: "codegraph-linux-x64/bin/codegraph", executableSha256: createHash("sha256").update(body).digest("hex"), sha256: "0".repeat(64), url: "https://example.invalid/codegraph.tar.gz" } },
+		}],
+	}))
 	return executable
 }
 
 function runMcp(root, input, extraEnv = {}) {
-	return spawnSync(process.execPath, [bundle], {
+	const payloadBundle = join(root, "plugin/mcp/codegraph/dist/serve.js")
+	return spawnSync(process.execPath, [existsSync(payloadBundle) ? payloadBundle : bundle], {
 		cwd: pluginRoot,
 		encoding: "utf8",
 		env: {
@@ -51,7 +69,7 @@ function runMcp(root, input, extraEnv = {}) {
 			...extraEnv,
 		},
 		input,
-		timeout: 5_000,
+		timeout: 10_000,
 	})
 }
 
@@ -66,6 +84,7 @@ test("Given the v4.17.1 port When CodeGraph is inspected Then exact upstream pro
 	assert.equal(provenance.upstream.treeOid, "fab3443348af56fd7e0168ceaca00530c777c64d")
 	assert.match(runtime, /CODEGRAPH_TELEMETRY/)
 	assert.doesNotMatch(runtime, /(?:from|require\()\s*["'](?!node:)[@a-z]/)
+	assert.doesNotMatch(runtime, /cmd\.exe|["']\/d["'].*["']\/s["'].*["']\/c["']/)
 })
 
 test("Given a missing native asset When MCP requests arrive Then initialize, list, call, and malformed input fail open truthfully", () => {
@@ -84,7 +103,7 @@ test("Given a missing native asset When MCP requests arrive Then initialize, lis
 		assert.equal(responses[1].result.serverInfo.version, "1.0.1")
 		assert.deepEqual(responses[2].result.tools, [])
 		assert.equal(responses[3].result.isError, true)
-		assert.match(responses[3].result.content[0].text, /verified native asset is missing/)
+		assert.match(responses[3].result.content[0].text, /native executable is missing/)
 	} finally {
 		rmSync(root, { recursive: true, force: true })
 	}
@@ -107,6 +126,21 @@ test("Given a managed CodeGraph process When tools are listed and called Then th
 		assert.deepEqual(launch.env, { daemon: "1", download: "1", install: join(root, "data/codegraph"), telemetry: "0", track: "1" })
 		assert.match(responses.find((response) => response.id === 2).result.tools[0].description, /container symbols/i)
 		assert.match(responses.find((response) => response.id === 3).result.content[0].text, /request a specific member/i)
+	} finally {
+		rmSync(root, { recursive: true, force: true })
+	}
+})
+
+test("Given a tampered CodeGraph executable When MCP starts Then verification fails before the child executes", () => {
+	const root = temporaryRoot()
+	try {
+		const executable = fixtureExecutable(root, "exit")
+		writeFileSync(executable, "#!/usr/bin/env node\nrequire('node:fs').writeFileSync(__filename + '.owned', 'owned')\nprocess.stdout.write('1.0.1\\n')\n")
+		chmodSync(executable, 0o755)
+		const result = runMcp(root, `${JSON.stringify({ jsonrpc: "2.0", id: 1, method: "initialize", params: {} })}\n`)
+		assert.equal(result.status, 0)
+		assert.match(result.stderr, /checksum mismatch/)
+		assert.equal(existsSync(`${executable}.owned`), false)
 	} finally {
 		rmSync(root, { recursive: true, force: true })
 	}
@@ -141,7 +175,7 @@ test("Given the exact materialized v4.17.1 sources When built twice Then the Cod
 	}
 })
 
-test("Given the real pinned Linux CodeGraph 1.0.1 runtime When MCP initializes and lists tools Then the native protocol responds and exits cleanly", { skip: !existsSync(realRuntime), timeout: 10_000 }, async () => {
+test("Given the real pinned Linux CodeGraph 1.0.1 runtime When MCP initializes and lists tools Then the native protocol responds and exits cleanly", { skip: !existsSync(realRuntime), timeout: 20_000 }, async () => {
 	const root = temporaryRoot()
 	try {
 		const destination = join(root, "data/native/codegraph/1.0.1/linux-x64/codegraph-linux-x64")

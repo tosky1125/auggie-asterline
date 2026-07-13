@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { createHash } from "node:crypto"
 import { existsSync, readFileSync } from "node:fs"
-import { mkdtemp, readFile, readdir } from "node:fs/promises"
+import { chmod, lstat, mkdir, mkdtemp, readFile, readdir, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -79,6 +79,7 @@ function fixtureSbom(archive, overrides = {}) {
         "linux-x64": {
           archive: "tar.gz",
           executable: "bundle/bin/fixture",
+          executableSha256: "0".repeat(64),
           sha256: sha256(archive),
           url: "https://example.invalid/fixture.tar.gz",
           ...overrides,
@@ -105,6 +106,9 @@ test("Given the shipped SBOM, when validated, then every native release pin is e
   assert.equal(Object.keys(sbom.components[1].assets).length, 6)
   assert.equal(sbom.components[0].assets["linux-x64"].sha256, "a26253a9c821d935f7e383e40f0de7c2ca62a4121de1f73a6d81ec32eae631e0")
   assert.equal(sbom.components[1].assets["linux-x64"].sha256, "d45a068f44596a85c7ba7d0ef924eaf7103fbbf3cafbeb668127daff60a52228")
+  for (const component of sbom.components) for (const asset of Object.values(component.assets)) {
+    assert.match(asset.executableSha256, /^[0-9a-f]{64}$/)
+  }
 })
 
 test("Given an unknown field or malformed digest, when parsed, then the manifest is rejected", () => {
@@ -215,7 +219,7 @@ test("Given an entry size bomb, when provisioned, then extraction stops before a
 test("Given a hanging executable, when probed, then the bounded probe is killed and install is discarded", async () => {
   const root = await mkdtemp(join(tmpdir(), "asterline-native-timeout-"))
   const archive = tarGz([tarEntry("bundle/bin/fixture", Buffer.from("#!/bin/sh\nwhile :; do :; done\n"))])
-  const sbom = fixtureSbom(archive)
+  const sbom = fixtureSbom(archive, { executableSha256: sha256(Buffer.from("#!/bin/sh\nwhile :; do :; done\n")) })
   sbom.components[0].probe.timeoutMs = 100
   const result = await provisionNativeAsset({
     sbom, toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64",
@@ -231,7 +235,7 @@ test("Given a verified local archive, when provisioned, then install and exact p
   const script = Buffer.from("#!/bin/sh\nprintf 'fixture 1.0.0\\n'\n")
   const archive = tarGz([tarEntry("bundle/bin/fixture", script)])
   const options = {
-    sbom: fixtureSbom(archive), toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64",
+    sbom: fixtureSbom(archive, { executableSha256: sha256(script) }), toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64",
     allowDownload: true, fetchImpl: fetchBytes(archive),
   }
   const result = await provisionNativeAsset(options)
@@ -241,4 +245,51 @@ test("Given a verified local archive, when provisioned, then install and exact p
   const doctor = await nativeAssetDoctor({ ...options, allowDownload: undefined })
   assert.equal(doctor.status, "available")
   assert.equal(doctor.probe.stdout, "fixture 1.0.0\n")
+  for (const path of [
+    root,
+    join(root, "fixture"),
+    join(root, "fixture", "1.0.0"),
+    join(root, "fixture", "1.0.0", "linux-x64"),
+    join(root, "fixture", "1.0.0", "linux-x64", "bundle"),
+    join(root, "fixture", "1.0.0", "linux-x64", "bundle", "bin"),
+  ]) assert.equal((await lstat(path)).mode & 0o777, 0o700, path)
+})
+
+test("Given a probe-compatible cached executable is replaced, when diagnosed again, then it is rejected before execution", async () => {
+  const root = await mkdtemp(join(tmpdir(), "asterline-native-tamper-"))
+  const trusted = Buffer.from("#!/bin/sh\nprintf 'fixture 1.0.0\\n'\n")
+  const archive = tarGz([tarEntry("bundle/bin/fixture", trusted)])
+  const sbom = fixtureSbom(archive, { executableSha256: sha256(trusted) })
+  const installed = await provisionNativeAsset({ sbom, toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64", allowDownload: true, fetchImpl: fetchBytes(archive) })
+  assert.equal(installed.status, "available")
+  const marker = join(root, "executed-marker")
+  await writeFile(installed.executablePath, `#!/bin/sh\nprintf 'fixture 1.0.0\\n'\nprintf owned > ${JSON.stringify(marker)}\n`)
+  await chmod(installed.executablePath, 0o700)
+
+  const result = await nativeAssetDoctor({ sbom, toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64" })
+
+  assert.equal(result.code, "integrity_mismatch")
+  assert.equal(existsSync(marker), false)
+})
+
+test("Given a cached executable or parent is a symlink, when diagnosed, then escape is rejected before execution", async (context) => {
+  const trusted = Buffer.from("#!/bin/sh\nprintf 'fixture 1.0.0\\n'\n")
+  const archive = tarGz([tarEntry("bundle/bin/fixture", trusted)])
+  const sbom = fixtureSbom(archive, { executableSha256: sha256(trusted) })
+  for (const target of ["executable", "parent"]) await context.test(target, async () => {
+    const root = await mkdtemp(join(tmpdir(), "asterline-native-symlink-"))
+    const outside = await mkdtemp(join(tmpdir(), "asterline-native-outside-"))
+    const finalRoot = join(root, "fixture", "1.0.0", "linux-x64")
+    const outsideExecutable = join(outside, "fixture")
+    await writeFile(outsideExecutable, trusted, { mode: 0o700 })
+    await mkdir(join(finalRoot, "bundle"), { recursive: true })
+    if (target === "executable") {
+      await mkdir(join(finalRoot, "bundle", "bin"))
+      await symlink(outsideExecutable, join(finalRoot, "bundle", "bin", "fixture"))
+    } else {
+      await symlink(outside, join(finalRoot, "bundle", "bin"))
+    }
+    const result = await nativeAssetDoctor({ sbom, toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64" })
+    assert.equal(result.code, "unsafe_cache_path")
+  })
 })

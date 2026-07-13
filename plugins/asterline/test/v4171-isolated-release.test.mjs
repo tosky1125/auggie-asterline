@@ -63,7 +63,6 @@ function fixture(t) {
 		ASTERLINE_HOME: join(home, ".asterline"),
 		ASTERLINE_PLUGIN_DATA: join(root, "data"),
 		ASTERLINE_LSP_DAEMON_DIR: join(root, "lsp-daemon"),
-		ASTERLINE_BOOTSTRAP_DOWNLOAD: "0",
 		CODEGRAPH_TELEMETRY: "0",
 	}
 	t.after(async () => {
@@ -136,7 +135,7 @@ test("Given an exact isolated install, every bin and hook runs without a package
 	assert.equal(existsSync(sentinel), false, "runtime invoked a package-manager sentinel")
 })
 
-test("Given isolated local MCP bundles, protocol startup is self-contained with downloads disabled", { timeout: 30_000 }, (t) => {
+test("Given isolated local MCP bundles, protocol startup is self-contained with downloads disabled by default", { timeout: 30_000 }, (t) => {
 	const { root, plugin, sentinel, env } = fixture(t)
 	const exchanges = [
 		["ast_grep", "mcp/ast_grep/dist/cli.js", ["mcp"]],

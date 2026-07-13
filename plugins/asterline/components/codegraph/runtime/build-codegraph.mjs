@@ -66,6 +66,12 @@ function verifySource(root, recipe) {
 
 function materialize(source, staging, recipe) {
 	cpSync(join(componentRoot, "src"), join(staging, "adapter"), { recursive: true })
+	mkdirSync(join(staging, "scripts"), { recursive: true })
+	for (const file of ["native-archive.mjs", "native-assets.mjs", "native-probe.mjs", "native-verification.mjs"]) {
+		cpSync(join(pluginRoot, "scripts", file), join(staging, "scripts", file))
+	}
+	const paths = join(staging, "adapter", "paths.ts")
+	writeFileSync(paths, readFileSync(paths, "utf8").replace('../../../scripts/native-assets.mjs', '../scripts/native-assets.mjs'))
 	cpSync(join(source, "packages/mcp-stdio-core/src"), join(staging, "upstream/mcp-stdio-core"), { recursive: true })
 	mkdirSync(join(staging, "upstream/codegraph"), { recursive: true })
 	const digests = []
@@ -87,6 +93,12 @@ function materialize(source, staging, recipe) {
 			after = after.replace(
 				"\treturn Promise.race([childExit, bridgeDone.then(() => childExit)]);",
 				"\treturn Promise.race([childExit, bridgeDone.then(() => childExit)]).finally(() => { if (shutdownTimer !== undefined) clearTimeout(shutdownTimer); });",
+			)
+		}
+		if (name === "serve-invocation.ts") {
+			after = after.replace(
+				'return { args: ["/d", "/s", "/c", command, ...args], command: "cmd.exe" };',
+				'throw new Error(`Windows command shim execution is disabled: ${command}`);',
 			)
 		}
 		writeFileSync(join(staging, "upstream/codegraph", name), after)

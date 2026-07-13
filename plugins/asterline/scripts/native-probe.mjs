@@ -8,10 +8,7 @@ const KILL_GRACE_MS = 250
 export function buildProbeInvocation(options) {
   const extension = extname(options.executablePath).toLowerCase()
   if (options.platform === "win32" && [".bat", ".cmd"].includes(extension)) {
-    return {
-      command: options.comspec ?? process.env.ComSpec ?? "cmd.exe",
-      args: ["/d", "/s", "/c", options.executablePath, ...options.args],
-    }
+    throw new Error(`Windows command shim execution is disabled: ${options.executablePath}`)
   }
   if ([".cjs", ".js", ".mjs"].includes(extension)) {
     return { command: options.execPath ?? process.execPath, args: [options.executablePath, ...options.args] }

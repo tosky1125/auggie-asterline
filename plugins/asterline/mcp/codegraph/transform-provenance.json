@@ -30,13 +30,13 @@
     {
       "file": "packages/omo-codex/plugin/components/codegraph/src/serve-invocation.ts",
       "canonicalSha256": "e91b35f51c84e80c629dfd503831af6fc25e4b9781516ee9a155ac0b75722e04",
-      "transformedSha256": "e91b35f51c84e80c629dfd503831af6fc25e4b9781516ee9a155ac0b75722e04"
+      "transformedSha256": "f90ff4a16fb8899b388c94ed74091b969d6802f93a315c51ceda493578f67ad4"
     }
   ],
   "outputFiles": [
     {
       "file": "dist/serve.js",
-      "sha256": "3e9cca5557d7ab78a09d4a6ca42f5df917afdc9eca05a6ae72030969fd97bdc6"
+      "sha256": "f8660f7c64f67e70edfe05f6aedbbc4a5063e0782fde95cfb82fb97f0c80496c"
     },
     {
       "file": "dist/package.json",

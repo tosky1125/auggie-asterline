@@ -65,10 +65,11 @@
     "asset": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["archive", "executable", "sha256", "url"],
+      "required": ["archive", "executable", "executableSha256", "sha256", "url"],
       "properties": {
         "archive": { "enum": ["tar.gz", "tgz", "zip"] },
         "executable": { "type": "string", "minLength": 1 },
+        "executableSha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
         "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
         "url": { "type": "string", "format": "uri", "pattern": "^https://" }
       }

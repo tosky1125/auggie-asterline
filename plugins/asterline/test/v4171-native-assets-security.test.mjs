@@ -1,7 +1,7 @@
 import assert from "node:assert/strict"
 import { createHash } from "node:crypto"
 import { existsSync } from "node:fs"
-import { mkdtemp, mkdir, readFile, readdir, writeFile } from "node:fs/promises"
+import { mkdtemp, mkdir, readFile, readdir, symlink, writeFile } from "node:fs/promises"
 import { tmpdir } from "node:os"
 import { join } from "node:path"
 import test from "node:test"
@@ -40,24 +40,25 @@ function fixtureSbom(archive, executable = "bundle/bin/fixture") {
       version: "1.0.0",
       license: { spdx: "MIT", provenance: "https://example.invalid/LICENSE" },
       source: { repository: "https://example.invalid/repo", revision: "a".repeat(40) },
-      probe: { args: ["--version"], expectedExit: 0, expectedStdout: "fixture 1.0.0\n", timeoutMs: 1000 },
+      probe: { args: ["--version"], expectedExit: 0, expectedStdout: "fixture 1.0.0\n", timeoutMs: 5000 },
       assets: {
         "linux-x64": {
-          archive: "tar.gz", executable, sha256: sha256(archive), url: "https://example.invalid/fixture.tar.gz",
+          archive: "tar.gz", executable, executableSha256: "0".repeat(64), sha256: sha256(archive), url: "https://example.invalid/fixture.tar.gz",
         },
       },
     }],
   }
 }
 
-test("Given Windows script assets, when probe invocation is built, then cmd and JavaScript use explicit safe runtimes", () => {
-  assert.deepEqual(buildProbeInvocation({
+test("Given Windows command shims, when probe invocation is built, then shell execution is rejected", () => {
+  assert.throws(() => buildProbeInvocation({
     executablePath: "C:\\cache\\codegraph.cmd", args: ["--version"], platform: "win32",
     comspec: "C:\\Windows\\System32\\cmd.exe", execPath: "C:\\node.exe",
-  }), {
-    command: "C:\\Windows\\System32\\cmd.exe",
-    args: ["/d", "/s", "/c", "C:\\cache\\codegraph.cmd", "--version"],
-  })
+  }), /command shim/)
+  assert.throws(() => buildProbeInvocation({
+    executablePath: "C:\\cache\\owned&calc.cmd", args: ["--version"], platform: "win32",
+    comspec: "C:\\Windows\\System32\\cmd.exe", execPath: "C:\\node.exe",
+  }), /command shim/)
   assert.deepEqual(buildProbeInvocation({
     executablePath: "C:\\cache\\tool.js", args: ["--version"], platform: "win32",
     comspec: "cmd.exe", execPath: "C:\\node.exe",
@@ -73,8 +74,10 @@ test("Given output-bomb executables, when probed, then per-stream and combined l
   for (const [name, body] of cases) await context.test(name, async () => {
     const root = await mkdtemp(join(tmpdir(), "asterline-native-output-"))
     const archive = tarGz([tarEntry("bundle/bin/fixture.js", Buffer.from(`#!/usr/bin/env node\n${body}\n`))])
+    const sbom = fixtureSbom(archive, "bundle/bin/fixture.js")
+    sbom.components[0].assets["linux-x64"].executableSha256 = sha256(Buffer.from(`#!/usr/bin/env node\n${body}\n`))
     const result = await provisionNativeAsset({
-      sbom: fixtureSbom(archive, "bundle/bin/fixture.js"), toolId: "fixture", cacheRoot: root,
+      sbom, toolId: "fixture", cacheRoot: root,
       platform: "linux", arch: "x64", allowDownload: true, fetchImpl: fetchBytes(archive),
     })
     assert.equal(result.code, "probe_failed")
@@ -91,8 +94,10 @@ test("Given an unhealthy cached install, when a verified replacement arrives, th
   await writeFile(executable, "#!/bin/sh\nprintf 'broken\\n'\n", { mode: 0o755 })
   const replacement = Buffer.from("#!/bin/sh\nprintf 'fixture 1.0.0\\n'\n")
   const archive = tarGz([tarEntry("bundle/bin/fixture", replacement)])
+  const sbom = fixtureSbom(archive)
+  sbom.components[0].assets["linux-x64"].executableSha256 = sha256(replacement)
   const result = await provisionNativeAsset({
-    sbom: fixtureSbom(archive), toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64",
+    sbom, toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64",
     allowDownload: true, fetchImpl: fetchBytes(archive),
   })
   assert.equal(result.status, "available")
@@ -103,8 +108,10 @@ test("Given an unhealthy cached install, when a verified replacement arrives, th
 test("Given concurrent installers, when they collide, then both return the same healthy cache without debris", async () => {
   const root = await mkdtemp(join(tmpdir(), "asterline-native-concurrent-"))
   const archive = tarGz([tarEntry("bundle/bin/fixture", Buffer.from("#!/bin/sh\nprintf 'fixture 1.0.0\\n'\n"))])
+  const sbom = fixtureSbom(archive)
+  sbom.components[0].assets["linux-x64"].executableSha256 = sha256(Buffer.from("#!/bin/sh\nprintf 'fixture 1.0.0\\n'\n"))
   const options = {
-    sbom: fixtureSbom(archive), toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64",
+    sbom, toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64",
     allowDownload: true, fetchImpl: fetchBytes(archive),
   }
   const results = await Promise.all([provisionNativeAsset(options), provisionNativeAsset(options)])
@@ -125,4 +132,22 @@ test("Given a corrupt tar header checksum, when extracted, then no file is trust
   assert.equal(result.code, "unsafe_archive")
   assert.equal(existsSync(join(root, "fixture")), false)
   assert.deepEqual(await readdir(root), [])
+})
+
+test("Given an existing cache-parent symlink, when installation starts, then publication cannot escape", async () => {
+  const root = await mkdtemp(join(tmpdir(), "asterline-native-install-link-"))
+  const outside = await mkdtemp(join(tmpdir(), "asterline-native-install-outside-"))
+  await symlink(outside, join(root, "fixture"))
+  const executable = Buffer.from("#!/bin/sh\nprintf 'fixture 1.0.0\\n'\n")
+  const archive = tarGz([tarEntry("bundle/bin/fixture", executable)])
+  const sbom = fixtureSbom(archive)
+  sbom.components[0].assets["linux-x64"].executableSha256 = sha256(executable)
+
+  const result = await provisionNativeAsset({
+    sbom, toolId: "fixture", cacheRoot: root, platform: "linux", arch: "x64",
+    allowDownload: true, fetchImpl: fetchBytes(archive),
+  })
+
+  assert.equal(result.code, "install_failed")
+  assert.deepEqual(await readdir(outside), [])
 })
