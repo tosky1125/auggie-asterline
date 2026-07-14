@@ -2,6 +2,9 @@
 
 // src/cli.ts
 import { argv, stderr } from "node:process";
+import { nativeAssetDoctor } from "../../../scripts/native-assets.mjs";
+import { readFileSync as readNativeManifestSync } from "node:fs";
+import { fileURLToPath as nativeFileURLToPath } from "node:url";
 
 // src/mcp-lifecycle-log.ts
 import { appendFileSync, renameSync, statSync } from "node:fs";
@@ -206,7 +209,7 @@ function createSgResultFromStdout(stdout) {
 // ../ast-grep-core/src/runner.ts
 var SG_BINARY_NOT_FOUND_MESSAGE = `ast-grep (sg) binary not found.
 
-` + `Provision sg through the checksum-pinned Asterline bootstrap.`;
+` + `Provision sg through the checksum-pinned Asterline bootstrap: launch Auggie once with ASTERLINE_BOOTSTRAP_DOWNLOAD=1, wait for completion, then restart.`;
 function buildSgArgs(options, flags) {
   const args = ["run", "-p", options.pattern, "--lang", options.lang];
   if (flags.includeJson) {
@@ -407,6 +410,27 @@ function findRuntimeDirSgPath(env, platform, arch, homedir) {
   const binaryName = platform === "win32" ? "sg.exe" : "sg";
   const runtimePath = join2(asterlineHome, "runtime", "ast-grep", `${platform}-${arch}`, binaryName);
   return findValidExecutable(runtimePath, platform);
+}
+const ASTERLINE_PLUGIN_ROOT = resolve(dirname(nativeFileURLToPath(import.meta.url)), "..", "..", "..");
+function bootstrapPluginData(env, homedir) {
+  const configured = nonEmptyValue(env["ASTERLINE_PLUGIN_DATA"]) ?? nonEmptyValue(env["PLUGIN_DATA"]);
+  if (configured !== undefined) {
+    if (!isAbsolute(configured))
+      throw new Error("plugin data root must be absolute");
+    return resolve(configured);
+  }
+  return join2(resolve(nonEmptyValue(env["HOME"]) ?? homedir()), ".augment", "asterline", "plugin-data");
+}
+async function findBootstrapCacheSgPath(env, platform, arch, homedir) {
+  const sbom = JSON.parse(readNativeManifestSync(join2(ASTERLINE_PLUGIN_ROOT, "native", "SBOM.json"), "utf8"));
+  const result = await nativeAssetDoctor({
+    sbom,
+    toolId: "ast-grep",
+    cacheRoot: join2(bootstrapPluginData(env, homedir), "native"),
+    platform,
+    arch
+  });
+  return result.status === "available" ? result.executablePath : null;
 }
 function findSgCliPathSync(options = {}) {
   const env = options.env ?? process.env;
@@ -781,6 +805,18 @@ async function getAstGrepPath() {
     return initPromise;
   }
   initPromise = (async () => {
+    const envOverridePath = findEnvOverrideSgPath(process.env, process.platform);
+    if (envOverridePath && existsSync2(envOverridePath)) {
+      resolvedCliPath2 = envOverridePath;
+      setSgCliPath(envOverridePath);
+      return envOverridePath;
+    }
+    const bootstrapPath = await findBootstrapCacheSgPath(process.env, process.platform, process.arch, defaultHomedir);
+    if (bootstrapPath && existsSync2(bootstrapPath)) {
+      resolvedCliPath2 = bootstrapPath;
+      setSgCliPath(bootstrapPath);
+      return bootstrapPath;
+    }
     const syncPath = findSgCliPathSync();
     if (syncPath && existsSync2(syncPath)) {
       resolvedCliPath2 = syncPath;

@@ -10,11 +10,12 @@
   "build": "runtime/build-ast-grep.mjs",
   "output": {
     "path": "dist/cli.js",
-    "sha256": "5287ee5dad733c685853ded32e94adf46b31fa1723f4e420912e5b8d9032f99a"
+    "sha256": "08395af56b10c58606218157f8a231182f79db540f3c9b955643c90e88204c20"
   },
   "transforms": [
     "normalize the Node fs builtin to node:fs",
     "map runtime files, environment keys, and help text to Asterline identity",
+    "resolve the bootstrap native cache through checksum, symlink, realpath, and probe verification before fallback discovery",
     "remove package-manager installation advice and disable the unused Bun compatibility branch"
   ]
 }
