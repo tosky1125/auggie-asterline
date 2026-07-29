@@ -20,6 +20,7 @@ This skill is intentionally compact. The full workflow lives in `references/full
 ## Non-Negotiables
 
 - Use the work-loop CLI state under `.asterline/work-loop`; do not hand-edit goal state.
+- Register goals up front (`node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop create-goals`, then the available goal/task tool from the printed handoff) and mirror every atomic step into the live todo/task surface: one ultra-granular step per action, exactly one in_progress, transitions marked the instant they happen.
 - After any compaction or context loss, read `.asterline/work-loop/brief.md`, `goals.json`, and `ledger.jsonl` directly, then run `node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop status --json`; never re-plan from scratch.
 - If the direct Node CLI's `create-goals` command says the existing aggregate is already complete, start unrelated new work with a fresh `--session-id <new-id>` instead of steering or forcing the completed default state. Use `--force` only to intentionally overwrite completed evidence.
 - Every success criterion needs observable evidence from a real surface: a channel (tmux, HTTP, browser, computer-use) or, for CLI- or data-shaped criteria, an auxiliary surface (CLI stdout, DB diff, parsed config dump).
@@ -29,7 +30,7 @@ This skill is intentionally compact. The full workflow lives in `references/full
 - Launch independent lanes in parallel and keep doing independent root work while Auggie executes them.
 - Auggie integration supports parallel splitting only. Do not rely on worker messaging, progress polling, follow-up tasks, resume, persistent teams, or cross-turn worker identity.
 - Integrate only terminal results. A missing, empty, or blocked result is inconclusive and may be retried once as a smaller fresh assignment.
-- Use `git-flow` for git-tracked edits: inspect recent and touched-path commit history, then commit each verified work unit atomically in the repository's observed language, scope, and message style with only that unit's files staged.
+- Use `git-flow` for git-tracked edits: inspect recent and touched-path commit history, then commit each verified work unit atomically in the repository's observed language, scope, and message style with only that unit's files staged. Never carry verified units into a later omnibus commit.
 
 ## Auggie Delegation Boundary
 

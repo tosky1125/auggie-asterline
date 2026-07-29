@@ -16,14 +16,14 @@ function assertExactKeys(value, expected, label) {
   assert.deepEqual(Object.keys(value).sort(), [...expected].sort(), label);
 }
 
-test("registers the exact LazyCodex 4.17.1 MCP inventory for Auggie", async () => {
+test("registers the exact LazyCodex 4.19.3 MCP inventory for Auggie", async () => {
   const manifest = await readManifest();
 
   assertExactKeys(manifest, ["mcpServers"], "top-level MCP schema drifted");
   assertExactKeys(
     manifest.mcpServers,
     expectedNames,
-    "Asterline MCP inventory must match the supported v4.17.1 port",
+    "Asterline MCP inventory must match the supported v4.19.3 port",
   );
 });
 

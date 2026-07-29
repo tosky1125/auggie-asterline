@@ -39,7 +39,7 @@ node --test ../../test/v4171-comment-checker.test.mjs
 node ../../scripts/audit-runtime-imports.mjs --root dist --config runtime/runtime-audit.json
 ```
 
-The v4.17.1 contract tests execute the committed dist. Then run the inherited plugin packaging gate.
+The v4.19.3 contract tests execute the committed dist. Then run the inherited plugin packaging gate.
 
 ## ANTI-PATTERNS
 

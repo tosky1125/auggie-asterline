@@ -1,12 +1,12 @@
 # Upstream Provenance
 
 Asterline is an Auggie marketplace port of the generated LazyCodex distribution
-and its canonical source repository at version 4.17.1.
+and its canonical source repository at version 4.19.3.
 
-- Generated distribution: `code-yeongyu/lazycodex` tag `v4.17.1`, commit
-  `3d7416bff3e6c80ebf5542b4dd12f5c76298d46d`.
-- Canonical source: `code-yeongyu/oh-my-openagent` tag `v4.17.1`, commit
-  `ed0241d1af225d38de55fdbcf0baa0abc9a1465a`.
+- Generated distribution: `code-yeongyu/lazycodex` tag `v4.19.3`, commit
+  `895b70cb8cc66ebb5b0390571bc65a858e4e6303`.
+- Canonical source: `code-yeongyu/oh-my-openagent` tag `v4.19.3`, commit
+  `614cc5358dc393153fc39acae74dc5bd9fb9fffc`.
 - Exact source trees and generated-source gitlinks are locked in
   `release/upstream-lock.json` and verified before materialization.
 - The retained Auggie `ast_grep` MCP was removed upstream after v4.10.0. Its

@@ -1,6 +1,6 @@
 {
 	"name": "@code-yeongyu/asterline-work-loop",
-	"version": "4.17.1",
+	"version": "4.19.3",
 	"description": "Asterline plugin: durable repo-native multi-goal orchestration with embedded success criteria and observable evidence audit.",
 	"type": "module",
 	"license": "MIT",

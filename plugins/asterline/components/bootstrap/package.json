@@ -1,6 +1,6 @@
 {
 	"name": "@asterline/auggie-bootstrap",
-	"version": "4.17.1",
+	"version": "4.19.3",
 	"description": "Fail-open Auggie SessionStart bootstrap for Asterline native runtime assets.",
 	"type": "module",
 	"private": true,

@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "upstream": {
     "repository": "https://github.com/code-yeongyu/oh-my-openagent",
-    "tag": "v4.17.1",
-    "commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a"
+    "tag": "v4.19.3",
+    "commit": "614cc5358dc393153fc39acae74dc5bd9fb9fffc"
   },
-  "recipeSha256": "5c7b6d6e0359b5f2e4671321446d5ad9edd24d7da9a45c9eb1572944d4fc464e",
+  "recipeSha256": "a0895ee242632f88b1ab2d9ed28ea9873ea73b0da64054bea048e2d72cc8622c",
   "transformedFiles": [
     {
       "file": "packages/git-bash-mcp/src/cli.ts",
@@ -31,15 +31,15 @@
   "outputFiles": [
     {
       "file": "dist/cli.js",
-      "sha256": "817616789f4eb886e9a8c19b50d74cdb9c9c46bdb548658a50d2a0663685048d"
+      "sha256": "a004742fc4d1a14be3d43d9f6db8cd1f389eec2aceea35e68bca8a2e8b27d000"
     },
     {
       "file": "dist/index.js",
-      "sha256": "834c8a0977b6dab6dec4bd6c0d733d5004ea9679e8fcf6bbf1e5923134dfec25"
+      "sha256": "dd9da1862be41729fdd1399b250d27c3137e200cf8fc287083f4781908efe363"
     },
     {
       "file": "dist/package.json",
-      "sha256": "e21a02f50d8b829648993b54abfef70f3e907812cff40cf77c0708329e590c35"
+      "sha256": "7efae97daec4f4d6726cc12de048291c0582b1b66320ad536ba1f6ece6874674"
     }
   ]
 }

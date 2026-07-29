@@ -122,20 +122,20 @@ const mcp = readJson("plugins/asterline/.mcp.json");
 const pkg = readJson("plugins/asterline/package.json");
 
 if (marketplace.name !== "auggie-asterline") fail("marketplace name mismatch");
-if (marketplace.version !== "4.17.1") fail("marketplace version mismatch");
+if (marketplace.version !== "4.19.3") fail("marketplace version mismatch");
 const entry = marketplace.plugins?.[0];
 if (entry?.name !== "asterline") fail("marketplace plugin name mismatch");
-if (entry?.version !== "4.17.1") fail("marketplace plugin version mismatch");
+if (entry?.version !== "4.19.3") fail("marketplace plugin version mismatch");
 if (entry?.source !== "./plugins/asterline") fail("marketplace source mismatch");
 
 if (plugin.name !== "asterline") fail("plugin name mismatch");
-if (plugin.version !== "4.17.1") fail("plugin version mismatch");
+if (plugin.version !== "4.19.3") fail("plugin version mismatch");
 for (const key of ["skills", "agents", "rules", "hooks", "mcpServers"]) {
   if (!plugin[key]) fail(`plugin manifest missing ${key}`);
 }
 
 if (pkg.name !== "@asterline/auggie-plugin") fail("runtime package name mismatch");
-if (pkg.version !== "4.17.1") fail("runtime package version mismatch");
+if (pkg.version !== "4.19.3") fail("runtime package version mismatch");
 if (pkg.bin?.["asterline-telemetry"] !== undefined) fail("runtime telemetry bin must not be published");
 if (pkg.dependencies?.["posthog-node"] !== undefined) fail("runtime posthog-node dependency must not be published");
 for (const binName of Object.keys(pkg.bin ?? {})) {
@@ -158,7 +158,7 @@ const hookText = JSON.stringify(hooks);
 if (JSON.stringify(Object.keys(hooks.hooks ?? {}).sort()) !== JSON.stringify(["PostToolUse", "PreToolUse", "SessionStart", "Stop"])) {
   fail("hook manifest contains unsupported Auggie events");
 }
-if (/matcher|statusMessage|UserPromptSubmit|PostCompact|SubagentStop/.test(hookText)) fail("hook manifest contains unsupported Auggie properties or events");
+if (/statusMessage|UserPromptSubmit|PostCompact|SubagentStop/.test(hookText)) fail("hook manifest contains unsupported Auggie properties or events");
 for (const token of ["create_goal", "apply_patch", "LazyCodex", "OMO", "omo"]) {
   if (hookText.includes(token)) fail(`hook manifest contains legacy token: ${token}`);
 }

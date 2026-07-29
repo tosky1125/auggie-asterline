@@ -98,7 +98,7 @@ const digestTree = (root) => {
   return hash.digest('hex');
 };
 
-test('Given the release lock, when inspected, then every intended v4.17.1 source tree is pinned', () => {
+test('Given the release lock, when inspected, then every intended v4.19.3 source tree is pinned', () => {
   // Given
   const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
 
@@ -107,9 +107,9 @@ test('Given the release lock, when inspected, then every intended v4.17.1 source
   const canonical = lock.sources.find(({ id }) => id === 'oh-my-openagent');
 
   // Then
-  assert.equal(lock.release, '4.17.1');
-  assert.equal(generated.tag, 'v4.17.1');
-  assert.equal(generated.commit, '3d7416bff3e6c80ebf5542b4dd12f5c76298d46d');
+  assert.equal(lock.release, '4.19.3');
+  assert.equal(generated.tag, 'v4.19.3');
+  assert.equal(generated.commit, '895b70cb8cc66ebb5b0390571bc65a858e4e6303');
   assert.deepEqual(generated.gitlinks, {
     src: '65715d1c2c35e27ccf2195ef688b0909dddb403c',
   });
@@ -118,11 +118,11 @@ test('Given the release lock, when inspected, then every intended v4.17.1 source
       source: 'plugins/omo/skills',
       destination: 'generated/plugins/omo/skills',
       type: 'tree',
-      oid: '7da0054dfc49e2be00060086d4cabee06253a85f',
+      oid: '1068eda549d9535ef2e7d62d505f14b97bccdb02',
     },
   ]);
-  assert.equal(canonical.tag, 'v4.17.1');
-  assert.equal(canonical.commit, 'ed0241d1af225d38de55fdbcf0baa0abc9a1465a');
+  assert.equal(canonical.tag, 'v4.19.3');
+  assert.equal(canonical.commit, '614cc5358dc393153fc39acae74dc5bd9fb9fffc');
   assert.deepEqual(
     canonical.paths.map(({ source }) => source),
     [
@@ -238,10 +238,10 @@ test('Given a destination path escape, when the lock is parsed, then it fails be
   assert.equal(existsSync(join(root, 'escaped')), false);
 });
 
-test('Given both exact v4.17.1 repositories, when materialized twice, then staging trees are deterministic', (t) => {
+test('Given both exact v4.19.3 repositories, when materialized twice, then staging trees are deterministic', (t) => {
   // Given
-  const lazycodex = '/tmp/lazycodex-v4.17.1-plan';
-  const canonical = '/tmp/omo-v417';
+  const lazycodex = '/tmp/lazycodex-fresh-2026';
+  const canonical = '/tmp/oh-my-openagent-v4193-full';
   if (!existsSync(join(lazycodex, '.git')) || !existsSync(join(canonical, '.git'))) {
     t.skip('exact local upstream repositories are unavailable');
     return;

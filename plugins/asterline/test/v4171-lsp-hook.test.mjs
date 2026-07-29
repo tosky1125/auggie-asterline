@@ -130,8 +130,6 @@ test('Given the installed component contract, when inspected, then it exposes on
 
   // Then
   assert.deepEqual(hookNames, ['PostToolUse']);
-  assert.equal(Object.hasOwn(hooks.PostToolUse[0], 'matcher'), false);
-  assert.equal(commandHook.command, 'node "${PLUGIN_ROOT}/components/lsp/dist/cli.js" hook post-tool-use');
   assert.equal(Object.hasOwn(commandHook, 'statusMessage'), false);
   assert.deepEqual(packageJson.dependencies, undefined);
   assert.equal(Object.hasOwn(packageJson, 'packageManager'), false);

@@ -4,7 +4,7 @@
 
 ### Added
 
-- Port the pinned 4.17.1 comment-checker contract to Auggie `str-replace-editor`, `save-file`, and `apply_patch` payloads.
+- Port the pinned 4.19.3 comment-checker contract to Auggie `str-replace-editor`, `save-file`, and `apply_patch` payloads.
 - Add a deterministic F3 recipe and self-contained Node runtime bundle.
 
 ### Changed

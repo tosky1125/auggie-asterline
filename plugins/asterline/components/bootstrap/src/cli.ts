@@ -5,7 +5,7 @@ import { fileURLToPath } from "node:url";
 import { runSessionStart } from "./hook.ts";
 import { runWorker } from "./worker.ts";
 
-const HELP = "Asterline bootstrap 4.17.1\nUsage: asterline-bootstrap hook session-start | worker [--once] [--data-root <absolute-path>] | help\n";
+const HELP = "Asterline bootstrap 4.19.3\nUsage: asterline-bootstrap hook session-start | worker [--once] [--data-root <absolute-path>] | help\n";
 
 type WorkerFlags = { readonly once: boolean; readonly dataRoot?: string };
 

@@ -1,6 +1,6 @@
 {
   "name": "@asterline/auggie-plugin",
-  "version": "4.17.1",
+  "version": "4.19.3",
   "description": "Asterline Auggie marketplace plugin with bundled runtime components.",
   "type": "module",
   "private": true,

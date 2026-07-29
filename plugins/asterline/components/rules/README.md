@@ -2,7 +2,7 @@
 
 Asterline plugin that injects local project rule files into model context through lifecycle hooks.
 
-It ports the v4.17.1 rule engine to Asterline:
+It ports the v4.19.3 rule engine to Asterline:
 
 - `SessionStart` loads static project instructions once per Auggie conversation.
 - `PostToolUse` watches `apply_patch`, `str-replace-editor`, and `save-file`, then injects matching file-specific rules as additional context.

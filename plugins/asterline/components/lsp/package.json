@@ -1,6 +1,6 @@
 {
   "name": "@asterline/lsp-hook",
-  "version": "4.17.1",
+  "version": "4.19.3",
   "description": "Auggie PostToolUse diagnostics adapter for the Asterline LSP runtime.",
   "private": true,
   "type": "module",

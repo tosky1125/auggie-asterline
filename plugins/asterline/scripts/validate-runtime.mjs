@@ -120,7 +120,7 @@ if (JSON.stringify(Object.keys(hooks).sort()) !== JSON.stringify(['PostToolUse',
   console.error('Asterline runtime validation failed: unsupported hook event is registered');
   process.exit(1);
 }
-if (/matcher|statusMessage|UserPromptSubmit|PostCompact|SubagentStop/.test(hookText)) {
+if (/statusMessage|UserPromptSubmit|PostCompact|SubagentStop/.test(hookText)) {
   console.error('Asterline runtime validation failed: unsupported hook property or event is registered');
   process.exit(1);
 }

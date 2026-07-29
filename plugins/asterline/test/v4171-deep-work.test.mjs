@@ -23,7 +23,7 @@ const filesBelow = (root) => {
 
 const read = (path) => readFileSync(join(skillRoot, path), 'utf8');
 
-test('Given generated v4.17.1 ultrawork assets, when deep-work is materialized, then every source path and only the approved attribution file ship', () => {
+test('Given generated v4.19.3 ultrawork assets, when deep-work is materialized, then every source path and only the approved attribution file ship', () => {
   assert.equal(existsSync(skillRoot), true);
   assert.deepEqual(filesBelow(skillRoot), [...generatedPaths, ...internalPaths].sort());
 });

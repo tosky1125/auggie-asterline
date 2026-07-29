@@ -30,7 +30,7 @@ State lives under `.asterline/work-loop[/<session>]/{brief.md,goals.json,ledger.
 
 Source retains explicit steering and goal-guard protocol CLIs, but the component hook manifest registers only Auggie's supported `Stop` continuation. Auggie 0.32 does not accept `UserPromptSubmit`; do not claim that adapter is installed.
 
-README, committed runtime, and tests describe the v4.17.1 surface. Remove alternate CLI aliases rather than normalizing them in new examples.
+README, committed runtime, and tests describe the v4.19.3 surface. Remove alternate CLI aliases rather than normalizing them in new examples.
 
 ## VALIDATION
 

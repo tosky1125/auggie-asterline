@@ -27,4 +27,4 @@ node --test ../../test/v4171-work-loop.test.mjs
 
 The installed component registers no unsupported hook event. Its explicit hook CLI remains available for protocol testing and reports public session identities as `auggie:<session_id>`. Parallel task decomposition is supported by the `team-mode` skill; persistent team messaging, resumption, and durable worker threads are not.
 
-See [NOTICE](NOTICE) for pinned v4.17.1 provenance and [LICENSE](LICENSE) for licensing.
+See [NOTICE](NOTICE) for pinned v4.19.3 provenance and [LICENSE](LICENSE) for licensing.

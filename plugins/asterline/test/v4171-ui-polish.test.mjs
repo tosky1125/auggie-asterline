@@ -8,7 +8,7 @@ import test from 'node:test';
 
 const pluginRoot = new URL('..', import.meta.url).pathname;
 const skillRoot = join(pluginRoot, 'skills', 'ui-polish');
-const expectedPathDigest = '49fec9ff12c60b43834f032f974149f00c6855c089ded96a5e7d0a2826dc02e0';
+const expectedPathDigest = '657ce98b7d649d666b67336d41cf858aedd6d36b89e87e93761ce22075682c8e';
 const internalPythonModules = [
   'references/ui-ux-db/scripts/design_system_parts/__init__.py',
   'references/ui-ux-db/scripts/design_system_parts/ascii.py',
@@ -36,13 +36,13 @@ const run = (command, args) => spawnSync(command, args, {
   timeout: 20_000,
 });
 
-test('ui-polish preserves every v4.17.1 generated path plus an explicit internal allowlist', () => {
+test('ui-polish preserves every v4.19.3 generated path plus an explicit internal allowlist', () => {
   const files = walkFiles(skillRoot);
   const internal = files.filter((file) => internalPythonModules.includes(file));
   const upstream = files.filter((file) => !internalPythonModules.includes(file));
   const digest = createHash('sha256').update(`${upstream.join('\n')}\n`).digest('hex');
   assert.deepEqual(internal, internalPythonModules);
-  assert.equal(upstream.length, 171);
+  assert.equal(upstream.length, 172);
   assert.equal(digest, expectedPathDigest);
 });
 

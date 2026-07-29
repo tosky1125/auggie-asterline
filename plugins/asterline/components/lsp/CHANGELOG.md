@@ -1,6 +1,6 @@
 # Changelog
 
-## 4.17.1
+## 4.19.3
 
 - Parse exact Auggie 0.32 edit payloads through the shared hook bridge.
 - Diagnose only successful affected files and fail open for unavailable language servers.

@@ -1,6 +1,6 @@
 # Changelog
 
-## 4.17.1
+## 4.19.3
 
 - Adapt SessionStart and PostToolUse to the Auggie hook-bridge payload contract without unsupported manifest matchers.
 - Emit one deterministic self-contained runtime bundle and remove the obsolete multi-file benchmark entrypoint.

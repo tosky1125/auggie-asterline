@@ -10,7 +10,7 @@ One-shot Windows Git Bash guidance hook plus the reproducible source recipe for 
 - `src/cli.ts`: Node hook CLI; malformed input and operational errors fail open.
 - `dist/`: tracked tsc output consumed by the installed wrappers.
 - `hooks/hooks.json`: warning-free Auggie `PreToolUse` registration; the hook filters tool payloads itself.
-- `runtime/`: exact v4.17.1 source pin, Asterline transforms, and deterministic F3 bundle build.
+- `runtime/`: exact v4.19.3 source pin, Asterline transforms, and deterministic F3 bundle build.
 - `../../mcp/git_bash/`: self-contained MCP build plus transform provenance.
 
 ## LOCAL CONTRACTS

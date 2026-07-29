@@ -2,8 +2,8 @@
 	"schemaVersion": 1,
 	"upstream": {
 		"repository": "https://github.com/code-yeongyu/oh-my-openagent",
-		"tag": "v4.17.1",
-		"commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a"
+		"tag": "v4.19.3",
+		"commit": "614cc5358dc393153fc39acae74dc5bd9fb9fffc"
 	},
 	"toolchain": { "command": "bun", "version": "1.3.14" },
 	"sources": [
@@ -24,7 +24,7 @@
 		{ "file": "packages/git-bash-mcp/src/mcp.ts", "from": "OMO_CODEX_GIT_BASH_TIMEOUT_MS", "to": "ASTERLINE_GIT_BASH_TIMEOUT_MS", "expectedCount": 1 },
 		{ "file": "packages/git-bash-mcp/src/mcp.ts", "from": "OMO_CODEX_EXEC_COMMAND_TIMEOUT_MS", "to": "ASTERLINE_EXEC_COMMAND_TIMEOUT_MS", "expectedCount": 1 },
 		{ "file": "packages/git-bash-mcp/src/mcp.ts", "from": "  \"CODEX_EXEC_COMMAND_TIMEOUT_MS\",\n", "to": "", "expectedCount": 1 },
-		{ "file": "packages/git-bash-mcp/src/mcp.ts", "from": "serverInfo: { name: \"git_bash\", version: \"0.1.0\" }", "to": "serverInfo: { name: \"git_bash\", version: \"4.17.1\" }", "expectedCount": 1 },
+		{ "file": "packages/git-bash-mcp/src/mcp.ts", "from": "serverInfo: { name: \"git_bash\", version: \"0.1.0\" }", "to": "serverInfo: { name: \"git_bash\", version: \"4.19.3\" }", "expectedCount": 1 },
 		{ "file": "packages/git-bash-mcp/src/mcp.ts", "from": "  if (!canRunGitBash(options)) return;\n\n", "to": "", "expectedCount": 1 },
 		{ "file": "packages/git-bash-mcp/src/mcp.ts", "from": "parseErrorResponse: () => errorResponse(null, -32601, \"Method not found\")", "to": "parseErrorResponse: () => errorResponse(null, -32700, \"Parse error\")", "expectedCount": 1 },
 		{ "file": "packages/git-bash-mcp/src/runner.ts", "from": "omo-git-bash-run-", "to": "asterline-git-bash-run-", "expectedCount": 1 },
