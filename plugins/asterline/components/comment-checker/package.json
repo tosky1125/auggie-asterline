@@ -1,6 +1,6 @@
 {
 	"name": "@code-yeongyu/asterline-comment-checker",
-	"version": "4.17.1",
+	"version": "4.19.3",
 	"description": "Asterline plugin that runs comment-checker after edit-like PostToolUse hooks.",
 	"private": true,
 	"type": "module",

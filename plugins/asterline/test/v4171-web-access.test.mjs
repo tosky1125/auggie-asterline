@@ -75,13 +75,13 @@ const pureLines = (source, path) => source.split('\n').filter((line) => {
   return path.endsWith('.py') ? !trimmed.startsWith('#') : !trimmed.startsWith('//');
 }).length;
 
-test('Given the generated v4.17.1 web skill, when materialized, then its exact 46-file path set is preserved', () => {
+test('Given the generated v4.19.3 web skill, when materialized, then its exact 46-file path set is preserved', () => {
   assert.equal(existsSync(skillRoot), true);
   assert.deepEqual(filesBelow(skillRoot), upstreamFiles.sort());
   const lock = JSON.parse(readFileSync(join(pluginRoot, 'release', 'upstream-lock.json'), 'utf8'));
   const generated = lock.sources.find((source) => source.id === 'lazycodex-generated');
-  assert.equal(generated.commit, '3d7416bff3e6c80ebf5542b4dd12f5c76298d46d');
-  assert.equal(generated.paths[0].oid, '7da0054dfc49e2be00060086d4cabee06253a85f');
+  assert.equal(generated.commit, '895b70cb8cc66ebb5b0390571bc65a858e4e6303');
+  assert.equal(generated.paths[0].oid, '1068eda549d9535ef2e7d62d505f14b97bccdb02');
 });
 
 test('Given the Asterline adaptation, when public routing metadata is read, then web-access naming and Auggie limits are truthful', () => {

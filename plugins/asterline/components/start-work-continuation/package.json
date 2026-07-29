@@ -1,6 +1,6 @@
 {
 	"name": "@code-yeongyu/asterline-start-work-continuation",
-	"version": "4.17.1",
+	"version": "4.19.3",
 	"description": "Asterline Stop hook continuation injector for Auggie run-plan work.",
 	"type": "module",
 	"license": "MIT",

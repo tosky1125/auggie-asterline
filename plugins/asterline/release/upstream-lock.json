@@ -1,11 +1,11 @@
 {
   "schemaVersion": 1,
-  "release": "4.17.1",
+  "release": "4.19.3",
   "sources": [
     {
       "id": "lazycodex-generated",
-      "tag": "v4.17.1",
-      "commit": "3d7416bff3e6c80ebf5542b4dd12f5c76298d46d",
+      "tag": "v4.19.3",
+      "commit": "895b70cb8cc66ebb5b0390571bc65a858e4e6303",
       "gitlinks": {
         "src": "65715d1c2c35e27ccf2195ef688b0909dddb403c"
       },
@@ -14,32 +14,32 @@
           "source": "plugins/omo/skills",
           "destination": "generated/plugins/omo/skills",
           "type": "tree",
-          "oid": "7da0054dfc49e2be00060086d4cabee06253a85f"
+          "oid": "1068eda549d9535ef2e7d62d505f14b97bccdb02"
         }
       ]
     },
     {
       "id": "oh-my-openagent",
-      "tag": "v4.17.1",
-      "commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a",
+      "tag": "v4.19.3",
+      "commit": "614cc5358dc393153fc39acae74dc5bd9fb9fffc",
       "paths": [
         {
           "source": "packages/omo-codex/plugin",
           "destination": "canonical/packages/omo-codex/plugin",
           "type": "tree",
-          "oid": "fb65c4fd828f13d4ef20ade019dce5d2771cf439"
+          "oid": "439a74792650756271757effdfa23f9cd394bdac"
         },
         {
           "source": "packages/shared-skills/skills",
           "destination": "canonical/packages/shared-skills/skills",
           "type": "tree",
-          "oid": "2c50d1df2694ce939cf45de7dbb8c9d4395ad180"
+          "oid": "8c76e51752107a1d257aadee76bbc54ca7b05418"
         },
         {
           "source": "packages/utils",
           "destination": "canonical/packages/utils",
           "type": "tree",
-          "oid": "6f66e37d2fb4f182ecdd2c83f2a76001b1f7b56d"
+          "oid": "4891ba69acd31d0415aac6edebda04f6dfd5a9ee"
         },
         {
           "source": "packages/comment-checker-core",
@@ -57,25 +57,25 @@
           "source": "packages/lsp-core",
           "destination": "canonical/packages/lsp-core",
           "type": "tree",
-          "oid": "7c659151e5184fd413e4982d48a1199ec77e8d00"
+          "oid": "6aa7015ea6a4d65955eed0368782f99cb66fd4f7"
         },
         {
           "source": "packages/lsp-daemon",
           "destination": "canonical/packages/lsp-daemon",
           "type": "tree",
-          "oid": "27dbcdb0aae86e19c86f6236684885799cbab3f4"
+          "oid": "48fe727e8a3c0fbf2d056559d9d3a93e41b1a113"
         },
         {
           "source": "packages/lsp-tools-mcp",
           "destination": "canonical/packages/lsp-tools-mcp",
           "type": "tree",
-          "oid": "f810a4ec1c22a8a59f7d6a135c2ff7a9a79671c3"
+          "oid": "62c6ac8aa23cc34b7c96b59987501d59fd900be6"
         },
         {
           "source": "packages/mcp-stdio-core",
           "destination": "canonical/packages/mcp-stdio-core",
           "type": "tree",
-          "oid": "a45d3a3459dc68efeaf06413dd9a4c09fc3f1f8d"
+          "oid": "cb9c35016c0723c44352bc0557b99a7df1360782"
         }
       ]
     }

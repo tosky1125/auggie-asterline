@@ -55,9 +55,9 @@ Auggie subagent reliability:
 - Paste only the context the child needs. Each one-shot assignment must stand alone.
 - Launch independent plan and reviewer lanes in parallel and keep doing independent root work while Auggie executes them.
 - For work likely to exceed one wait cycle, require the child to send `WORKING: <task> - <current phase>` before long reading, testing, or review passes, and `BLOCKED: <reason>` only when it cannot progress.
-- While any child is active, keep the parent visibly alive with active subagent count, agent names, latest `WORKING:` phase, and whether the parent is waiting for mailbox updates.
-- Track spawned agent names locally. Use `wait_agent` for mailbox signals, not proof of completion. A timeout only means no new mailbox update arrived. Treat a running child as alive.
-- Fallback only when the child is completed without the deliverable, ack-only after `followup_task`, explicitly `BLOCKED:`, or no longer running. Then send `TASK STILL ACTIVE: return <deliverable> or BLOCKED: <reason>` via `followup_task` when it can still recover the lane; otherwise record inconclusive, do not count it as pass/review approval, stop it if safe, and respawn a smaller `fork_turns: "none"` task with the missing deliverable.
+- While any child is active, keep the parent visibly alive with active subagent count, agent names, and latest `WORKING:` phase.
+- Track spawned agent names locally. A timeout only means no new update arrived; treat a running child as alive.
+- Fallback only when the child is completed without the deliverable, ack-only, explicitly `BLOCKED:`, or no longer running. Then record inconclusive, do not count it as pass/review approval, and respawn a smaller task with the missing deliverable.
 
 ## Artifacts
 - `.asterline/work-loop/brief.md`: original brief and durable constraints.
@@ -99,9 +99,9 @@ If `WORK_LOOP_CLI` is empty, open the durable notepad first, record the missing 
 
 Run one form:
 ```sh
-node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop create-goals --brief "<brief>" --json
-node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop create-goals --brief-file <path> --json
-cat <brief> | node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop create-goals --from-stdin --json
+node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop create-goals --brief "<brief>" [--validation-batch-json <json-or-path>] --json
+node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop create-goals --brief-file <path> [--validation-batch-json <json-or-path>] --json
+cat <brief> | node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop create-goals --from-stdin [--validation-batch-json <json-or-path>] --json
 ```
 If the existing aggregate is already complete, do not steer or force the
 completed default state for unrelated new work. Start a fresh run with
@@ -129,7 +129,7 @@ Read pending goals, criteria IDs, current ledger head, blockers, and aggregate A
 Loop per goal. Cap at 5 cycles per goal. Cap identical same-criterion failures at 3.
 
 ### Acquire Next Goal
-1. Run `node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop complete-goals --json` and read the handoff, including criteria.
+1. Run `node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop complete-goals --json` and read the handoff, including criteria. After the first goal starts, a successful complete checkpoint normally prints the next goal instruction directly; use `complete-goals` as the manual fallback/resume path.
 2. Call `get_goal` and inspect active Auggie state.
 3. Apply this table exactly:
 
@@ -161,7 +161,7 @@ Loop per goal. Cap at 5 cycles per goal. Cap identical same-criterion failures a
 ### Goal Completion
 1. Confirm every criterion is `pass` with `node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop criteria --goal-id <id> --json`.
 2. Call `get_goal` for a fresh snapshot.
-3. Run `node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop checkpoint --goal-id <id> --status complete --evidence "<criteria evidence summary>" --host-goal-json <snapshot> --json`.
+3. Run `node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop checkpoint --goal-id <id> --status complete --evidence "<criteria evidence summary>" --host-goal-json <snapshot> --json`; on success it auto-starts and prints the next eligible goal unless `--no-advance` is passed.
 4. If blocked or failed, checkpoint with `--status blocked` or `--status failed` and include diagnosis evidence.
 5. If this is the final goal, run the final quality gate first and pass `--quality-gate-json`.
 
@@ -202,8 +202,10 @@ Use steering only for structured evidence-backed mutation. Reject natural-langua
 | annotate_ledger | Audit-only note | `--evidence`, `--rationale` |
 | mark_blocked_superseded | Old story replaced by new evidence | `--goal-id`, `--replacements?`, `--evidence`, `--rationale` |
 
-Command form: `node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop steer --kind <kind> [<kind-specific-fields>] --evidence "<...>" --rationale "<...>" --json`.
+Command form: `node "$ASTERLINE_PLUGIN_ROOT/components/work-loop/dist/cli.js" work-loop steer --kind <kind> [<kind-specific-fields>] --evidence "<...>" --rationale "<...>" --json`. For multiple evidence-backed plan-shape changes discovered together, pass `--proposals-json <json-or-path>` with an array of proposals; the batch applies atomically or rejects without partial plan mutation.
 Structured prompt directives accepted: `ASTERLINE_WORK_LOOP_STEER: { ... }` and `asterline.work-loop.steer: {...}`.
+
+Validation batches are optional aggregate-mode review boundaries declared at create time with `--validation-batch-json`. A batch-final member requires all other members resolved, all member criteria pass, and a member-spanning quality gate; split/supersede steering keeps batch membership updated.
 
 ## Constraints
 1. NEVER call `update_goal` mid-aggregate; only on final story after the quality gate passes.

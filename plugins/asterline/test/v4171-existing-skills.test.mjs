@@ -35,22 +35,23 @@ const REQUIRED_NEW_PATHS = Object.freeze({
   'code-intel': ['agents/openai.yaml'],
   'code-intel-setup': ['agents/openai.yaml'],
   'comment-guard': ['agents/openai.yaml'],
-  'debug-trace': ['agents/openai.yaml'],
+  'debug-trace': ['agents/openai.yaml', 'references/methodology/03-flaky-triage.md'],
   'deep-research': ['ATTRIBUTION.md', 'agents/openai.yaml'],
   'init-knowledge': ['agents/openai.yaml'],
   'reshape-code': ['agents/openai.yaml'],
   'review-pass': ['agents/openai.yaml'],
   'rule-sync': ['agents/openai.yaml'],
   'run-plan': ['agents/openai.yaml'],
+  'ui-polish': ['agents/openai.yaml', 'references/design/interaction-skill.md'],
   'visual-check': ['agents/openai.yaml', 'references/agent-browser-setup.md', 'scripts/visual-qa.mjs'],
   'work-plan': ['references/intent-clear.md', 'references/intent-unclear.md', 'scripts/scaffold-plan.mjs'],
 });
 
 const EXPECTED_FILE_COUNTS = Object.freeze({
   'clean-ai-code': 2, 'code-engineer': 80, 'code-intel': 2, 'code-intel-setup': 26,
-  'comment-guard': 2, 'debug-trace': 20, 'deep-research': 3, 'git-flow': 2,
+  'comment-guard': 2, 'debug-trace': 21, 'deep-research': 3, 'git-flow': 2,
   'health-check': 2, 'init-knowledge': 2, 'reshape-code': 2, 'review-pass': 2,
-  'rule-sync': 2, 'run-plan': 2, 'ui-polish': 178, 'upstream-fix': 3,
+  'rule-sync': 2, 'run-plan': 2, 'session-history': 23, 'ui-polish': 179, 'upstream-fix': 3,
   'upstream-report': 2, 'visual-check': 17, 'work-loop': 4, 'work-plan': 6,
 });
 
@@ -83,7 +84,7 @@ const walkFiles = async (directory) => {
   return nested.flat();
 };
 
-test('Given the v4.17.1 refresh, every existing skill keeps its Asterline public identity', async () => {
+test('Given the v4.19.3 refresh, every existing skill keeps its Asterline public identity', async () => {
   for (const [name, upstream] of Object.entries(MAPPINGS)) {
     const skill = await readFile(new URL(`${name}/SKILL.md`, ROOT_URL), 'utf8');
     assert.match(skill, new RegExp(`^---\\nname: ${name.replaceAll('-', '\\-')}\\n`, 'm'));
@@ -108,7 +109,7 @@ test('Given the public code-intel names, the underlying runtime contract remains
   assert.doesNotMatch(combined, /\.asterline\/code-intel(?:-client)?\.json|top-level `code-intel` map|MCP registration is `code-intel`|mcp__code-intel/);
 });
 
-test('Given v4.17.1 added assets, every mapped path is packaged and non-empty', async () => {
+test('Given v4.19.3 added assets, every mapped path is packaged and non-empty', async () => {
   for (const [name, paths] of Object.entries(REQUIRED_NEW_PATHS)) {
     for (const path of paths) {
       const info = await stat(new URL(`${name}/${path}`, ROOT_URL));
@@ -117,7 +118,7 @@ test('Given v4.17.1 added assets, every mapped path is packaged and non-empty', 
   }
 });
 
-test('Given the pinned v4.17.1 inventories, every mapped skill has the exact packaged file count', async () => {
+test('Given the pinned v4.19.3 inventories, every mapped skill has the exact packaged file count', async () => {
   for (const [name, expected] of Object.entries(EXPECTED_FILE_COUNTS)) {
     const files = (await walkFiles(fileURLToPath(new URL(`${name}/`, ROOT_URL))))
       .filter((path) => !path.endsWith('/AGENTS.md'));

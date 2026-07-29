@@ -2,8 +2,8 @@
   "schemaVersion": 1,
   "upstream": {
     "repository": "https://github.com/code-yeongyu/oh-my-openagent",
-    "tag": "v4.17.1",
-    "commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a"
+    "tag": "v4.19.3",
+    "commit": "614cc5358dc393153fc39acae74dc5bd9fb9fffc"
   },
   "toolchain": {
     "command": "bun",

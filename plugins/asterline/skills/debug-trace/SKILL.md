@@ -1,6 +1,6 @@
 ---
 name: debug-trace
-description: "Use for real runtime debugging across any language or binary: crashes, silent failures, wrong responses, stuck processes, memory leaks, async misbehavior, unexplained timing, and reverse engineering. Runs a hypothesis-driven loop, confirms root cause, locks the issue with a failing test or faithful repro, fixes minimally, and verifies through the real surface."
+description: "Use for real runtime debugging across any language or binary: crashes, silent failures, wrong responses, stuck processes, memory leaks, async misbehavior, unexplained timing, and reverse engineering. Runs a hypothesis-driven loop, confirms root cause, locks the issue with a failing test or faithful repro, fixes minimally, and verifies through the real surface. Triggers: 'debug this', 'why is X not working', 'hanging', 'attach a debugger', 'reverse engineer', 'pwndbg', 'gdb', 'lldb', 'node inspect', 'tsx debug', 'pdb', 'dlv', 'delve', 'rust-gdb', 'set a breakpoint', 'context window exploded', 'why is the response empty', 'why is this happening', 'trace this bug', 'reproduce and fix', 'silent failure', 'HTTP 200 but empty', 'why did it stop', 'inspect the binary', 'playwright', 'flaky test', 'fails intermittently', 'passes in isolation', 'only fails in CI'."
 ---
 
 # Debugging
@@ -84,6 +84,7 @@ These are not phases — read them when the situation calls for them:
 
 | Situation | Reference |
 |---|---|
+| The failure is intermittent — fails sometimes, a different test each run, passes in isolation, or only fails in CI | 📖 **[references/methodology/03-flaky-triage.md](references/methodology/03-flaky-triage.md)** — read BEFORE Phase 2; the failure signature usually collapses the search space in one round |
 | You cannot run the actual operation (paid API, blocked network, missing hardware) but still need runtime evidence | 📖 **[references/methodology/partial-runtime-evidence.md](references/methodology/partial-runtime-evidence.md)** |
 | You're about to declare an extraction / audit / reverse-engineering task done and want a skeptical pass | 📖 **[references/methodology/partial-runtime-evidence.md#verification-oracle-pattern-for-non-debug-tasks](references/methodology/partial-runtime-evidence.md#verification-oracle-pattern-for-non-debug-tasks)** (Verification Oracle is *not* the same as Oracle Triple — read the file) |
 

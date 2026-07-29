@@ -1,6 +1,6 @@
 {
   "name": "asterline",
-  "version": "4.17.1",
+  "version": "4.19.3",
   "description": "Asterline for Auggie: evidence-led planning, execution, code intelligence, review, debugging, cleanup, visual checks, and durable work loops.",
   "author": {
     "name": "Asterline maintainers"

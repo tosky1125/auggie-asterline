@@ -2,10 +2,10 @@
   "schemaVersion": 1,
   "upstream": {
     "repository": "https://github.com/code-yeongyu/oh-my-openagent",
-    "tag": "v4.17.1",
-    "commit": "ed0241d1af225d38de55fdbcf0baa0abc9a1465a"
+    "tag": "v4.19.3",
+    "commit": "614cc5358dc393153fc39acae74dc5bd9fb9fffc"
   },
-  "recipeSha256": "bb0ff7465528e9abd0a5dc280a635a201355a82f9214a841fcfe83571eeecc5f",
+  "recipeSha256": "1d5fde68bf1d8d6209a5d5892d6adfbd7eb94ff3d5df06e95210e599bf566c3d",
   "transformedFiles": [
     {
       "file": "packages/lsp-core/src/lsp/cleanup-errors.ts",
@@ -79,7 +79,7 @@
     },
     {
       "file": "dist/package.json",
-      "sha256": "9fba88bac9d34d426671aac57709dc86fde552bed7db92723c5ba904e86b68d4"
+      "sha256": "e2b6218813d604cc91584a8742483e5dba0d9427a9f06d6a83d200095cdd4145"
     },
     {
       "file": "dist/standalone.js",

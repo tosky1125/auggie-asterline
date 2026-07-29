@@ -77,10 +77,10 @@ function lines(output) {
 	return output.trim().split("\n").filter(Boolean).map((line) => JSON.parse(line))
 }
 
-test("Given the v4.17.1 port When CodeGraph is inspected Then exact upstream provenance and a self-contained bundle are shipped", () => {
+test("Given the v4.19.3 port When CodeGraph is inspected Then exact upstream provenance and a self-contained bundle are shipped", () => {
 	const provenance = JSON.parse(readFileSync(join(componentRoot, "UPSTREAM-PROVENANCE.json"), "utf8"))
 	const runtime = readFileSync(bundle, "utf8")
-	assert.equal(provenance.upstream.commit, "ed0241d1af225d38de55fdbcf0baa0abc9a1465a")
+	assert.equal(provenance.upstream.commit, "614cc5358dc393153fc39acae74dc5bd9fb9fffc")
 	assert.equal(provenance.upstream.treeOid, "fab3443348af56fd7e0168ceaca00530c777c64d")
 	assert.match(runtime, /CODEGRAPH_TELEMETRY/)
 	assert.doesNotMatch(runtime, /(?:from|require\()\s*["'](?!node:)[@a-z]/)
@@ -159,7 +159,7 @@ test("Given a child that ignores stdin closure When the client disconnects Then 
 	}
 })
 
-test("Given the exact materialized v4.17.1 sources When built twice Then the CodeGraph bundle is reproducible", { skip: !existsSync(canonicalRoot) }, () => {
+test("Given the exact materialized v4.19.3 sources When built twice Then the CodeGraph bundle is reproducible", { skip: !existsSync(canonicalRoot) }, () => {
 	const root = temporaryRoot()
 	try {
 		const outputs = [join(root, "one"), join(root, "two")]

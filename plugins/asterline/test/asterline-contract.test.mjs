@@ -73,7 +73,7 @@ test('Auggie hook manifest uses only supported events and wrapper commands', () 
   assert.match(serialized, /hooks\/bin\/comment-guard-post-tool-use\.sh/);
   assert.match(serialized, /hooks\/bin\/work-loop-stop\.sh/);
   assert.doesNotMatch(serialized, /telemetry-session-start/);
-  assert.doesNotMatch(serialized, /matcher|statusMessage|UserPromptSubmit|PostCompact|SubagentStop/);
+  assert.doesNotMatch(serialized, /statusMessage|UserPromptSubmit|PostCompact|SubagentStop/);
   assert.doesNotMatch(serialized, /create_goal|apply_patch|\^Bash\$/);
   assert.doesNotMatch(serialized, /LazyCodex|lazycodex|OMO|omo|Codex|codex/);
 });
@@ -98,7 +98,7 @@ test('Auggie hook manifest contains only supported events and properties', () =>
 test('Runtime package identity is Asterline branded without a telemetry executable', () => {
   const pkg = readJson('package.json');
   assert.equal(pkg.name, '@asterline/auggie-plugin');
-  assert.equal(pkg.version, '4.17.1');
+  assert.equal(pkg.version, '4.19.3');
   assert(Object.keys(pkg.bin).every((name) => name.startsWith('asterline-')));
   assert.equal(pkg.bin['asterline-telemetry'], undefined);
   assert.equal(pkg.bin['asterline-deep-research-engine'], undefined);

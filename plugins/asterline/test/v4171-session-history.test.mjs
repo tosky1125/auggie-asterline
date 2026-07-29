@@ -24,6 +24,7 @@ const expectedFiles = [
   'scripts/agent_sessions/jsonio.py',
   'scripts/agent_sessions/kiro_scanner.py',
   'scripts/agent_sessions/opencode.py',
+  'scripts/agent_sessions/pi_family.py',
   'scripts/agent_sessions/scanners.py',
   'scripts/agent_sessions/sqlite_optional_scanners.py',
   'scripts/agent_sessions/sqlite_scanners.py',
@@ -33,9 +34,10 @@ const expectedFiles = [
   'scripts/find-agent-sessions.py',
 ];
 const expectedPlatforms = [
-  'codex', 'claude', 'senpi', 'opencode', 'openclaw', 'droid', 'amp', 'gemini', 'kimi', 'qwen',
+  'codex', 'claude', 'senpi', 'oh-my-pi', 'gajae-code', 'opencode', 'openclaw', 'droid', 'amp', 'gemini', 'kimi', 'qwen',
   'codebuff', 'roo-code', 'kilo-code', 'cline', 'kodu', 'cursor-cli', 'aider', 'kilo-cli', 'hermes',
   'goose', 'crush', 'zed', 'kiro',
+  'cursor', 'factory', 'roo', 'roocode', 'kilocode', 'kilo', 'omp', 'ohmypi', 'gjc', 'gajae', 'gajaecode',
 ];
 
 function filesBelow(root) {
@@ -67,7 +69,7 @@ function createSqlite(path, script) {
   execFileSync('python3', ['-c', script, path], { stdio: 'pipe' });
 }
 
-test('Given the v4.17.1 shipped skill, when inventory is inspected, then all 22 adapted files exist', () => {
+test('Given the v4.19.3 shipped skill, when inventory is inspected, then all 23 adapted files exist', () => {
   assert.deepEqual(filesBelow(skillRoot), expectedFiles);
   const skill = readFileSync(join(skillRoot, 'SKILL.md'), 'utf8');
   const metadata = readFileSync(join(skillRoot, 'agents', 'openai.yaml'), 'utf8');
@@ -80,7 +82,7 @@ test('Given the v4.17.1 shipped skill, when inventory is inspected, then all 22 
   }
 });
 
-test('Given the finder registry, when imported, then exactly 23 backends are registered', () => {
+test('Given the finder registry, when imported, then exactly 25 backends are registered', () => {
   const source = readFileSync(join(skillRoot, 'scripts', 'agent_sessions', 'scanners.py'), 'utf8');
   const names = [...source.matchAll(/^    "([a-z-]+)":/gm)].map((match) => match[1]);
   assert.deepEqual(names, expectedPlatforms);

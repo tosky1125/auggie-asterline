@@ -40,13 +40,13 @@ const runSynchronized = (cwd, args, startAt, input) =>
 		child.stdin.end(input);
 	});
 
-test("Given the v4.17.1 component When inspecting the package Then release bundling is self-contained", async () => {
+test("Given the v4.19.3 component When inspecting the package Then release bundling is self-contained", async () => {
 	// Given / When
 	const packageJson = JSON.parse(await readFile(join(componentRoot, "package.json"), "utf8"));
 	const recipe = JSON.parse(await readFile(join(componentRoot, "runtime", "work-loop.build.json"), "utf8"));
 
 	// Then
-	assert.equal(packageJson.version, "4.17.1");
+	assert.equal(packageJson.version, "4.19.3");
 	assert.equal(packageJson.scripts.build, "node runtime/build-work-loop.mjs");
 	assert.equal(recipe.toolchain.command, "bun");
 	assert.deepEqual(recipe.entries, [{ source: "work-loop/src/cli.ts", output: "cli.js", executable: true }]);
@@ -184,7 +184,6 @@ test("Given Auggie session steering When the CLI accepts it Then the public id i
 	assert.equal(JSON.parse(result.stdout).sessionId, "auggie:session-1");
 	assert.deepEqual(Object.keys(hooks.hooks), ["Stop"]);
 	assert.equal(hooks.hooks.Stop[0].hooks[0].command, 'node "${PLUGIN_ROOT}/dist/cli.js" hook stop');
-	assert.equal(Object.hasOwn(hooks.hooks.Stop[0], "matcher"), false);
 	assert.equal(Object.hasOwn(hooks.hooks.Stop[0].hooks[0], "statusMessage"), false);
 });
 

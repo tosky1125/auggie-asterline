@@ -1,6 +1,6 @@
 {
   "name": "@asterline/hook-bridge",
-  "version": "4.17.1",
+  "version": "4.19.3",
   "private": true,
   "type": "module",
   "exports": {

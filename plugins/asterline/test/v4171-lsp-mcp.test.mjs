@@ -10,7 +10,7 @@ const pluginRoot = new URL('..', import.meta.url).pathname;
 const runtimeRoot = join(pluginRoot, 'components', 'lsp', 'runtime');
 const shippedRoot = join(pluginRoot, 'mcp', 'lsp');
 const distRoot = join(shippedRoot, 'dist');
-const canonicalCommit = 'ed0241d1af225d38de55fdbcf0baa0abc9a1465a';
+const canonicalCommit = '614cc5358dc393153fc39acae74dc5bd9fb9fffc';
 const expectedPackages = ['lsp-core', 'lsp-daemon', 'lsp-tools-mcp', 'mcp-stdio-core'];
 const executableOnPath = (name) => (process.env.PATH ?? '').split(delimiter).map((directory) => join(directory, name)).find(existsSync);
 const realLspServer = executableOnPath('basedpyright-langserver');
@@ -81,7 +81,7 @@ const stopDaemon = async (daemonRoot) => {
   assert.equal(processExists(pid), false, `LSP daemon ${pid} survived cleanup`);
 };
 
-test('Given the pinned v4.17.1 sources, when inspecting the release recipe, then every LSP package and Asterline substitution is explicit', () => {
+test('Given the pinned v4.19.3 sources, when inspecting the release recipe, then every LSP package and Asterline substitution is explicit', () => {
   // Given
   const recipe = JSON.parse(readFileSync(join(runtimeRoot, 'lsp-mcp.build.json'), 'utf8'));
   const provenance = JSON.parse(readFileSync(join(shippedRoot, 'transform-provenance.json'), 'utf8'));

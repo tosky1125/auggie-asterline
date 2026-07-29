@@ -75,7 +75,7 @@ const runHelper = (args, options = {}) =>
     ...options,
   });
 
-test('Given the imported v4.17.1 skill, when its corpus is inspected, then all 17 upstream paths and only allowlisted helper modules are present', () => {
+test('Given the imported v4.19.3 skill, when its corpus is inspected, then all 17 upstream paths and only allowlisted helper modules are present', () => {
   assert.deepEqual(filesBelow(skillRoot), [...upstreamFiles, ...helperModules].sort());
   for (const path of upstreamFiles) assert.ok(existsSync(join(skillRoot, path)), `missing upstream path: ${path}`);
   const skill = readFileSync(join(skillRoot, 'SKILL.md'), 'utf8');

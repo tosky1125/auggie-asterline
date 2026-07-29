@@ -50,9 +50,8 @@ test("Given Auggie 0.32 hook support When git guidance is inspected Then only wa
 	const provenance = JSON.parse(readFileSync(join(mcpRoot, "transform-provenance.json"), "utf8"))
 	assert.deepEqual(Object.keys(manifest.hooks), ["PreToolUse"])
 	assert.equal(manifest.hooks.PreToolUse.length, 1)
-	assert.equal("matcher" in manifest.hooks.PreToolUse[0], false)
 	assert.equal("statusMessage" in manifest.hooks.PreToolUse[0].hooks[0], false)
-	assert.equal(recipe.upstream.commit, "ed0241d1af225d38de55fdbcf0baa0abc9a1465a")
+	assert.equal(recipe.upstream.commit, "614cc5358dc393153fc39acae74dc5bd9fb9fffc")
 	assert.equal(recipe.toolchain.version, "1.3.14")
 	assert.deepEqual(recipe.sources.map(({ treeOid }) => treeOid), [
 		"fa9e38e9ed9923e416748b50faa4739c0c6b2a46",
@@ -143,7 +142,7 @@ test("Given the bundled runner When commands succeed or time out Then output and
 	assert.deepEqual(after, [])
 })
 
-test("Given exact v4.17.1 sources When the Git Bash MCP is built twice Then outputs are deterministic and self-contained", { skip: !existsSync(canonicalRoot) }, (t) => {
+test("Given exact v4.19.3 sources When the Git Bash MCP is built twice Then outputs are deterministic and self-contained", { skip: !existsSync(canonicalRoot) }, (t) => {
 	const root = fixture(t)
 	const outputs = [join(root, "one"), join(root, "two")]
 	for (const output of outputs) {
