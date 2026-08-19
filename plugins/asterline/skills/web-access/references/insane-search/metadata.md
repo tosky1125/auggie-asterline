@@ -1,15 +1,15 @@
-# 메타데이터 추출 — OGP / JSON-LD / Schema.org
+# Metadata Extraction — OGP / JSON-LD / Schema.org
 
-> HTML을 받았을 때 구조화된 데이터를 추출하는 보조 기법.
-> 본문 전체를 못 가져와도 제목, 요약, 가격, 프로필 등 핵심 정보를 확보할 수 있다.
+> A supplementary technique for extracting structured data when HTML is received.
+> Even when the full body cannot be retrieved, core information such as title, summary, price, and profile can be obtained.
 
-## 의존성
+## Dependencies
 
-없음 (curl + python3 기본 모듈).
+None (curl + python3 standard modules).
 
-## OGP (Open Graph Protocol) 메타태그
+## OGP (Open Graph Protocol) Meta Tags
 
-대부분의 사이트가 소셜 공유용으로 삽입. 제목 + 설명 + 이미지 확보 가능.
+Most sites insert these for social sharing. Title + description + image can be obtained.
 
 ```bash
 curl -sL -H "User-Agent: Mozilla/5.0 ..." "{URL}" | \
@@ -23,9 +23,9 @@ for m in re.findall(r'<meta name=\"description\" content=\"([^\"]*?)\"', html):
 "
 ```
 
-## JSON-LD (Schema.org 구조화 데이터)
+## JSON-LD (Schema.org Structured Data)
 
-**가장 가치 높은 추출 대상.** 상품, 기사, 프로필 등 구조화된 정보가 JSON으로 들어있다.
+**The most valuable extraction target.** Structured information such as products, articles, and profiles is contained as JSON.
 
 ```bash
 curl -sL "{URL}" | \
@@ -42,9 +42,9 @@ for b in blocks:
 "
 ```
 
-### 실제 사례
+### Real Examples
 
-**쿠팡 검색 결과** — `CollectionPage` + `ItemList`:
+**Coupang Search Results** — `CollectionPage` + `ItemList`:
 ```json
 {
   "@type": "CollectionPage",
@@ -64,7 +64,7 @@ for b in blocks:
 }
 ```
 
-**LinkedIn 프로필** — `Person`:
+**LinkedIn Profile** — `Person`:
 ```json
 {
   "@type": "Person",
@@ -76,7 +76,7 @@ for b in blocks:
 }
 ```
 
-**뉴스 기사** — `NewsArticle`:
+**News Article** — `NewsArticle`:
 ```json
 {
   "@type": "NewsArticle",
@@ -87,9 +87,9 @@ for b in blocks:
 }
 ```
 
-## Next.js RSC 페이로드 (요즘IT 등)
+## Next.js RSC Payload (YojeumIT, etc.)
 
-Next.js App Router 사이트는 `self.__next_f.push()` 스크립트에 콘텐츠가 포함됨.
+Next.js App Router sites include content in the `self.__next_f.push()` script.
 
 ```bash
 curl -sL "{URL}" | \
@@ -98,19 +98,19 @@ import sys, re
 html = sys.stdin.read()
 chunks = re.findall(r'self\.__next_f\.push\(\[1,\"(.*?)\"\]\)', html)
 text = ''.join(chunks)
-# 한국어 텍스트 추출 (유니코드 이스케이프 디코딩)
+# Extract Korean text (decode unicode escapes)
 decoded = text.encode().decode('unicode_escape', errors='ignore')
 print(decoded[:3000])
 "
 ```
 
-## 활용 시점
+## When to Use
 
-메타데이터 추출은 **독립 방법이 아니라 보조 기법**이다.
-어떤 Phase에서든 HTML을 받으면 같이 실행:
+Metadata extraction is **not a standalone method but a supplementary technique**.
+Run it alongside any phase where HTML is received:
 
-- Phase 1에서 curl로 HTML 받음 → JSON-LD도 추출
-- Phase 2에서 curl_cffi로 HTML 받음 → JSON-LD도 추출
-- Phase 3에서 Playwright로 DOM 받음 → `browser_evaluate`로 JSON-LD 추출
+- Phase 1: Receive HTML via curl → also extract JSON-LD
+- Phase 2: Receive HTML via curl_cffi → also extract JSON-LD
+- Phase 3: Receive DOM via Playwright → extract JSON-LD via `browser_evaluate`
 
-본문은 못 가져와도 JSON-LD에서 **상품 가격, 기사 요약, 프로필 정보**는 확보될 수 있다.
+Even if the body cannot be retrieved, **product prices, article summaries, and profile information** can be obtained from JSON-LD.

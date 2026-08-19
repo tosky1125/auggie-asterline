@@ -17,6 +17,7 @@ const expectedFiles = [
   'references/opencode.md',
   'references/senpi.md',
   'scripts/agent_sessions/__init__.py',
+  'scripts/agent_sessions/aside_scanner.py',
   'scripts/agent_sessions/claude.py',
   'scripts/agent_sessions/cli.py',
   'scripts/agent_sessions/codex.py',
@@ -36,8 +37,8 @@ const expectedFiles = [
 const expectedPlatforms = [
   'codex', 'claude', 'senpi', 'oh-my-pi', 'gajae-code', 'opencode', 'openclaw', 'droid', 'amp', 'gemini', 'kimi', 'qwen',
   'codebuff', 'roo-code', 'kilo-code', 'cline', 'kodu', 'cursor-cli', 'aider', 'kilo-cli', 'hermes',
-  'goose', 'crush', 'zed', 'kiro',
-  'cursor', 'factory', 'roo', 'roocode', 'kilocode', 'kilo', 'omp', 'ohmypi', 'gjc', 'gajae', 'gajaecode',
+  'goose', 'crush', 'zed', 'kiro', 'aside',
+  'cursor', 'factory', 'roo', 'roocode', 'kilocode', 'kilo', 'omp', 'ohmypi', 'gjc', 'gajae', 'gajaecode', 'aside-browser',
 ];
 
 function filesBelow(root) {
@@ -69,7 +70,7 @@ function createSqlite(path, script) {
   execFileSync('python3', ['-c', script, path], { stdio: 'pipe' });
 }
 
-test('Given the v4.19.3 shipped skill, when inventory is inspected, then all 23 adapted files exist', () => {
+test('Given the v4.19.4 shipped skill, when inventory is inspected, then all 24 adapted files exist', () => {
   assert.deepEqual(filesBelow(skillRoot), expectedFiles);
   const skill = readFileSync(join(skillRoot, 'SKILL.md'), 'utf8');
   const metadata = readFileSync(join(skillRoot, 'agents', 'openai.yaml'), 'utf8');
@@ -82,7 +83,7 @@ test('Given the v4.19.3 shipped skill, when inventory is inspected, then all 23 
   }
 });
 
-test('Given the finder registry, when imported, then exactly 25 backends are registered', () => {
+test('Given the finder registry, when imported, then exactly 26 backends are registered', () => {
   const source = readFileSync(join(skillRoot, 'scripts', 'agent_sessions', 'scanners.py'), 'utf8');
   const names = [...source.matchAll(/^    "([a-z-]+)":/gm)].map((match) => match[1]);
   assert.deepEqual(names, expectedPlatforms);

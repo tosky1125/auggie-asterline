@@ -39,6 +39,7 @@ const expectedSkills = [
   "code-intel",
   "code-intel-setup",
   "comment-guard",
+  "data-scientist",
   "debug-trace",
   "deep-research",
   "deep-work",
@@ -98,7 +99,7 @@ test('Auggie hook manifest contains only supported events and properties', () =>
 test('Runtime package identity is Asterline branded without a telemetry executable', () => {
   const pkg = readJson('package.json');
   assert.equal(pkg.name, '@asterline/auggie-plugin');
-  assert.equal(pkg.version, '4.19.3');
+  assert.equal(pkg.version, '4.19.4');
   assert(Object.keys(pkg.bin).every((name) => name.startsWith('asterline-')));
   assert.equal(pkg.bin['asterline-telemetry'], undefined);
   assert.equal(pkg.bin['asterline-deep-research-engine'], undefined);

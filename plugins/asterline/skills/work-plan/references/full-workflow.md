@@ -31,7 +31,7 @@ When the request is architecture-scale, references Discord / external repos, or 
 5. **synthesize** one plan with explicit collect -> verify -> design -> adversarial -> synthesize evidence baked into the todos.
 
 ## Phase 2 - Route, then interview or research
-Make ONE judgment and follow ONE reference. Review modifiers are not routing signals: `high accuracy` / `ultra high accuracy` / `고정밀` set `review_required: true`, then the CLEAR/UNCLEAR test still decides whether to interview or adopt defaults.
+Make ONE judgment and follow ONE reference. Review modifiers are not routing signals: `high accuracy` / `ultra high accuracy` / `ultra precision` set `review_required: true`, then the CLEAR/UNCLEAR test still decides whether to interview or adopt defaults.
 - CLEAR -> `intent-clear.md`: run the **two filters** on every candidate question; ask only surviving forks (owner-decisions), with WHY.
 - UNCLEAR -> `intent-unclear.md`: research maximally, adopt announced best-practice defaults, do not ask the user extra questions. Unless classification is Trivial, set `review_required: true` in the draft because this route requires automatic high-accuracy review.
 

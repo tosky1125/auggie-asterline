@@ -14,7 +14,7 @@ asterline/
 ├── hooks/                       # Installed Auggie adapters
 ├── mcp/                         # Dist-only MCP payloads
 ├── rules/                       # Three loaded native policies; no extra Markdown
-├── skills/                      # Exact twenty-five-skill public API
+├── skills/                      # Exact twenty-six-skill public API
 ├── test/                        # Aggregate contract suite
 └── release/build-sources/       # Immutable build-only source closure
 ```

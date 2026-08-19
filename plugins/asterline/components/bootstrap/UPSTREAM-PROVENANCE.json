@@ -2,10 +2,10 @@
 	"schemaVersion": 1,
 	"upstream": {
 		"repository": "https://github.com/code-yeongyu/oh-my-openagent",
-		"tag": "v4.19.3",
-		"commit": "614cc5358dc393153fc39acae74dc5bd9fb9fffc",
+		"tag": "v4.19.4",
+		"commit": "b072d279110bdda2c6ac2525d0d24dc54d16148a",
 		"path": "packages/omo-codex/plugin/components/bootstrap",
-		"treeOid": "ef8ef5496986b75e8d78e75373ced05d62e30c52"
+		"treeOid": "bece3bbdcb0423d66197006af86ed82dcfad55d0"
 	},
 	"adaptation": {
 		"host": "Auggie CLI 0.32",

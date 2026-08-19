@@ -81,7 +81,7 @@ const stopDaemon = async (daemonRoot) => {
   assert.equal(processExists(pid), false, `LSP daemon ${pid} survived cleanup`);
 };
 
-test('Given the pinned v4.19.3 sources, when inspecting the release recipe, then every LSP package and Asterline substitution is explicit', () => {
+test('Given the pinned v4.19.4 sources, when inspecting the release recipe, then every LSP package and Asterline substitution is explicit', () => {
   // Given
   const recipe = JSON.parse(readFileSync(join(runtimeRoot, 'lsp-mcp.build.json'), 'utf8'));
   const provenance = JSON.parse(readFileSync(join(shippedRoot, 'transform-provenance.json'), 'utf8'));

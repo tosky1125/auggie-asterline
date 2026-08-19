@@ -38,10 +38,10 @@ function run(subcommand, payload, environment = {}) {
   });
 }
 
-test('Given the shipped component, when metadata is inspected, then it is a self-contained Auggie v4.19.3 runtime', () => {
+test('Given the shipped component, when metadata is inspected, then it is a self-contained Auggie v4.19.4 runtime', () => {
   const manifest = JSON.parse(readFileSync(join(component, 'hooks', 'hooks.json'), 'utf8'));
   const packageJson = JSON.parse(readFileSync(join(component, 'package.json'), 'utf8'));
-  assert.equal(packageJson.version, '4.19.3');
+  assert.equal(packageJson.version, '4.19.4');
   assert.deepEqual(Object.keys(manifest.hooks).sort(), ['PostToolUse', 'SessionStart']);
   assert.doesNotMatch(JSON.stringify(manifest), /statusMessage|UserPromptSubmit|PostCompact/);
   assert.equal(packageJson.dependencies, undefined);

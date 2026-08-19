@@ -2,7 +2,7 @@
 
 ## OVERVIEW
 
-Twenty shipped Auggie skills imported from a pinned upstream runtime and adapted to the Asterline namespace. Skill prose is executable routing policy, not ordinary documentation.
+Twenty-six shipped Auggie skills imported from a pinned upstream runtime and adapted to the Asterline namespace. Skill prose is executable routing policy, not ordinary documentation.
 
 ## STRUCTURE
 
@@ -19,7 +19,7 @@ Deep toolkits: `code-engineer`, `code-intel-setup`, `debug-trace`, `visual-check
 ## PUBLIC CONTRACT
 
 - Directory name must equal frontmatter `name`.
-- The exact twenty directory names are hardcoded in the root validator, aggregate contract test, README, and smoke expectations; the plugin runtime validator checks only the count.
+- The exact twenty-six directory names are hardcoded in the root validator, aggregate contract test, README, and smoke expectations; the plugin runtime validator checks only the count.
 - Keep `SKILL.md` concise enough to route; put scenario detail in `references/` and executable enforcement in `scripts/`.
 - Preserve explicit Auggie compatibility sections in orchestration-heavy skills. Port foreign harness examples instead of invoking them literally.
 - Optional `agents/openai.yaml` describes discovery UI; it does not replace `SKILL.md` behavior.

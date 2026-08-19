@@ -142,7 +142,7 @@ test("Given the bundled runner When commands succeed or time out Then output and
 	assert.deepEqual(after, [])
 })
 
-test("Given exact v4.19.3 sources When the Git Bash MCP is built twice Then outputs are deterministic and self-contained", { skip: !existsSync(canonicalRoot) }, (t) => {
+test("Given exact v4.19.4 sources When the Git Bash MCP is built twice Then outputs are deterministic and self-contained", { skip: !existsSync(canonicalRoot) }, (t) => {
 	const root = fixture(t)
 	const outputs = [join(root, "one"), join(root, "two")]
 	for (const output of outputs) {

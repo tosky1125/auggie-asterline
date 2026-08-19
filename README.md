@@ -1,6 +1,6 @@
 # auggie-asterline
 
-Asterline is an Auggie marketplace plugin that ports the upstream 4.19.3
+Asterline is an Auggie marketplace plugin that ports the upstream 4.19.4
 runtime surface into an Asterline-branded Auggie package. It provides durable
 planning loops, deep research and deep work, code intelligence, review pressure,
 cleanup, visual checks, hooks, and MCP servers through the `asterline` plugin namespace.
@@ -71,6 +71,7 @@ auggie --plugin-dir . command list
 - `/asterline:code-intel`: use language-aware diagnostics and navigation.
 - `/asterline:code-intel-setup`: configure language-server support.
 - `/asterline:comment-guard`: check edited-code comments for low-signal text.
+- `/asterline:data-scientist`: high-performance data processing with DuckDB and Polars.
 - `/asterline:debug-trace`: reproduce, isolate, fix, and verify runtime defects.
 - `/asterline:deep-research`: run broad evidence-backed research.
 - `/asterline:deep-work`: apply the Asterline deep-work execution discipline.
@@ -92,7 +93,7 @@ auggie --plugin-dir . command list
 - `/asterline:work-loop`: execute durable goal loops with observable proof.
 - `/asterline:work-plan`: produce a decision-complete implementation plan.
 
-The exact public inventory is 25 skills. Local MCP servers include structural search,
+The exact public inventory is 26 skills. Local MCP servers include structural search,
 language intelligence, and checksum-pinned CodeGraph; `grep_app` and `context7` use
 explicit HTTP transport entries. Auggie hooks use only `SessionStart`, `PreToolUse`,
 `PostToolUse`, and `Stop`, without unsupported matcher or status-message properties.

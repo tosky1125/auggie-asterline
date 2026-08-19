@@ -1,45 +1,45 @@
 {
   "schemaVersion": 1,
-  "release": "4.19.3",
+  "release": "4.19.4",
   "sources": [
     {
       "id": "lazycodex-generated",
-      "tag": "v4.19.3",
-      "commit": "895b70cb8cc66ebb5b0390571bc65a858e4e6303",
+      "tag": "v4.19.4",
+      "commit": "fb48ddc4bc8be02a0cfe0a509a30cf3543edf72a",
       "gitlinks": {
-        "src": "65715d1c2c35e27ccf2195ef688b0909dddb403c"
+        "src": "f9ce2c33b2d411d8e1049f3a478208aac6aa75f0"
       },
       "paths": [
         {
           "source": "plugins/omo/skills",
           "destination": "generated/plugins/omo/skills",
           "type": "tree",
-          "oid": "1068eda549d9535ef2e7d62d505f14b97bccdb02"
+          "oid": "f9ce2c33b2d411d8e1049f3a478208aac6aa75f0"
         }
       ]
     },
     {
       "id": "oh-my-openagent",
-      "tag": "v4.19.3",
-      "commit": "614cc5358dc393153fc39acae74dc5bd9fb9fffc",
+      "tag": "v4.19.4",
+      "commit": "b072d279110bdda2c6ac2525d0d24dc54d16148a",
       "paths": [
         {
           "source": "packages/omo-codex/plugin",
           "destination": "canonical/packages/omo-codex/plugin",
           "type": "tree",
-          "oid": "439a74792650756271757effdfa23f9cd394bdac"
+          "oid": "992df98e7e179e5a7513636e9089bcd7782877c9"
         },
         {
           "source": "packages/shared-skills/skills",
           "destination": "canonical/packages/shared-skills/skills",
           "type": "tree",
-          "oid": "8c76e51752107a1d257aadee76bbc54ca7b05418"
+          "oid": "28c4589a0b77a4bd2be1e257468745303422df7b"
         },
         {
           "source": "packages/utils",
           "destination": "canonical/packages/utils",
           "type": "tree",
-          "oid": "4891ba69acd31d0415aac6edebda04f6dfd5a9ee"
+          "oid": "daa5af121f1f081e4eeab0632e93eb95b56e7d78"
         },
         {
           "source": "packages/comment-checker-core",
@@ -57,7 +57,7 @@
           "source": "packages/lsp-core",
           "destination": "canonical/packages/lsp-core",
           "type": "tree",
-          "oid": "6aa7015ea6a4d65955eed0368782f99cb66fd4f7"
+          "oid": "a997b1fb0ba7cb1d6712d7ac095cfde4e10453b8"
         },
         {
           "source": "packages/lsp-daemon",

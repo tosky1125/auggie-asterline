@@ -1,17 +1,17 @@
-# TLS 임퍼소네이션 — curl_cffi
+# TLS Impersonation — curl_cffi
 
-> TLS 핑거프린트(JA3/JA4) 기반 WAF를 우회하는 핵심 방법.
-> 일반 curl/requests는 OpenSSL 핑거프린트라 즉시 차단되지만,
-> curl_cffi는 실제 브라우저(Chrome/Safari/Firefox)의 TLS 핑거프린트를 복제한다.
+> The core method for bypassing TLS fingerprint (JA3/JA4) based WAFs.
+> Plain curl/requests use an OpenSSL fingerprint and get blocked immediately,
+> but curl_cffi replicates the TLS fingerprint of a real browser (Chrome/Safari/Firefox).
 
-## 의존성
+## Dependencies
 
-`python3 -c "import curl_cffi"`로 사전 준비 여부를 확인한다. 없으면 이 경로를 중단하고 운영자에게 요청하며 스킬이 직접 설치하지 않는다.
+Check readiness with `python3 -c "import curl_cffi"`. If it is missing, abort this path and request the operator to install it; the skill does not install it directly.
 
-## 다중 타겟 순차 시도
+## Multi-target Sequential Attempt
 
-하나의 impersonate 타겟이 실패하면 다른 타겟으로 재시도한다.
-**시도 순서: safari → chrome → firefox**
+If one impersonate target fails, retry with another target.
+**Attempt order: safari → chrome → firefox**
 
 ```python
 from curl_cffi import requests
@@ -25,7 +25,7 @@ HEADERS = {
 }
 
 def cffi_fetch(url, locale="ko-KR"):
-    """다중 타겟 순차 시도 + 신원위장. 성공하면 (response, target) 반환."""
+    """Multi-target sequential attempt + identity camouflage. Returns (response, target) on success."""
     from urllib.parse import urlparse
     origin = f"{urlparse(url).scheme}://{urlparse(url).netloc}"
     for target in TARGETS:
@@ -34,14 +34,14 @@ def cffi_fetch(url, locale="ko-KR"):
             session.headers.update(HEADERS)
             session.headers["Accept-Language"] = f"{locale},{locale.split('-')[0]};q=0.9"
             session.headers["Referer"] = "https://www.google.com/"
-            # 신원위장: 홈페이지 쿠키 워밍 → Referer 체인
+            # Identity camouflage: homepage cookie warm-up → Referer chain
             try:
                 session.get(origin, timeout=10)
             except Exception:
-                pass  # 홈 실패해도 본 요청은 시도
+                pass  # Try the main request even if the homepage fails
             session.headers["Referer"] = origin
             resp = session.get(url, timeout=20)
-            # JS 필수 사이트 감지 → 나머지 타겟 시도 무의미
+            # Detect JS-required site → remaining target attempts are pointless
             if "behavioral-content" in resp.text or "sec-if-cpt" in resp.text:
                 return None, None  # → Phase 3 Playwright
             if resp.status_code == 200 and len(resp.text) > 500:
@@ -51,20 +51,20 @@ def cffi_fetch(url, locale="ko-KR"):
     return None, None
 ```
 
-## 임퍼소네이션 타겟 목록 (v0.15.0)
+## Impersonation Target List (v0.15.0)
 
-generic alias는 항상 최신 버전으로 해석된다. **2026년에 chrome99 같은 옛 버전은 WAF가 의심하므로 generic alias 사용 권장.**
+A generic alias always resolves to the latest version. **In 2026, old versions like chrome99 raise WAF suspicion, so using generic aliases is recommended.**
 
-| Alias | 해석 (2026.04) | 용도 |
+| Alias | Resolution (2026.04) | Use case |
 |-------|---------------|------|
-| `safari` | safari260 | **한국 사이트 최적** (쿠팡, 에펨코리아) |
-| `chrome` | chrome146 | 범용 (Cloudflare, Akamai) |
-| `firefox` | firefox135 | chrome/safari 실패 시 대안 |
-| `chrome_android` | chrome131_android | 모바일 API 엔드포인트 |
-| `safari_ios` | safari260_ios | iOS 모바일 |
+| `safari` | safari260 | **Best for Korean sites** (Coupang, FM Korea) |
+| `chrome` | chrome146 | General purpose (Cloudflare, Akamai) |
+| `firefox` | firefox135 | Alternative when chrome/safari fails |
+| `chrome_android` | chrome131_android | Mobile API endpoints |
+| `safari_ios` | safari260_ios | iOS mobile |
 
 <details>
-<summary>핀 버전 전체 (클릭)</summary>
+<summary>All pinned versions (click)</summary>
 
 ```
 chrome99, chrome100, chrome101, chrome104, chrome107, chrome110,
@@ -78,44 +78,44 @@ firefox133, firefox135
 
 </details>
 
-## WAF별 최적 전략
+## Optimal Strategy per WAF
 
-| WAF | 최적 타겟 | 추가 조건 | 성공률 |
+| WAF | Optimal target | Additional condition | Success rate |
 |-----|-----------|-----------|--------|
-| F5 BIG-IP (쿠팡) | `safari` | `Referer: https://www.coupang.com/` | ~70% |
-| Cloudflare (TLS만) | `chrome` | Sec-Fetch-* 헤더 추가 | ~80% |
-| Akamai | `chrome` | 레지덴셜 프록시 병행 | 80-90% |
+| F5 BIG-IP (Coupang) | `safari` | `Referer: https://www.coupang.com/` | ~70% |
+| Cloudflare (TLS only) | `chrome` | Add Sec-Fetch-* headers | ~80% |
+| Akamai | `chrome` | Use residential proxy in parallel | 80-90% |
 | AWS WAF | `chrome` | — | ~80% |
-| CloudFront (요즘IT) | 불필요 | 일반 curl + Chrome UA로 충분 | 100% |
+| CloudFront (YojeumIT) | Not needed | Plain curl + Chrome UA is sufficient | 100% |
 
-## 세션과 쿠키
+## Sessions and Cookies
 
 ```python
 from curl_cffi import requests
 
-# 세션 유지 (쿠키 자동 관리)
+# Maintain session (automatic cookie management)
 session = requests.Session(impersonate="safari")
 
-# 첫 요청으로 세션 쿠키 획득
+# Obtain session cookies with the first request
 session.get("https://www.coupang.com/")
 
-# 이후 요청에 쿠키 자동 전달
+# Cookies are automatically forwarded on subsequent requests
 resp = session.get("https://www.coupang.com/np/search?q=키보드")
 ```
 
-## 콤보: nodriver/FlareSolverr → curl_cffi
+## Combo: nodriver/FlareSolverr → curl_cffi
 
-JS 챌린지 사이트는 브라우저로 쿠키를 획득한 뒤 curl_cffi로 고속 처리:
+For JS challenge sites, obtain cookies with a browser, then process at high speed with curl_cffi:
 
 ```python
-# 1. nodriver로 cf_clearance 쿠키 획득
+# 1. Obtain cf_clearance cookie with nodriver
 import nodriver as uc
 browser = await uc.start(headless=True)
 page = await browser.get("https://cf-protected-site.com")
 await page.cf_verify()
 cookies = await browser.cookies.get_all()
 
-# 2. curl_cffi Session에 쿠키 전달
+# 2. Pass cookies to a curl_cffi Session
 from curl_cffi import requests
 session = requests.Session(impersonate="chrome")
 for c in cookies:
@@ -123,7 +123,7 @@ for c in cookies:
 resp = session.get("https://cf-protected-site.com/api/data")
 ```
 
-## 비동기 (async)
+## Async
 
 ```python
 import asyncio
@@ -148,35 +148,35 @@ resp = requests.get(
 )
 ```
 
-WAF 벤더들이 아직 HTTP/3 핑거프린트를 적극 활용하지 않아 우회 효과가 높다.
+WAF vendors do not yet actively utilize HTTP/3 fingerprints, so the bypass effect is high.
 
-## 대안 라이브러리
+## Alternative Libraries
 
-curl_cffi 실패 시 대안:
+Alternatives when curl_cffi fails:
 
-| 라이브러리 | 운영자 준비 대상 | 특징 |
+| Library | Operator setup target | Characteristics |
 |-----------|------|------|
-| primp | `primp` | Rust 기반, Firefox 148까지, 고성능 |
-| wreq/rnet | `wreq` | Rust 기반, 100+ 디바이스 프로필 |
-| tls-client2 | `tls-client2` | Go 기반 포크, 동기만 |
+| primp | `primp` | Rust-based, up to Firefox 148, high performance |
+| wreq/rnet | `wreq` | Rust-based, 100+ device profiles |
+| tls-client2 | `tls-client2` | Go-based fork, synchronous only |
 
 ```python
-# primp 예시
+# primp example
 import primp
 client = primp.Client(impersonate="chrome_146")
 resp = client.get("https://example.com")
 ```
 
-## curl_cffi가 못 뚫는 것
+## What curl_cffi Cannot Bypass
 
-| 방어 수단 | curl_cffi | 대응 |
+| Defense mechanism | curl_cffi | Response |
 |-----------|-----------|------|
-| TLS/JA3 핑거프린트 | 우회 가능 | 핵심 기능 |
-| HTTP/2 SETTINGS 핑거프린트 | 우회 가능 | impersonate에 포함 |
-| HTTP/3 QUIC 핑거프린트 | 우회 가능 (v0.15+) | 신규 |
-| JS 챌린지 (Turnstile 등) | **불가** | → nodriver 또는 Playwright |
-| CAPTCHA | **불가** | → 2captcha/CapSolver |
-| IP 평판 (데이터센터) | **불가** | → 프록시/VPN |
-| 행동 분석 (마우스/타이밍) | **불가** | → 실제 브라우저 |
+| TLS/JA3 fingerprint | Bypassable | Core feature |
+| HTTP/2 SETTINGS fingerprint | Bypassable | Included in impersonate |
+| HTTP/3 QUIC fingerprint | Bypassable (v0.15+) | New |
+| JS challenge (Turnstile etc.) | **Not possible** | → nodriver or Playwright |
+| CAPTCHA | **Not possible** | → 2captcha/CapSolver |
+| IP reputation (datacenter) | **Not possible** | → Proxy/VPN |
+| Behavioral analysis (mouse/timing) | **Not possible** | → Real browser |
 
-JS 챌린지가 걸린 사이트는 → [playwright.md](playwright.md) 로 넘긴다.
+Sites with JS challenges are handed off to → [playwright.md](playwright.md).

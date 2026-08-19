@@ -25,10 +25,10 @@ const required = [
 ];
 const expectedSkills = [
   'clean-ai-code', 'code-engineer', 'code-intel', 'code-intel-setup', 'comment-guard',
-  'debug-trace', 'deep-research', 'deep-work', 'git-flow', 'health-check', 'init-knowledge',
-  'reshape-code', 'review-pass', 'rule-sync', 'run-plan', 'session-history', 'structure-search',
-  'team-mode', 'ui-polish', 'upstream-fix', 'upstream-report', 'visual-check', 'web-access',
-  'work-loop', 'work-plan',
+  'data-scientist', 'debug-trace', 'deep-research', 'deep-work', 'git-flow', 'health-check',
+  'init-knowledge', 'reshape-code', 'review-pass', 'rule-sync', 'run-plan', 'session-history',
+  'structure-search', 'team-mode', 'ui-polish', 'upstream-fix', 'upstream-report', 'visual-check',
+  'web-access', 'work-loop', 'work-plan',
 ];
 const missing = required.filter((path) => !existsSync(join(root, path)));
 const skills = readdirSync(join(root, 'skills')).filter((name) => existsSync(join(root, 'skills', name, 'SKILL.md'))).sort();

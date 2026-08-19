@@ -1,11 +1,11 @@
 ---
 name: team-mode
-description: "Auggie에서는 병렬 작업 분할만 지원하며 지속 팀, 메시징, 재개, 스레드는 지원하지 않습니다. Use when the user asks for team mode, a team of agents, or parallel workers and the work can be split into bounded independent subtasks with disjoint ownership."
+description: "Auggie supports only parallel task decomposition; durable teams, messaging, resume, and threads are not supported. Use when the user asks for team mode, a team of agents, or parallel workers and the work can be split into bounded independent subtasks with disjoint ownership."
 ---
 
 # Auggie Team Mode
 
-Auggie에서는 병렬 작업 분할만 지원하며 지속 팀, 메시징, 재개, 스레드는 지원하지 않습니다.
+Auggie supports only parallel task decomposition; durable teams, messaging, resume, and threads are not supported.
 
 Treat team mode as one-shot parallel decomposition. Use the available Auggie subagent or delegation surface to run bounded independent subtasks and collect each terminal result; the parent verifies and integrates the work.
 

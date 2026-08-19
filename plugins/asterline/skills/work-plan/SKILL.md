@@ -1,6 +1,6 @@
 ---
 name: work-plan
-description: "Auggie-native strategic planning consultant. Explores the codebase exhaustively, surfaces only the ambiguities exploration cannot resolve, asks the user, and waits for explicit approval before producing one decision-complete work plan. MUST USE when the work has 5+ steps, scope is ambiguous, multiple modules are involved, or the user asks for a plan. Triggers: work-plan, plan this, create a work plan, interview me, start planning, plan mode, break this down."
+description: "ACTIVATES ONLY on an explicit user request for a work plan before coding: the user themselves saying work-plan, /asterline:work-plan, or asking in their own words for a plan before coding. NEVER self-activates: a bare deep-work run, an agent-side routing decision, or reading this file is not a request. Explore-first planning consultant (Prometheus) that grounds in the codebase, asks only the forks exploration cannot resolve - or researches them to best practice when the intent is fuzzy - waits for explicit approval, then writes ONE decision-complete work plan a worker executes with zero further interview. Triggers: work-plan, plan this, make a plan, plan before coding, interview me, break this down, start planning, plan mode."
 metadata:
   short-description: Explore-first planning consultant that waits for your okay before planning
 ---

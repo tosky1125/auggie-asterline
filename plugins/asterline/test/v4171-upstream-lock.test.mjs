@@ -98,7 +98,7 @@ const digestTree = (root) => {
   return hash.digest('hex');
 };
 
-test('Given the release lock, when inspected, then every intended v4.19.3 source tree is pinned', () => {
+test('Given the release lock, when inspected, then every intended v4.19.4 source tree is pinned', () => {
   // Given
   const lock = JSON.parse(readFileSync(lockPath, 'utf8'));
 
@@ -107,22 +107,22 @@ test('Given the release lock, when inspected, then every intended v4.19.3 source
   const canonical = lock.sources.find(({ id }) => id === 'oh-my-openagent');
 
   // Then
-  assert.equal(lock.release, '4.19.3');
-  assert.equal(generated.tag, 'v4.19.3');
-  assert.equal(generated.commit, '895b70cb8cc66ebb5b0390571bc65a858e4e6303');
+  assert.equal(lock.release, '4.19.4');
+  assert.equal(generated.tag, 'v4.19.4');
+  assert.equal(generated.commit, 'fb48ddc4bc8be02a0cfe0a509a30cf3543edf72a');
   assert.deepEqual(generated.gitlinks, {
-    src: '65715d1c2c35e27ccf2195ef688b0909dddb403c',
+    src: 'f9ce2c33b2d411d8e1049f3a478208aac6aa75f0',
   });
   assert.deepEqual(generated.paths, [
     {
       source: 'plugins/omo/skills',
       destination: 'generated/plugins/omo/skills',
       type: 'tree',
-      oid: '1068eda549d9535ef2e7d62d505f14b97bccdb02',
+      oid: 'f9ce2c33b2d411d8e1049f3a478208aac6aa75f0',
     },
   ]);
-  assert.equal(canonical.tag, 'v4.19.3');
-  assert.equal(canonical.commit, '614cc5358dc393153fc39acae74dc5bd9fb9fffc');
+  assert.equal(canonical.tag, 'v4.19.4');
+  assert.equal(canonical.commit, 'b072d279110bdda2c6ac2525d0d24dc54d16148a');
   assert.deepEqual(
     canonical.paths.map(({ source }) => source),
     [
@@ -238,7 +238,7 @@ test('Given a destination path escape, when the lock is parsed, then it fails be
   assert.equal(existsSync(join(root, 'escaped')), false);
 });
 
-test('Given both exact v4.19.3 repositories, when materialized twice, then staging trees are deterministic', (t) => {
+test('Given both exact v4.19.4 repositories, when materialized twice, then staging trees are deterministic', (t) => {
   // Given
   const lazycodex = '/tmp/lazycodex-fresh-2026';
   const canonical = '/tmp/oh-my-openagent-v4193-full';

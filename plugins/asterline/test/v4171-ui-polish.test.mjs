@@ -36,7 +36,7 @@ const run = (command, args) => spawnSync(command, args, {
   timeout: 20_000,
 });
 
-test('ui-polish preserves every v4.19.3 generated path plus an explicit internal allowlist', () => {
+test('ui-polish preserves every v4.19.4 generated path plus an explicit internal allowlist', () => {
   const files = walkFiles(skillRoot);
   const internal = files.filter((file) => internalPythonModules.includes(file));
   const upstream = files.filter((file) => !internalPythonModules.includes(file));

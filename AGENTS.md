@@ -17,7 +17,7 @@ Auggie marketplace wrapper for the Asterline 4.17.1 runtime. The repository ship
 │   ├── components/                   # Source-bearing hook and workflow packages
 │   ├── hooks/                        # Aggregate Auggie event adapters
 │   ├── mcp/                          # Committed MCP runtime bundles
-│   ├── skills/                       # Twenty-five public skill contracts
+│   ├── skills/                       # Twenty-six public skill contracts
 │   └── release/build-sources/        # Build-only locked dependency sources
 ├── scripts/validate-marketplace.mjs  # Cross-repository acceptance contract
 └── scripts/smoke-auggie-local.sh     # Live command-surface smoke test

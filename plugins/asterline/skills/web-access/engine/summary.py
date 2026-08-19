@@ -16,11 +16,11 @@ _R7_ELIGIBLE_PROFILES = frozenset({
 })
 
 R7_HINT = (
-    "💡 R7 API-first 권장: WAF가 HTML 경로를 차단 중. "
-    "Playwright MCP 사용 → browser_navigate → browser_network_requests "
-    "→ `/api/`·`/graphql`·`\\.json` 필터로 내부 엔드포인트 탐지 → "
-    "해당 URL을 `python3 -m engine <API_URL>`로 재호출. 대부분 API 레이어는 "
-    "WAF 방어가 얕아 curl_cffi만으로 수집됨."
+    "R7 API-first recommendation: WAF is blocking HTML routes. "
+    "Use Playwright MCP → browser_navigate → browser_network_requests "
+    "→ filter `/api/`·`/graphql`·`\\.json` to detect internal endpoints → "
+    "re-invoke that URL via `python3 -m engine <API_URL>`. Most API layers "
+    "have weaker WAF protection and can be collected with curl_cffi alone."
 )
 
 

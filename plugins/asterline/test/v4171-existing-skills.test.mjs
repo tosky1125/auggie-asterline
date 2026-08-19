@@ -49,9 +49,9 @@ const REQUIRED_NEW_PATHS = Object.freeze({
 
 const EXPECTED_FILE_COUNTS = Object.freeze({
   'clean-ai-code': 2, 'code-engineer': 80, 'code-intel': 2, 'code-intel-setup': 26,
-  'comment-guard': 2, 'debug-trace': 21, 'deep-research': 3, 'git-flow': 2,
-  'health-check': 2, 'init-knowledge': 2, 'reshape-code': 2, 'review-pass': 2,
-  'rule-sync': 2, 'run-plan': 2, 'session-history': 23, 'ui-polish': 179, 'upstream-fix': 3,
+  'comment-guard': 2, 'data-scientist': 10, 'debug-trace': 21, 'deep-research': 3,
+  'git-flow': 2, 'health-check': 2, 'init-knowledge': 2, 'reshape-code': 2, 'review-pass': 2,
+  'rule-sync': 2, 'run-plan': 2, 'session-history': 24, 'ui-polish': 179, 'upstream-fix': 3,
   'upstream-report': 2, 'visual-check': 17, 'work-loop': 4, 'work-plan': 6,
 });
 
@@ -84,7 +84,7 @@ const walkFiles = async (directory) => {
   return nested.flat();
 };
 
-test('Given the v4.19.3 refresh, every existing skill keeps its Asterline public identity', async () => {
+test('Given the v4.19.4 refresh, every existing skill keeps its Asterline public identity', async () => {
   for (const [name, upstream] of Object.entries(MAPPINGS)) {
     const skill = await readFile(new URL(`${name}/SKILL.md`, ROOT_URL), 'utf8');
     assert.match(skill, new RegExp(`^---\\nname: ${name.replaceAll('-', '\\-')}\\n`, 'm'));
@@ -109,7 +109,7 @@ test('Given the public code-intel names, the underlying runtime contract remains
   assert.doesNotMatch(combined, /\.asterline\/code-intel(?:-client)?\.json|top-level `code-intel` map|MCP registration is `code-intel`|mcp__code-intel/);
 });
 
-test('Given v4.19.3 added assets, every mapped path is packaged and non-empty', async () => {
+test('Given v4.19.4 added assets, every mapped path is packaged and non-empty', async () => {
   for (const [name, paths] of Object.entries(REQUIRED_NEW_PATHS)) {
     for (const path of paths) {
       const info = await stat(new URL(`${name}/${path}`, ROOT_URL));
@@ -118,7 +118,7 @@ test('Given v4.19.3 added assets, every mapped path is packaged and non-empty', 
   }
 });
 
-test('Given the pinned v4.19.3 inventories, every mapped skill has the exact packaged file count', async () => {
+test('Given the pinned v4.19.4 inventories, every mapped skill has the exact packaged file count', async () => {
   for (const [name, expected] of Object.entries(EXPECTED_FILE_COUNTS)) {
     const files = (await walkFiles(fileURLToPath(new URL(`${name}/`, ROOT_URL))))
       .filter((path) => !path.endsWith('/AGENTS.md'));

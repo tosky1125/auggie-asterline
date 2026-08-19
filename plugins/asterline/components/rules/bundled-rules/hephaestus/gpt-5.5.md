@@ -41,7 +41,7 @@ asterline-runtime auto-runs LSP diagnostics after every edit and injects the res
 
 # Parallel Work
 
-Auggie에서는 병렬 작업 분할만 지원하며 지속 팀, 메시징, 재개, 스레드는 지원하지 않습니다.
+Auggie supports only parallel task decomposition; durable teams, messaging, resume, and threads are not supported.
 
 Use `$team-mode` only for bounded independent one-shot subtasks with disjoint ownership. Invoke the available Auggie delegation surface without naming or assuming its transport schema. The parent verifies and integrates terminal worker results. Never claim durable rosters, worker messaging, resumed workers, or thread lifecycle support.
 

@@ -3,7 +3,7 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const skillUrl = new URL('../skills/team-mode/SKILL.md', import.meta.url);
-const limitation = 'Auggie에서는 병렬 작업 분할만 지원하며 지속 팀, 메시징, 재개, 스레드는 지원하지 않습니다.';
+const limitation = 'Auggie supports only parallel task decomposition; durable teams, messaging, resume, and threads are not supported.';
 
 const readSkill = () => readFileSync(skillUrl, 'utf8');
 

@@ -1,19 +1,19 @@
-# 캐시 & 아카이브
+# Cache & Archive
 
-> 원본 사이트가 차단되었을 때 캐시된/아카이브된 버전으로 접근.
-> Google Cache는 2024년 7월 종료됨 — AMP 캐시와 archive.today가 대체.
+> Access cached/archived versions when the original site is blocked.
+> Google Cache was discontinued in July 2024 — AMP cache and archive.today serve as replacements.
 
-## 의존성
+## Dependencies
 
-없음 (curl만 사용).
+None (curl only).
 
-## 1. Google AMP 캐시
+## 1. Google AMP Cache
 
-AMP 지원 사이트의 캐시 버전. 뉴스/미디어 사이트에 효과적.
+Cached version of AMP-enabled sites. Effective for news/media sites.
 
 ```bash
-# URL 변환: domain의 .을 -로 → cdn.ampproject.org
-# 예: www.bbc.com → www-bbc-com.cdn.ampproject.org
+# URL conversion: replace . in domain with - → cdn.ampproject.org
+# Example: www.bbc.com → www-bbc-com.cdn.ampproject.org
 
 python3 -c "
 from urllib.parse import urlparse
@@ -23,61 +23,61 @@ domain_sub = p.netloc.replace('.', '-')
 print(f'https://{domain_sub}.cdn.ampproject.org/c/s/{p.netloc}{p.path}')
 "
 
-# 변환된 URL로 접근
+# Access with the converted URL
 curl -sL "https://{domain-with-dashes}.cdn.ampproject.org/c/s/{netloc}{path}"
 ```
 
-**성공 조건**: 사이트가 AMP 페이지를 제공하는 경우 (대부분의 뉴스/미디어)
-**실패 조건**: AMP 미지원 사이트, 매우 최신 콘텐츠 (캐시 지연 ~15초)
+**Success condition**: Site serves AMP pages (most news/media)
+**Failure condition**: Non-AMP sites, very recent content (cache delay ~15s)
 
 ## 2. archive.today
 
-사용자 제출 아카이브. 페이월 기사, 삭제된 콘텐츠에 특히 유용.
-도메인이 여러 개 — 하나가 차단되면 다른 것 사용.
+User-submitted archive. Particularly useful for paywalled articles and deleted content.
+Multiple domains exist — if one is blocked, use another.
 
 ```bash
-# 최신 스냅샷 조회
+# Fetch the latest snapshot
 curl -sL "https://archive.ph/newest/{URL}"
 
-# 도메인 로테이션 (하나가 차단되면 다른 것)
+# Domain rotation (use another if one is blocked)
 for domain in archive.ph archive.is archive.md archive.vn archive.li; do
   resp=$(curl -sL -o /dev/null -w "%{http_code}" "https://$domain/newest/{URL}")
   if [ "$resp" = "200" ] || [ "$resp" = "302" ]; then
-    echo "성공: https://$domain/newest/{URL}"
+    echo "Success: https://$domain/newest/{URL}"
     curl -sL "https://$domain/newest/{URL}"
     break
   fi
 done
 ```
 
-**성공 조건**: 누군가 이전에 해당 URL을 아카이브한 경우
-**실패 조건**: 아카이브된 적 없는 URL
+**Success condition**: Someone has previously archived the URL
+**Failure condition**: URL has never been archived
 
 ## 3. Wayback Machine (Internet Archive)
 
 ```bash
-# 스냅샷 존재 여부 확인
+# Check if a snapshot exists
 curl -sL "https://archive.org/wayback/available?url={URL}"
 
-# 최신 스냅샷으로 접근
+# Access the latest snapshot
 curl -sL "https://web.archive.org/web/{URL}"
 
-# CDX API — 스냅샷 목록 조회
+# CDX API — fetch snapshot list
 curl -sL "https://web.archive.org/cdx/search/cdx?url={URL}&output=json&fl=timestamp,statuscode&limit=5"
 ```
 
-**성공 조건**: 크롤링 대상이었던 공개 URL
-**실패 조건**: robots.txt로 차단된 사이트, SPA (렌더링 안 됨), iframe 기반 사이트
+**Success condition**: Public URL that was a crawl target
+**Failure condition**: Sites blocked by robots.txt, SPAs (not rendered), iframe-based sites
 
-## 4. Google Cache (종료됨)
+## 4. Google Cache (Discontinued)
 
-> **2024년 7월 종료.** `webcache.googleusercontent.com`은 더 이상 동작하지 않음.
-> 대신 AMP 캐시 또는 archive.today를 사용.
+> **Discontinued in July 2024.** `webcache.googleusercontent.com` no longer works.
+> Use AMP cache or archive.today instead.
 
-## 시도 순서
+## Try Order
 
 ```
-1. AMP 캐시 (뉴스/미디어 사이트 → 높은 성공률)
-2. archive.today (페이월/삭제 콘텐츠 → 아카이브 있으면 확실)
-3. Wayback Machine (오래된 콘텐츠 → 스냅샷 있으면 확실)
+1. AMP cache (news/media sites → high success rate)
+2. archive.today (paywalled/deleted content → reliable if archived)
+3. Wayback Machine (old content → reliable if snapshot exists)
 ```
