@@ -86,7 +86,7 @@ test('Given the imported v4.19.4 skill, when its corpus is inspected, then all 1
   assert.match(skill, /ast_grep_search/);
   assert.match(skill, /ast_grep_replace/);
   assert.doesNotMatch(skill, /structure_search_(?:search|replace)/);
-  assert.doesNotMatch(skill, new RegExp(['\\$' + ['om', 'o'].join('') + ':ast-grep', '\\$lazycodex', 'plugins\\/' + ['om', 'o'].join('') + '\\b', 'OMO_AST_GREP_SG_PATH'].join('|')));
+  assert.doesNotMatch(skill, new RegExp(['\\$' + ['om', 'o'].join('') + ':ast-grep', '\\$lazycodex', 'plugins\\/' + ['om', 'o'].join('') + '\\b', 'OM' + 'O_AST_GREP_SG_PATH'].join('|')));
   assert.match(readFileSync(join(skillRoot, 'SOURCE'), 'utf8'), /3148c69/);
 });
 

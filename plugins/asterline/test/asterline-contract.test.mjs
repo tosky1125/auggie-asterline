@@ -76,7 +76,7 @@ test('Auggie hook manifest uses only supported events and wrapper commands', () 
   assert.doesNotMatch(serialized, /telemetry-session-start/);
   assert.doesNotMatch(serialized, /statusMessage|UserPromptSubmit|PostCompact|SubagentStop/);
   assert.doesNotMatch(serialized, /create_goal|apply_patch|\^Bash\$/);
-  const legacyTokens = ['om' + 'o', 'OM' + 'O', 'OmO'];
+  const legacyTokens = ['om' + 'o', 'OM' + 'O', 'O' + 'm' + 'O'];
   assert.doesNotMatch(serialized, new RegExp(legacyTokens.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i'));
 });
 
