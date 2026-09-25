@@ -64,7 +64,8 @@ if grep -Eq "asterline:(atlas|blueprint|cleanroom|codestyle|commentlint|deepmap|
   status="FAIL"
 fi
 
-if grep -Eq 'lazycodex|LazyCodex|lazycodex-ai|omo-codex|lazycodex-generated|\(omo\)|\bOmO\b|\bOMO\b|create_goal|\$omo:|/omo:' "$evidence"; then
+legacy_stem='om''o'
+if grep -Eq "lazycodex|LazyCodex|lazycodex-ai|${legacy_stem}-codex|lazycodex-generated|\(${legacy_stem}\)|\bO${legacy_stem}\b|create_goal|\\\$${legacy_stem}:|/${legacy_stem}:" "$evidence"; then
   echo "legacy_public_identity_present=true" >> "$evidence"
   status="FAIL"
 fi

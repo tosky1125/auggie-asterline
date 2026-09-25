@@ -12,7 +12,7 @@ const pluginRoot = resolve(import.meta.dirname, "..")
 const componentRoot = join(pluginRoot, "components/codegraph")
 const bundle = join(pluginRoot, "mcp/codegraph/dist/serve.js")
 const buildScript = join(componentRoot, "runtime/build-codegraph.mjs")
-const canonicalRoot = "/tmp/omo-v417"
+const canonicalRoot = "/tmp/asterline-v417"
 const realRuntime = "/tmp/native-probe-cg/codegraph-linux-x64"
 
 function temporaryRoot() {

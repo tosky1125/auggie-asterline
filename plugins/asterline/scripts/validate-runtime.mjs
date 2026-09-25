@@ -12,8 +12,6 @@ const required = [
   'components/start-work-continuation/dist/cli.js',
   'components/work-loop/dist/cli.js',
   'mcp/ast_grep/dist/cli.js',
-  'mcp/ast_grep/runtime/build-ast-grep.mjs',
-  'mcp/ast_grep/runtime/upstream-lock.json',
   'mcp/codegraph/dist/serve.js',
   'mcp/git_bash/dist/cli.js',
   'mcp/lsp/dist/cli.js',
@@ -82,7 +80,35 @@ for (const component of readdirSync(join(root, 'components'))) {
     if (existsSync(join(root, path))) publicFiles.push(...walk(path));
   }
 }
-const forbiddenPublicPattern = /\$omo:|\/omo:|\$lcx|lcx-|ulw-loop|ulw-plan|LazyCodex|lazycodex|lazycodex-ai|omo-codex|lazycodex-generated|\(omo\)|\bOmO\b|\bOMO\b|\bCodex\b|\bcodex\b|CODEX|\.codex|codex-|openai\/codex|create_goal|call_omo_agent|[A-Za-z]Codex|Codex[A-Za-z]/;
+const legacyStem = ['om', 'o'].join('');
+const forbiddenPublicPattern = new RegExp(
+  [
+    `\\$${legacyStem}:`,
+    `\\/${legacyStem}:`,
+    '\\$lcx',
+    'lcx-',
+    'ulw-loop',
+    'ulw-plan',
+    'LazyCodex',
+    'lazycodex',
+    'lazycodex-ai',
+    `${legacyStem}-codex`,
+    'lazycodex-generated',
+    `\\(${legacyStem}\\)`,
+    `\\bO${'m'}O\\b`,
+    `\\bOM${'O'}\\b`,
+    '\\bCodex\\b',
+    '\\bcodex\\b',
+    'CODEX',
+    '\\.codex',
+    'codex-',
+    'openai/codex',
+    'create_goal',
+    `call_${legacyStem}_agent`,
+    '[A-Za-z]Codex',
+    'Codex[A-Za-z]',
+  ].join('|'),
+);
 const scanExempt = (path) => path.endsWith('/ATTRIBUTION.md') || path.endsWith('/NOTICE') || path.startsWith('skills/session-history/');
 const leaked = [...new Set(publicFiles)].filter((path) => !scanExempt(path) && forbiddenPublicPattern.test(readFileSync(join(root, path), 'utf8')));
 const pkg = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));

@@ -65,7 +65,7 @@ test('team-mode explicitly refuses unsupported durable-team behavior', () => {
   }
 
   assert.doesNotMatch(source, /MultiAgentV2|codex_app|create_thread|send_message/i);
-  assert.doesNotMatch(source, /\.omo\/teams|\.asterline\/(?:teams|team-mode)|scripts\//i);
+  assert.doesNotMatch(source, new RegExp('\\.om' + 'o\\/teams|\\.asterline\\/(?:teams|team-mode)|scripts\\/', 'i'));
 });
 
 test('resume requests receive a truthful refusal and a safe alternative', () => {

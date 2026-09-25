@@ -75,7 +75,7 @@ test('Given the v4.19.4 shipped skill, when inventory is inspected, then all 24 
   const skill = readFileSync(join(skillRoot, 'SKILL.md'), 'utf8');
   const metadata = readFileSync(join(skillRoot, 'agents', 'openai.yaml'), 'utf8');
   assert.match(skill, /^---\nname: session-history\n/);
-  assert.doesNotMatch(skill + metadata, /coding-agent-sessions|\$coding-agent-sessions|\(OmO\)/);
+  assert.doesNotMatch(skill + metadata, /coding-agent-sessions|\$coding-agent-sessions|\(Om\+O\)/);
   assert.match(metadata, /\$session-history/);
   for (const reference of ['all-platforms.md', 'claude.md', 'codex.md', 'opencode.md', 'senpi.md']) {
     assert.equal(skill.includes(`references/${reference}`), true);

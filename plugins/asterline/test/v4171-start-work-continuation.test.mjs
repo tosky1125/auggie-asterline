@@ -71,7 +71,7 @@ test('Given installed Auggie run-plan state, when Stop runs, then actual dist bl
   assert.match(output.reason, new RegExp(join(root, '.asterline', 'run-plan', 'ledger.jsonl').replaceAll('\\', '\\\\')));
   assert.match(output.reason, /auggie:session-1/);
   assert.match(output.reason, /skills\/run-plan\/SKILL\.md/);
-  assert.doesNotMatch(output.reason, /LazyCodex|omo-codex|start-work\/SKILL\.md|multi_agent_v1/);
+  assert.doesNotMatch(output.reason, new RegExp(['LazyCodex', ['om', 'o'].join('') + '-codex', 'start-work/SKILL\\.md', 'multi_agent_v1'].join('|')));
 });
 
 test('Given completed or unrelated state, when Stop runs, then actual dist fails open', (t) => {

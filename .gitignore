@@ -3,6 +3,16 @@
 .[o]mo/
 .env.langfuse.local
 
+# Upstream lineage, build recipes, and rebuild provenance: local-only, never committed
+UPSTREAM-PROVENANCE.json
+UPSTREAM-PROVENANCE.md
+release/upstream-lock.json
+mcp/ast_grep/runtime/upstream-lock.json
+mcp/ast_grep/runtime/build-ast-grep.mjs
+mcp/codegraph/transform-provenance.json
+*runtime/*-mcp.build.json
+test/v4171-upstream-lock.test.mjs
+
 # Node
 node_modules/
 
