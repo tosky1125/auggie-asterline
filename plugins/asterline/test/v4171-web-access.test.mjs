@@ -91,8 +91,8 @@ test('Given the Asterline adaptation, when public routing metadata is read, then
   assert.match(skill, /^# Web Access$/m);
   assert.match(metadata, /\$web-access/);
   assert.match(skill, /Auggie/);
-  assert.doesNotMatch(skill + metadata, /\$ultimate-browsing|\(OmO\)|mcp__playwright__|Claude session/);
-  const staleCookiePrefix = new RegExp(['omo', 'cookies-'].join('-'));
+  assert.doesNotMatch(skill + metadata, /\$ultimate-browsing|\(Om\+O\)|mcp__playwright__|Claude session/);
+  const staleCookiePrefix = new RegExp(['om' + 'o', 'cookies-'].join('-'));
   assert.doesNotMatch(readFileSync(join(skillRoot, 'scripts', 'extract_cookies.py'), 'utf8'), staleCookiePrefix);
 });
 

@@ -10,7 +10,7 @@ let out: string[];
 let err: string[];
 let originalAsterlineSessionId: string | undefined;
 let originalAsterlineThreadId: string | undefined;
-let originalOmoSessionId: string | undefined;
+let originalSessionId: string | undefined;
 
 beforeEach(async () => {
 	testDir = await mkdtemp(join(tmpdir(), "ug-cli-json-err-"));
@@ -18,7 +18,7 @@ beforeEach(async () => {
 	err = [];
 	originalAsterlineSessionId = process.env["ASTERLINE_SESSION_ID"];
 	originalAsterlineThreadId = process.env["AUGGIE_SESSION_ID"];
-	originalOmoSessionId = process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
+	originalSessionId = process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
 	delete process.env["ASTERLINE_SESSION_ID"];
 	delete process.env["AUGGIE_SESSION_ID"];
 	delete process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
@@ -39,8 +39,8 @@ afterEach(async () => {
 	else process.env["ASTERLINE_SESSION_ID"] = originalAsterlineSessionId;
 	if (originalAsterlineThreadId === undefined) delete process.env["AUGGIE_SESSION_ID"];
 	else process.env["AUGGIE_SESSION_ID"] = originalAsterlineThreadId;
-	if (originalOmoSessionId === undefined) delete process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
-	else process.env["ASTERLINE_WORK_LOOP_SESSION_ID"] = originalOmoSessionId;
+	if (originalSessionId === undefined) delete process.env["ASTERLINE_WORK_LOOP_SESSION_ID"];
+	else process.env["ASTERLINE_WORK_LOOP_SESSION_ID"] = originalSessionId;
 	await rm(testDir, { recursive: true, force: true });
 });
 

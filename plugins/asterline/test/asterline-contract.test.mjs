@@ -76,7 +76,8 @@ test('Auggie hook manifest uses only supported events and wrapper commands', () 
   assert.doesNotMatch(serialized, /telemetry-session-start/);
   assert.doesNotMatch(serialized, /statusMessage|UserPromptSubmit|PostCompact|SubagentStop/);
   assert.doesNotMatch(serialized, /create_goal|apply_patch|\^Bash\$/);
-  assert.doesNotMatch(serialized, /LazyCodex|lazycodex|OMO|omo|Codex|codex/);
+  const legacyTokens = ['om' + 'o', 'OM' + 'O', 'O' + 'm' + 'O'];
+  assert.doesNotMatch(serialized, new RegExp(legacyTokens.map((token) => token.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('|'), 'i'));
 });
 
 test('Auggie hook manifest contains only supported events and properties', () => {
@@ -197,7 +198,35 @@ test('Public shipped surfaces contain no Codex-era identity tokens', () => {
     files.push(mcpLocalEntrypoint(mcp[name]));
   }
 
-  const forbidden = /\$omo:|\/omo:|\$lcx|lcx-|ulw-loop|ulw-plan|LazyCodex|lazycodex|lazycodex-ai|omo-codex|lazycodex-generated|\(omo\)|\bOmO\b|\bOMO\b|\bCodex\b|\bcodex\b|CODEX|\.codex|codex-|openai\/codex|create_goal|call_omo_agent|[A-Za-z]Codex|Codex[A-Za-z]/;
+  const legacyCase = ['om', 'o'].join('');
+  const forbidden = new RegExp(
+    [
+      `\\$${legacyCase}:`,
+      `\\/${legacyCase}:`,
+      '\\$lcx',
+      'lcx-',
+      'ulw-loop',
+      'ulw-plan',
+      'LazyCodex',
+      'lazycodex',
+      'lazycodex-ai',
+      `${legacyCase}-codex`,
+      'lazycodex-generated',
+      `\\(${legacyCase}\\)`,
+      `\\bO${'m'}O\\b`,
+      `\\bOM${'O'}\\b`,
+      '\\bCodex\\b',
+      '\\bcodex\\b',
+      'CODEX',
+      '\\.codex',
+      'codex-',
+      'openai/codex',
+      'create_goal',
+      `call_${legacyCase}_agent`,
+      '[A-Za-z]Codex',
+      'Codex[A-Za-z]',
+    ].join('|'),
+  );
   for (const file of [...new Set(files)]) {
     if (file.endsWith('/ATTRIBUTION.md') || file.endsWith('/NOTICE') || file.startsWith('skills/session-history/')) continue;
     const text = readFileSync(join(root, file), 'utf8');

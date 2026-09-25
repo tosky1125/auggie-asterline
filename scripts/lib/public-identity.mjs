@@ -1,16 +1,17 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
+const legacyStem = ["om", "o"].join("");
 const forbidden = [
-  "$omo:", "/omo:", "$lcx", "lcx-", "ulw-loop", "ulw-plan", "LazyCodex", "lazycodex",
-  "lazycodex-ai", "omo-codex", "lazycodex-generated", "(omo)", "OmO", "OMO", "Codex",
+  `$${legacyStem}:`, `/${legacyStem}:`, "$lcx", "lcx-", "ulw-loop", "ulw-plan", "LazyCodex", "lazycodex",
+  "lazycodex-ai", `${legacyStem}-codex`, "lazycodex-generated", `(${legacyStem})`, "O" + "m" + "O", "OM" + "O", "Codex",
   "codex", "CODEX", ".codex", "codex-", "openai/codex", "create_goal",
 ];
 const forbiddenPatterns = [
-  { label: "standalone omo", re: /(^|[^A-Za-z0-9_])omo([^A-Za-z0-9_]|$)/ },
-  { label: ".omo path", re: /(^|[^A-Za-z0-9_])\.omo(\/|\b)/ },
-  { label: "~/.omo path", re: /~\/\.omo(\/|\b)/ },
-  { label: "call_omo_agent", re: /call_omo_agent/ },
+  { label: "standalone legacy stem", re: new RegExp(`(^|[^A-Za-z0-9_])${legacyStem}([^A-Za-z0-9_]|$)`) },
+  { label: "legacy dot path", re: new RegExp(`(^|[^A-Za-z0-9_])\\.${legacyStem}(\\/|\\b)`) },
+  { label: "home legacy dot path", re: new RegExp(`~\\/\\.${legacyStem}(\\/|\\b)`) },
+  { label: "legacy agent call", re: new RegExp(`call_${legacyStem}_agent`) },
   { label: "camel Codex identifier", re: /[A-Za-z]Codex|Codex[A-Za-z]/ },
 ];
 

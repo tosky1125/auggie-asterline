@@ -13,7 +13,7 @@ const mcpRoot = join(pluginRoot, "mcp/git_bash")
 const mcpCli = join(mcpRoot, "dist/cli.js")
 const mcpLibrary = join(mcpRoot, "dist/index.js")
 const buildScript = join(componentRoot, "runtime/build-git-bash.mjs")
-const canonicalRoot = "/tmp/omo-v417"
+const canonicalRoot = "/tmp/asterline-v417"
 
 const sha256 = (value) => createHash("sha256").update(value).digest("hex")
 

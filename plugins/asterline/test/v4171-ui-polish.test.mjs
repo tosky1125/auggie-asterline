@@ -66,7 +66,7 @@ test('ui-polish owns its public identity and truthful Auggie routing', () => {
   assert.match(skill, /not available|when available|if available/i);
   assert.doesNotMatch(skill, /`agent-browser` skill|\/(?:visual-qa|review-work)\b/);
   assert.match(agent, /display_name:\s*["']?Asterline UI Polish/i);
-  assert.doesNotMatch(agent, /\(OmO\)|frontend/i);
+  assert.doesNotMatch(agent, /\(Om\+O\)|frontend/i);
 });
 
 test('ui-polish preserves databases, helpers, licenses, and local links', () => {

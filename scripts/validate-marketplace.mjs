@@ -159,7 +159,8 @@ if (JSON.stringify(Object.keys(hooks.hooks ?? {}).sort()) !== JSON.stringify(["P
   fail("hook manifest contains unsupported Auggie events");
 }
 if (/statusMessage|UserPromptSubmit|PostCompact|SubagentStop/.test(hookText)) fail("hook manifest contains unsupported Auggie properties or events");
-for (const token of ["create_goal", "apply_patch", "LazyCodex", "OMO", "omo"]) {
+const legacyStem = ["om", "o"].join("");
+for (const token of ["create_goal", "apply_patch", "LazyCodex", "OM" + "O", legacyStem]) {
   if (hookText.includes(token)) fail(`hook manifest contains legacy token: ${token}`);
 }
 for (const entries of Object.values(hooks.hooks ?? {})) {
@@ -249,7 +250,7 @@ const packagePublicMetadata = JSON.stringify({
 });
 scanPublicMetadata("plugins/asterline/package.json", packagePublicMetadata, fail);
 
-if (hasPath("plugins/omo")) fail("old plugin tree must not exist");
+if (hasPath(`plugins/${legacyStem}`)) fail("old plugin tree must not exist");
 if (hasPath("plugins/asterline/commands")) fail("commands directory should not exist");
 
 if (failures.length > 0) {

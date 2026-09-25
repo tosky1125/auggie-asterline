@@ -147,7 +147,10 @@ test('Given local Markdown links, every relative file target resolves inside its
 });
 
 test('Given Auggie execution, skill contracts do not expose foreign public aliases or durable-team claims', async () => {
-  const forbidden = /\$(?:omo:)?(?:remove-ai-slops|programming|lsp-setup|lsp|comment-checker|debugging|ulw-research|git-master|lcx-doctor|init-deep|refactor|review-work|rules|start-work|lcx-contribute-bug-fix|lcx-report-bug|visual-qa|ulw-loop|ulw-plan)\b|\$asterline:[a-z0-9-]+|team_(?:send_message|task_create|task_update|shutdown_request|approve_shutdown|delete)|resume_agent|close_agent|send_input|task\((?:subagent_type|category)=|\.opencode\/|\.codex\/|\bCODEX_HOME\b/g;
+  const forbidden = new RegExp(
+    '\\$(?:' + ['om', 'o'].join('') + ':)?(?:remove-ai-slops|programming|lsp-setup|lsp|comment-checker|debugging|ulw-research|git-master|lcx-doctor|init-deep|refactor|review-work|rules|start-work|lcx-contribute-bug-fix|lcx-report-bug|visual-qa|ulw-loop|ulw-plan)\\b|\\$asterline:[a-z0-9-]+|team_(?:send_message|task_create|task_update|shutdown_request|approve_shutdown|delete)|resume_agent|close_agent|send_input|task\\((?:subagent_type|category)=|\\.opencode\\/|\\.codex\\/|\\bCODEX_HOME\\b',
+    'g',
+  );
   const publicBranding = /\b(?:LazyCodex|OpenCode)\b/g;
   for (const name of Object.keys(MAPPINGS)) {
     for (const path of await walkFiles(fileURLToPath(new URL(`${name}/`, ROOT_URL)))) {

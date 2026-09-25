@@ -73,7 +73,7 @@ export function parseArgs(argv) {
 
 // Resolve a project-relative path and confine it under .asterline/ - the script's own
 // enforcement of the prometheus planner write boundary.
-export function resolveSafeOmoPath(cwd, relPath) {
+export function resolveSafePlannerPath(cwd, relPath) {
 	const resolved = resolve(cwd, relPath);
 	const rel = relative(cwd, resolved);
 	if (rel.startsWith("..") || isAbsolute(rel)) {
@@ -121,15 +121,15 @@ async function mkdirWithoutSymlinks(dir, stopAt) {
 async function assertSafeWriteParent(cwd, target) {
 	const workspaceReal = await realpath(cwd);
 	const workspaceRoot = resolve(cwd);
-	const omoRoot = resolve(cwd, ".asterline");
+	const asterlineRoot = resolve(cwd, ".asterline");
 	const parent = dirname(target);
 	assertContainedPath(workspaceRoot, parent, `refused: path escapes the workspace root: ${target}`);
-	assertContainedPath(omoRoot, parent, `refused: work-plan may only write under .asterline/: ${target}`);
+	assertContainedPath(asterlineRoot, parent, `refused: work-plan may only write under .asterline/: ${target}`);
 	await mkdirWithoutSymlinks(parent, workspaceRoot);
-	const omoReal = await realpath(omoRoot);
+	const asterlineReal = await realpath(asterlineRoot);
 	const parentReal = await realpath(parent);
 	assertContainedPath(workspaceReal, parentReal, `refused: path escapes the workspace root through symlinks: ${target}`);
-	assertContainedPath(omoReal, parentReal, `refused: work-plan may only write under .asterline/ through real paths: ${target}`);
+	assertContainedPath(asterlineReal, parentReal, `refused: work-plan may only write under .asterline/ through real paths: ${target}`);
 }
 
 async function assertSafeWriteTarget(target) {
@@ -270,7 +270,7 @@ ${FINAL_VERIFICATION_ITEMS.map((item) => `- [ ] ${item}`).join("\n")}
 // success; --reset overwrites but refuses to discard a hand-edited file unless
 // --force is also passed.
 export async function writeGuarded(cwd, relPath, content, { reset = false, force = false } = {}) {
-	const target = resolveSafeOmoPath(cwd, relPath);
+	const target = resolveSafePlannerPath(cwd, relPath);
 	await assertSafeWriteParent(cwd, target);
 	await assertSafeWriteTarget(target);
 	const existing = await readFile(target, "utf8").catch(() => null);

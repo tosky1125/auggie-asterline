@@ -33,7 +33,7 @@ The separate MCP bundle exposes `which_bash` and `diagnose` on every host, and c
 npm run build
 bun test test/*.test.ts
 node dist/cli.js help
-node runtime/build-git-bash.mjs --source /tmp/omo-v417 --output ../../mcp/git_bash
+node runtime/build-git-bash.mjs --source /tmp/asterline-v417 --output ../../mcp/git_bash
 ```
 
 Then run the inherited plugin packaging gate; wrapper changes also require the inherited root marketplace validator.
