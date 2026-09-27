@@ -18,6 +18,15 @@
             "timeout": 30000
           }
         ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash -lc 'exec \"$HOME/.augment/plugins/marketplaces/auggie-asterline/plugins/asterline/hooks/bin/session-gateway-beacon.sh\"'",
+            "timeout": 10000
+          }
+        ]
       }
     ],
     "PreToolUse": [
